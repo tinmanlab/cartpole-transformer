@@ -2,13 +2,13 @@
 
 A beginner-first interactive lab for learning **Transformer attention by seeing it control Cart-Pole**.
 
-The project starts deliberately small: before using a trained Transformer, it makes every step of attention visible and editable.
+The project starts deliberately small and now includes both a transparent fallback controller and a trained one-block, one-head causal Transformer whose real intermediate tensors are visualized in the browser.
 
 ## Live demo
 
 **https://tinmanlab.github.io/cartpole-transformer/**
 
-The current v0.1 is a deliberately transparent toy-attention explainer, not a trained control policy.
+The live page now prefers the learned tiny Transformer artifact and falls back to the transparent toy controller only if the learned artifact cannot be loaded.
 
 ## Why Cart-Pole?
 
@@ -31,8 +31,10 @@ The first goal is not state-of-the-art control. The first goal is to make the ca
 ### 0.1 — State-only attention explainer
 Small, inspectable single-head attention. Every number is visible. Sliders change Cart-Pole state and immediately update Q, K, V, scores, softmax weights, context and the toy left/right action.
 
-### 0.2 — Learned Cart-Pole Transformer
-Replace hand-picked weights with a tiny trained causal Transformer policy. Compare learned attention with the transparent toy model and verify actual episode return.
+### 0.2 — Learned Cart-Pole Transformer — complete
+A deterministic 1-block, 1-head causal Transformer (sequence 8, d_model 8, FFN 16) is behavior-cloned from a simple linear state-feedback teacher. The browser directly executes the serialized learned weights and exposes learned embedding, Q/K/V, pre-mask scores, causal mask, softmax weights, weighted V/context and action.
+
+Closed-loop evaluation: 80 randomized episodes with occasional ±4 N disturbance pulses, 500-step horizon. Both the learned Transformer and the simpler linear baseline achieved 500/500 mean, median and minimum steps (100% completion). See [docs/learned-model.md](docs/learned-model.md).
 
 ### 0.3 — Vision-only
 Treat rendered Cart-Pole frames as visual tokens. Show how an image/frame becomes patches/features and how temporal attention uses several frames to infer motion.
@@ -62,9 +64,9 @@ The interaction and visual-explanation approach is inspired by and may selective
 - https://github.com/poloclub/transformer-explainer
 - Baseline inspected: `bfe50afba10b9b560b84143ee1107d977defa74f`
 
-Useful upstream components include `QKV.svelte`, `Attention.svelte`, `AttentionMatrix.svelte`, `Embedding.svelte`, and `HeadStack.svelte`.
+The current visualization directly vendors/adapts the upstream `VectorCanvas.svelte`, `MatrixSvg.svelte`, and the generic gradient/path/redraw machinery from `Sankey.svelte`, pinned to commit `bfe50afba10b9b560b84143ee1107d977defa74f`. Cart-Pole-specific code only adapts model tensors and DOM selectors.
 
-Transformer Explainer is MIT licensed. Any upstream-derived source must retain the applicable copyright and license notice. See [NOTICE.md](NOTICE.md).
+Transformer Explainer is MIT licensed. File-level attribution and the exact reuse boundary are recorded in [NOTICE.md](NOTICE.md).
 
 ## Architecture rule
 
@@ -78,7 +80,7 @@ This separation lets later state, image, video, and multimodal models reuse the 
 
 ## Status
 
-**v0.1 state-only attention explainer is live on GitHub Pages.** The next implementation target is a tiny learned causal Transformer policy while preserving the same beginner-facing explainer.
+**v0.2 learned state Transformer is live on GitHub Pages.** Training, closed-loop evaluation, browser-runtime structural checks, causal-mask checks, softmax checks, a <10 ms average inference acceptance benchmark, production build, and Pages deployment are all automated. The next frontier is **v0.3 vision-only frame/video tokens**.
 
 ## License
 
