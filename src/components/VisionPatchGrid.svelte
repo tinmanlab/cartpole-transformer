@@ -4,6 +4,7 @@
   export let patches = [];
   export let gridSize = 8;
   export let cellSize = 18;
+  export let patchSize = 2;
   export let onSelect = () => {};
   export let selected = null;
 
@@ -13,7 +14,7 @@
 </script>
 
 <div class="patch-grid">
-  <div class="axis top">8 columns</div>
+  <div class="axis top">{gridSize} columns</div>
   <UpstreamMatrixSvg
     data={matrix}
     cellHeight={cellSize}
@@ -27,7 +28,7 @@
     onMouseOverCell={hover}
     showTooltip={(e,v)=>'patch mean '+v.toFixed(3)}
   />
-  <div class="caption">32×32 pixels → 4×4 average patches → 8×8 = 64 features</div>
+  <div class="caption">32×32 pixels → {patchSize}×{patchSize} average patches → {gridSize}×{gridSize} = {patches.length} features</div>
 </div>
 
 <style>
