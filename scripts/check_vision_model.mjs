@@ -14,6 +14,7 @@ const close = (a,b,eps=1e-8) => Math.abs(a-b) <= eps;
 
 assert(model.format === 'cartpole-vision-transformer-v1', 'wrong vision model format');
 assert(model.feature_dim === VISION_FEATURE_DIM, 'vision feature dimension mismatch');
+assert(model.token_input_dim === VISION_FEATURE_DIM * 2, 'vision token input dimension mismatch');
 assert(model.sequence_length === VISION_SEQUENCE_LENGTH, 'vision sequence length mismatch');
 
 const states = Array.from({length:model.sequence_length},(_,i)=>[
@@ -30,6 +31,8 @@ for (const o of observations) {
 }
 const out = runVisionAttention(history, model);
 assert(out.modelType === 'learned-vision-transformer', 'wrong runtime vision model type');
+assert(out.deltaFeatures.length === model.sequence_length, 'missing delta patch history');
+assert(out.tokenInputs[0].length === model.token_input_dim, 'wrong visual token input width');
 assert(out.tokens.length === model.sequence_length, 'wrong visual token count');
 assert(out.tokens[0].length === model.d_model, 'wrong visual token width');
 assert(out.inferredState.length === 4, 'missing inferred visual state');
