@@ -8,6 +8,7 @@ Uses visualization primitives adapted from poloclub/transformer-explainer
   import UpstreamVectorCanvas from '../upstream/VectorCanvas.svelte';
   import UpstreamMatrixSvg from '../upstream/MatrixSvg.svelte';
   import UpstreamAttentionExpansion from '../upstream/AttentionExpansion.svelte';
+  import AttentionCellTrace from './AttentionCellTrace.svelte';
 
   export let result;
   export let controllerForce = 0;
@@ -130,6 +131,12 @@ Uses visualization primitives adapted from poloclub/transformer-explainer
         scores={result.scores}
         masked={result.raw}
         weights={result.weights}
+        {selectedRow}
+        {selectedCol}
+        onSelect={(r,c)=>{onSelectAttention(r,c);onSelectToken(c);}}
+      />
+      <AttentionCellTrace
+        {result}
         {selectedRow}
         {selectedCol}
         onSelect={(r,c)=>{onSelectAttention(r,c);onSelectToken(c);}}
