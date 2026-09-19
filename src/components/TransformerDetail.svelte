@@ -133,13 +133,13 @@ Uses visualization primitives adapted from poloclub/transformer-explainer
         weights={result.weights}
         {selectedRow}
         {selectedCol}
-        onSelect={(r,c)=>{onSelectAttention(r,c);onSelectToken(c);}}
+        onSelect={(r,c)=>onSelectAttention(r,c)}
       />
       <AttentionCellTrace
         {result}
         {selectedRow}
         {selectedCol}
-        onSelect={(r,c)=>{onSelectAttention(r,c);onSelectToken(c);}}
+        onSelect={(r,c)=>onSelectAttention(r,c)}
       />
     </div>
   {:else if expandedStage === 'block'}
