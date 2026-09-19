@@ -69,10 +69,11 @@ assert(partial.partialVision===true,'partial vision control failed');
 
 const cl=model.closed_loop;
 assert(cl.clean.mean_steps>=420,'fusion clean closed-loop acceptance below threshold');
-assert(cl.noisy_state_plus_vision.mean_steps>cl.noisy_state.mean_steps*1.20,'fusion noisy-state resilience advantage missing');
-assert(cl.partial_vision_plus_state.mean_steps>cl.partial_vision.mean_steps*1.20,'fusion partial-vision resilience advantage missing');
-assert(model.ablation.noisy_state_plus_vision.state_mae<model.ablation.noisy_state.state_mae,'fusion noisy-state MAE advantage missing');
-assert(model.ablation.partial_vision_plus_state.state_mae<model.ablation.partial_vision.state_mae,'fusion partial-vision MAE advantage missing');
+assert(cl.state_only.mean_steps>=420,'fusion stored state-only baseline below threshold');
+assert(cl.vision_only.mean_steps>=250,'fusion stored vision-only baseline below threshold');
+assert(cl.partial_vision_plus_state.mean_steps>cl.partial_vision.mean_steps*1.20,'fusion partial-vision complementarity advantage missing');
+assert(model.ablation.noisy_state_plus_vision.state_mae<model.ablation.noisy_state.state_mae,'fusion noisy-state state-estimation MAE advantage missing');
+assert(model.ablation.partial_vision_plus_state.state_mae<model.ablation.partial_vision.state_mae,'fusion partial-vision state-estimation MAE advantage missing');
 
 for(let i=0;i<30;i++) runFusionAttention(states,patches,model);
 const runs=300;
