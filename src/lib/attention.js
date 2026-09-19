@@ -33,7 +33,8 @@ function softmax(xs) {
 
 export function runAttention(history) {
   const rawTokens = history.map(state => [...state]);
-  const tokens = rawTokens.map(normalize);
+  const normalizedTokens = rawTokens.map(normalize);
+  const tokens = normalizedTokens;
   const q = tokens.map(v => matVec(WQ, v));
   const k = tokens.map(v => matVec(WK, v));
   const v = tokens.map(t => [...t]);
@@ -58,7 +59,7 @@ export function runAttention(history) {
     8.00 * context[2] +
     3.00 * context[3];
 
-  return { rawTokens, tokens, q, k, v, raw, weights, context, actionScore };
+  return { modelType: 'transparent-toy', encoderType: 'scale-only', rawTokens, normalizedTokens, tokens, q, k, v, raw, weights, context, actionScore };
 }
 
 export function forceFromScore(score) {
