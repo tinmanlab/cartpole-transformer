@@ -76,7 +76,7 @@
     <button class="stage vision-stage-patch" type="button" on:click={onOpenDetail}>
       <div class="stage-head"><b>2</b><span>Patch features</span><small>patch 256D + Δ 256D</small></div>
       <div class="patch-anchor patch-pair">
-        <div><span>patch</span><VisionPatchGrid {patches} gridSize={patchGridSize} patchSize={2} cellSize={patchGridSize > 8 ? 4 : 8}/></div>
+        <div><span>patch</span><VisionPatchGrid {patches} gridSize={patchGridSize} patchSize={2} cellSize={patchGridSize > 8 ? 6 : 9}/></div>
         <div><span>Δ</span><VisionPatchGrid patches={deltaPatches} gridSize={patchGridSize} patchSize={2} cellSize={patchGridSize > 8 ? 4 : 8} mode="delta"/></div>
       </div>
     </button>
