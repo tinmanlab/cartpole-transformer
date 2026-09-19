@@ -34,6 +34,7 @@ contract this follows.
   ];
 
   let stage = 'input';
+  let applying = false;
   let stepApplied = false;
   let applyFailed = false;
   let capturedTrace = null;
@@ -50,17 +51,26 @@ contract this follows.
   }
 
   async function applyStep() {
-    if (stepApplied || status === 'fell') return;
-    onApplyStep();
-    // onApplyStep mutates the App-level lastDecisionTrace; tick() flushes
-    // that prop update down to us before we check it, so this never reports
-    // success on a step that didn't actually happen.
-    await tick();
-    if (lastDecisionTrace && lastDecisionTrace.tickFrom === capturedTick) {
-      stepApplied = true;
-      applyFailed = false;
-    } else {
-      applyFailed = true;
+    // `applying` is set synchronously, before any await, so two clicks
+    // dispatched back-to-back in the same task (e.g. a double DOM click)
+    // both see the guard: the second call returns immediately instead of
+    // calling onApplyStep() a second time before the first has resolved.
+    if (stepApplied || applying || status === 'fell') return;
+    applying = true;
+    try {
+      onApplyStep();
+      // onApplyStep mutates the App-level lastDecisionTrace; tick() flushes
+      // that prop update down to us before we check it, so this never
+      // reports success on a step that didn't actually happen.
+      await tick();
+      if (lastDecisionTrace && lastDecisionTrace.tickFrom === capturedTick) {
+        stepApplied = true;
+        applyFailed = false;
+      } else {
+        applyFailed = true;
+      }
+    } finally {
+      applying = false;
     }
   }
 
@@ -105,12 +115,39 @@ contract this follows.
     {:else}
       <p>Result / 결과 — apply exactly one real 20&nbsp;ms physics step from this frozen event to see what actually happens next.</p>
       {#if !capturedTrace}
-        <button type="button" class="fd-apply" disabled={status==='fell'} on:click={applyStep}>Apply one 20ms step · 1 step 실행</button>
+        <button type="button" class="fd-apply" disabled={status==='fell' || applying} on:click={applyStep}>Apply one 20ms step · 1 step 실행</button>
         {#if applyFailed}
           <p class="fd-error">The step did not apply (simulation state changed under the guide). Close and re-open Follow one decision to capture a fresh event.</p>
         {/if}
       {:else}
-        <DecisionTrace trace={capturedTrace}/>
+        <div class="fd-result-summary">
+          <div class="fd-result-tick">actual tick {capturedTrace.tickFrom} → {capturedTrace.tickTo}</div>
+          <div class="fd-values">
+            <span><b>applied force [N]</b>{capturedTrace.appliedPolicyForce.toFixed(2)}</span>
+          </div>
+          <div class="fd-before-after">
+            <div>
+              <span class="fd-ba-label">before (t)</span>
+              <div class="fd-values">
+                {#each FIELDS as [name,unit],i}
+                  <span><b>{name} [{unit}]</b>{capturedTrace.beforeState[i].toFixed(3)}</span>
+                {/each}
+              </div>
+            </div>
+            <div>
+              <span class="fd-ba-label">after (t+1)</span>
+              <div class="fd-values">
+                {#each FIELDS as [name,unit],i}
+                  <span><b>{name} [{unit}]</b>{capturedTrace.nextState[i].toFixed(3)}</span>
+                {/each}
+              </div>
+            </div>
+          </div>
+        </div>
+        <details class="fd-details">
+          <summary>동역학 계산 상세 · full dynamics detail</summary>
+          <DecisionTrace trace={capturedTrace}/>
+        </details>
         <button type="button" class="fd-new" disabled={status==='fell'} on:click={onNewDecision}>새 판단 따라가기 · Follow next decision</button>
       {/if}
     {/if}
@@ -134,5 +171,11 @@ header h3{font-size:15px;margin:5px 0 0}
 .fd-values b{font-family:Inter,ui-sans-serif,system-ui;font-size:14px;color:#8b93a1}
 .fd-apply,.fd-new{margin-top:6px;border:1px solid #243047;border-radius:8px;background:#243047;color:#fff;padding:10px 14px;min-height:44px;font-size:14px;cursor:pointer}
 .fd-apply:disabled,.fd-new:disabled{opacity:.4;cursor:not-allowed}
-@media(max-width:560px){.fd-stages{grid-template-columns:repeat(2,1fr)}}
+.fd-result-summary{border:1px solid #ded4f3;background:#f8f6fd;border-radius:10px;padding:10px;margin-bottom:10px}
+.fd-result-tick{font:14px ui-monospace,SFMono-Regular,Menlo,monospace;color:#5d4b92;margin-bottom:8px}
+.fd-before-after{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.fd-ba-label{display:block;font-size:14px;font-weight:700;color:#674e9f;margin-bottom:4px}
+.fd-details{margin-bottom:10px}
+.fd-details summary{font-size:14px;cursor:pointer;padding:8px 0;color:#4b5563;min-height:44px;display:flex;align-items:center}
+@media(max-width:560px){.fd-stages{grid-template-columns:repeat(2,1fr)}.fd-before-after{grid-template-columns:1fr}}
 </style>

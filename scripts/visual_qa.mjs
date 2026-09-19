@@ -249,7 +249,8 @@ async function auditLayout(page, name, { minFont=9.75 } = {}) {
     // floor (design contract), separate from the blanket ~10px minFont floor
     // above that still covers every other compact/eyebrow label in the app.
     const coreFontSelectors='.state-readout span,.action-readout span,.vision-hidden-state,.sim-controls button,'+
-      '.steps b,.steps p,.claim,.qkv-key,.panel-head small,.stage-head>span,.stage-head>small,.attention-read,.attention-read strong,.force-value';
+      '.steps b,.steps p,.claim,.qkv-key,.panel-head small,.stage-head>span,.stage-head>small,.attention-read,.attention-read strong,.force-value,'+
+      '.fd-badge,.fd-stages button,.fd-content p,.fd-values span,.fd-values b,.fd-result-tick,.fd-ba-label,.fd-details summary,.follow-decision-entry';
     const coreTextTooSmall=[];
     for(const el of [...document.querySelectorAll(coreFontSelectors)]){
       if(!visible(el)) continue;
@@ -680,16 +681,40 @@ async function runDesktop(browser) {
   await page.waitForTimeout(100);
   const applyButton=page.getByRole('button',{name:/Apply one 20ms step/});
   if(await applyButton.count()!==1) pushError('follow-decision guide: Result stage missing the explicit Apply-step button');
-  await applyButton.click();
-  await page.waitForTimeout(150);
+
+  // Regression: two synchronous DOM clicks in the same task must not apply
+  // two physics steps. This bypasses Playwright's own actionability
+  // re-checks (which a real double-click on a still-enabled button would
+  // also bypass, since disabling only lands after the first click's await),
+  // so it exercises the reentrancy guard directly rather than relying on a
+  // human being unlikely to double-click fast enough.
+  await applyButton.evaluate(el => { el.click(); el.click(); });
+  await page.waitForTimeout(200);
 
   const tickAfterApply=Number(await page.locator('main').getAttribute('data-sync-tick'));
-  if(tickAfterApply!==capturedTick+1) pushError('follow-decision guide: Apply-step did not advance the plant exactly one tick from the captured event');
+  if(tickAfterApply!==capturedTick+1) pushError('follow-decision guide: duplicate-click Apply-step advanced the plant by '+(tickAfterApply-capturedTick)+' ticks, expected exactly 1');
 
   const guideTrace=page.locator('.follow-decision-guide .decision-trace');
   const guideTickFrom=Number(await guideTrace.getAttribute('data-tick-from').catch(()=>NaN));
   const guideTickTo=Number(await guideTrace.getAttribute('data-tick-to').catch(()=>NaN));
   if(guideTickFrom!==capturedTick || guideTickTo!==capturedTick+1) pushError('follow-decision guide: displayed Result trace tick range is not t->t+1 for the captured event');
+
+  // Result stage must lead with a readable (>=14px) summary of the actual
+  // captured transition, matching the trace exactly, with the old verbose
+  // per-field trace present but collapsed by default.
+  const detailsOpenBeforeExpand=await page.locator('.follow-decision-guide .fd-details').evaluate(el=>el.open);
+  if(detailsOpenBeforeExpand) pushError('follow-decision guide: full dynamics detail is not collapsed by default');
+  const summaryTickText=await page.locator('.fd-result-tick').innerText();
+  if(!summaryTickText.includes(String(capturedTick)) || !summaryTickText.includes(String(capturedTick+1))) {
+    pushError('follow-decision guide: Result summary tick text does not match the captured trace t->t+1');
+  }
+  const summaryForceText=await page.locator('.fd-result-summary .fd-values').first().innerText();
+  const traceAppliedForce=Number(await guideTrace.getAttribute('data-applied-policy-force'));
+  if(!summaryForceText.includes(traceAppliedForce.toFixed(2))) {
+    pushError('follow-decision guide: Result summary applied-force does not match the captured trace');
+  }
+  const summaryFontSize=await page.locator('.fd-result-tick').evaluate(el=>parseFloat(getComputedStyle(el).fontSize));
+  if(summaryFontSize<14) pushError('follow-decision guide: Result summary text is below the 14px essential-text floor');
 
   // Revisit Input/Calculation/Action AFTER Apply: must still show the frozen
   // captured-event data, not the now-advanced live plant.

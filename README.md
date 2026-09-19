@@ -94,6 +94,11 @@ The cleanup raised the normal typography floor to 10 px, made controls at least 
 
 The final strict sweep covers **48 mode/detail/viewport states** with zero layout errors or warnings, followed by manual review of the generated desktop/laptop/tablet/mobile screenshot set.
 
+### 0.9 — Follow one decision guide — complete
+State mode (learned model only) has an opt-in **"한 판단 따라가기 · Follow one decision"** button below the lab. It freezes the simulation, captures one real tick's observation/attention/action once, and walks through the shared four-stage reading order — Input / Calculation / Action / Result — reusing the existing detail views: Calculation opens the Self Attention detail, Action opens the Action head detail, Result requires an explicit "Apply one 20 ms step" (the same single `Step` transition used elsewhere) before showing that transition's before/after state. Navigating stages never advances the simulation; only the explicit Apply button does, and only once per captured event. Closing the guide, resetting, or switching mode returns control to the normal live/step/push buttons. Vision, Fusion, and Compare are unaffected — this guide does not exist there.
+
+This view follows the small cross-repo presentation contract in [docs/learning-suite.md](docs/learning-suite.md), shared as documentation only (no runtime dependency) with the sibling PPO and DiffusionPolicy CartPole apps.
+
 ### Later
 Additional replay scenarios, video history, partial observability, attention-head comparison, and extensions to more complex control tasks.
 
