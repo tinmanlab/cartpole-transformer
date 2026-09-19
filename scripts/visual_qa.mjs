@@ -244,6 +244,67 @@ async function runDesktop(browser) {
   report.interactions.push={before:xdot0,after:xdot1,changed:xdot0!==xdot1};
   if(xdot0===xdot1) pushWarning('push interaction did not change visible xdot');
 
+  // Optional pixels-only mode becomes mandatory once the trained artifact is present.
+  const visionButton=page.getByRole('button',{name:'Vision'});
+  const visionEnabled=await visionButton.isEnabled().catch(()=>false);
+  report.interactions.visionMode={available:visionEnabled};
+
+  if(visionEnabled){
+    await visionButton.click();
+    await page.waitForTimeout(350);
+
+    const pipelineCount=await page.locator('.vision-pipeline').count();
+    const hiddenStateCount=await page.locator('.vision-hidden-state').count();
+    const stateReadoutCount=await page.locator('.state-readout').count();
+    const frameCount=await page.locator('.vision-stage-frame .vision-frame').count();
+    const patchCellCount=await page.locator('.vision-stage-patch .cell').count();
+
+    if(pipelineCount!==1) pushError('vision mode: pipeline missing');
+    if(hiddenStateCount!==1) pushError('vision mode: hidden-state label missing');
+    if(stateReadoutCount!==0) pushError('vision mode: explicit state readout leaked into pixels-only mode');
+    if(frameCount!==8) pushError('vision mode: expected 8 sampled frames, found '+frameCount);
+    if(patchCellCount!==256) pushError('vision mode: expected 256 patch cells, found '+patchCellCount);
+
+    const frameLabels=await page.locator('.vision-stage-frame .label').allInnerTexts();
+    if(!frameLabels.some(x=>x.includes('420ms')) || !frameLabels.some(x=>x==='t')) {
+      pushError('vision mode: frame labels do not expose 420ms temporal span');
+    }
+
+    const visionOutput0=await page.locator('.vision-stage-output').innerText();
+    await page.waitForTimeout(350);
+    const pushVision=page.getByRole('button',{name:'Push →'});
+    await pushVision.dispatchEvent('pointerdown');
+    await page.waitForTimeout(320);
+    await pushVision.dispatchEvent('pointerup');
+    await page.waitForTimeout(160);
+    const visionOutput1=await page.locator('.vision-stage-output').innerText();
+    if(visionOutput0===visionOutput1) pushWarning('vision mode: inferred motion/action did not visibly change after disturbance');
+
+    await page.screenshot({path:path.join(outDir,'desktop-vision-overview.jpg'),type:'jpeg',quality:82,fullPage:true});
+
+    await page.locator('.vision-stage-attention').click();
+    await page.waitForTimeout(180);
+    const visionDetailCount=await page.locator('.vision-detail-wide').count();
+    const ablationCount=await page.locator('.vision-detail-wide .ablation').count();
+    const truthCountBefore=await page.locator('.vision-detail-wide .truth').count();
+    if(visionDetailCount!==1) pushError('vision mode: full-width detail missing');
+    if(ablationCount!==1) pushError('vision mode: latest-frame ablation missing');
+    if(truthCountBefore!==0) pushError('vision mode: ground truth should be hidden by default');
+
+    const reveal=page.getByRole('button',{name:/Reveal ground-truth reference/});
+    await reveal.click();
+    await page.waitForTimeout(80);
+    const truthCountAfter=await page.locator('.vision-detail-wide .truth').count();
+    if(truthCountAfter!==1) pushError('vision mode: ground-truth teaching reference cannot be revealed');
+
+    report.interactions.visionMode={
+      available:true,pipelineCount,hiddenStateCount,stateReadoutCount,frameCount,patchCellCount,
+      outputChangedAfterPush:visionOutput0!==visionOutput1,
+      detailCount:visionDetailCount,ablationCount,truthHiddenByDefault:truthCountBefore===0,truthRevealable:truthCountAfter===1
+    };
+    await page.screenshot({path:path.join(outDir,'desktop-vision-detail.jpg'),type:'jpeg',quality:84,fullPage:true});
+  }
+
   report.interactions.consoleErrors=consoleErrors;
   if(consoleErrors.length) pushError('browser console/page errors: '+consoleErrors.join(' | '));
   await page.close();
