@@ -12,6 +12,7 @@
   export let selectedFrame = 7;
   export let onSelectFrame = () => {};
   export let onOpenDetail = () => {};
+  export let frameIntervalMs = 60;
 
   $: n = frames.length;
   $: last = Math.max(0,n-1);
@@ -47,7 +48,7 @@
     }]
   };
 
-  function label(i){return i===last?'t':'t−'+(last-i);}
+  function label(i){return i===last?'t':'−'+Math.round((last-i)*frameIntervalMs)+'ms';}
 </script>
 
 <section class="vision-pipeline resize-watch">
