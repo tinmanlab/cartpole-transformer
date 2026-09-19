@@ -67,12 +67,10 @@ export function runVisionAttention(patchHistory, model) {
   const mlp = mlpUp.map(x => matVec(w.ff2.weight, x, w.ff2.bias));
   const hidden = residual1.map((x, i) => add(x, mlp[i]));
   const last = hidden.length - 1;
-  const actionScore = matVec(w.action.weight, hidden[last], w.action.bias)[0];
-  const motionNormalized = matVec(w.motion.weight, hidden[last], w.motion.bias).map(Math.tanh);
-  const inferredMotion = [
-    motionNormalized[0] * model.motion_scale[0],
-    motionNormalized[1] * model.motion_scale[1],
-  ];
+  const inferredStateNormalized = matVec(w.state.weight, hidden[last], w.state.bias).map(Math.tanh);
+  const actionScore = inferredStateNormalized.reduce((sum, value, i) => sum + value * model.controller_gain[i], 0);
+  const inferredState = inferredStateNormalized.map((value, i) => value * model.state_scale[i]);
+  const inferredMotion = [inferredState[1], inferredState[3]];
 
   return {
     modelType: 'learned-vision-transformer',
@@ -102,8 +100,9 @@ export function runVisionAttention(patchHistory, model) {
     mlpUp,
     mlp,
     hidden,
+    inferredState,
+    inferredStateNormalized,
     inferredMotion,
-    motionNormalized,
     modelWeights: w,
     actionScore,
   };
