@@ -334,12 +334,12 @@ poloclub/transformer-explainer @ bfe50afba10b9b560b84143ee1107d977defa74f
         </div>
       {:else if expandedStage === 'action'}
         <div class="action-detail">
-          <div class="block-step"><b>Final hidden · t</b><div class="wide-vector"><UpstreamVectorCanvas data={result.hidden?.[last] || hiddenSelected} colorScale="blue" active={true}/></div></div>
+          <div class="block-step"><b>Final hidden · t</b><div class="wide-vector"><UpstreamVectorCanvas data={result.hidden?.[last] || hiddenSelected} colorScale="blue" active={true}/></div><code>{(result.hidden?.[last] || hiddenSelected).slice(0,4).map(v=>v.toFixed(5)).join(' ')}</code></div>
           <span>×</span>
           {#if result.modelWeights?.action}
             <div class="weight-peek"><span>action weight · 1×{result.modelWeights.action.weight[0].length}</span><UpstreamMatrixSvg data={result.modelWeights.action.weight} cellHeight={16} cellWidth={16} rowGap={1} colGap={2} shape="rect" colorScale={(v)=>paramColor(v)} showTooltip={(e,v)=>v.toFixed(3)}/></div>
           {/if}
-          <span>→ score {result.actionScore.toFixed(3)} → tanh × 10 →</span>
+          <span>→ score <code>{result.actionScore.toFixed(6)}</code> → tanh × 10 →</span>
           <div class="action-result">{controllerForce>=0?'RIGHT':'LEFT'} <b>{Math.abs(controllerForce).toFixed(2)} N</b></div>
         </div>
       {/if}
