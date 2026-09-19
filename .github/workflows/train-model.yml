@@ -41,5 +41,7 @@ jobs:
             echo "No model artifact changes"
           else
             git commit -m "model: update learned tiny transformer artifact"
+            git fetch origin main
+            git rebase origin/main
             git push origin HEAD:main
           fi
