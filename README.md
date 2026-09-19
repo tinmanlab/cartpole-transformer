@@ -85,6 +85,15 @@ The live single-controller modes now connect the Transformer calculation to the 
 
 The plant intermediates are returned directly by the environment's transition function; the explainer does not recompute lookalike dynamics. When paused, pressing **Step** populates the trace with the exact transition that was executed. State, Vision, and Fusion all reuse the same plant trace while keeping their different controller observations.
 
+### 0.8 — Comprehensive visual QA and responsive cleanup — complete
+The Playwright QA loop now audits all major State, Vision, Fusion, Compare, and Decision Trace views at **1440, 1024, 768, and 390 px** widths.
+
+The audit checks normal visible HTML text size, clipped text/content, major-container overflow, unintended sibling overlap, undersized controls, viewport escape, page-level horizontal overflow, and stacked-mobile Sankey behavior. State detail stages are individually opened and checked, including Embedding, Q/K/V, Attention, Residual/MLP, and Action.
+
+The cleanup raised the normal typography floor to 10 px, made controls at least 28–30 px high, moved the two-panel lab to a stacked layout before 1024 px becomes constrained, reflowed State detail calculations before they clip, and replaced rotated narrow-screen arrows with real down-arrow layout elements.
+
+The final strict sweep covers **48 mode/detail/viewport states** with zero layout errors or warnings, followed by manual review of the generated desktop/laptop/tablet/mobile screenshot set.
+
 ### Later
 Additional replay scenarios, video history, partial observability, attention-head comparison, and extensions to more complex control tasks.
 
@@ -123,7 +132,7 @@ This separation lets later state, image, video, and multimodal models reuse the 
 
 ## Status
 
-**v0.7 closed-loop decision trace is implemented.** State / Vision / Fusion now show the exact observation→controller→policy force→plant dynamics→next-state transition used by each 20 ms Step, including separate external disturbance and next policy action. Compare remains a separate deterministic replay environment. State/vision/fusion/comparison/dynamics checks, exact transition browser assertions, desktop/mobile QA, screenshot artifacts, and Pages deployment are automated.
+**v0.8 comprehensive visual QA is implemented.** State / Vision / Fusion / Compare / Decision Trace and every State detail stage are now swept at 1440/1024/768/390 px for typography, clipping, overlap, control size, viewport escape and horizontal overflow. The strict sweep covers 48 rendered states with zero errors/warnings, in addition to the existing state/vision/fusion/comparison/dynamics checks and screenshot-based manual review.
 
 ## License
 
