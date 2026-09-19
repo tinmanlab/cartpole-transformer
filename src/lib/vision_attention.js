@@ -38,7 +38,11 @@ export async function loadVisionModel() {
 export function runVisionAttention(patchHistory, model) {
   const w = model.weights;
   const frameFeatures = patchHistory.map(row => [...row]);
-  const frameEmbeddings = frameFeatures.map(features => matVec(w.embed.weight, features, w.embed.bias));
+  const deltaFeatures = frameFeatures.map((row, i) =>
+    i === 0 ? row.map(() => 0) : row.map((value, j) => value - frameFeatures[i - 1][j])
+  );
+  const tokenInputs = frameFeatures.map((row, i) => [...row, ...deltaFeatures[i]]);
+  const frameEmbeddings = tokenInputs.map(features => matVec(w.embed.weight, features, w.embed.bias));
   const positionEmbeddings = w.pos_embedding.map(row => [...row]);
   const tokens = frameEmbeddings.map((token, i) => add(token, positionEmbeddings[i]));
 
@@ -76,6 +80,8 @@ export function runVisionAttention(patchHistory, model) {
     modelType: 'learned-vision-transformer',
     encoderType: 'pixels->8x8-patches->linear',
     frameFeatures,
+    deltaFeatures,
+    tokenInputs,
     frameEmbeddings,
     positionEmbeddings,
     tokens,
