@@ -10,7 +10,8 @@
     "check:model": "node scripts/check_learned_model.mjs",
     "check:vision": "node scripts/check_vision_model.mjs",
     "check:fusion": "node scripts/check_fusion_model.mjs",
-    "check:comparison": "node scripts/check_comparison_replay.mjs"
+    "check:comparison": "node scripts/check_comparison_replay.mjs",
+    "check:dynamics": "node scripts/check_dynamics_trace.mjs"
   },
   "dependencies": {
     "d3": "^7.9.0",
