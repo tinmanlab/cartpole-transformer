@@ -1,0 +1,876 @@
+{
+  "generatedAt": "2026-09-19T04:46:03.143Z",
+  "baseURL": "http://127.0.0.1:4173/cartpole-transformer/",
+  "errors": [],
+  "warnings": [
+    "desktop-attention: detail text too small, min 8px"
+  ],
+  "views": {
+    "desktop-overview": {
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "document": {
+        "scrollWidth": 1440,
+        "scrollHeight": 1000
+      },
+      "lab": {
+        "x": 16,
+        "y": 52,
+        "width": 1408,
+        "height": 501,
+        "right": 1424,
+        "bottom": 553
+      },
+      "sim": {
+        "x": 16,
+        "y": 52,
+        "width": 629,
+        "height": 501,
+        "right": 645,
+        "bottom": 553
+      },
+      "pipeline": {
+        "x": 655,
+        "y": 52,
+        "width": 769,
+        "height": 501,
+        "right": 1424,
+        "bottom": 553
+      },
+      "overview": {
+        "x": 667,
+        "y": 97,
+        "width": 745,
+        "height": 444,
+        "right": 1412,
+        "bottom": 541
+      },
+      "detail": null,
+      "stages": {
+        ".embedding-overview": {
+          "x": 671,
+          "y": 196,
+          "width": 114,
+          "height": 262,
+          "right": 785,
+          "bottom": 458
+        },
+        ".qkv-overview": {
+          "x": 802,
+          "y": 122,
+          "width": 134,
+          "height": 409,
+          "right": 936,
+          "bottom": 531
+        },
+        ".attention-overview": {
+          "x": 953,
+          "y": 223,
+          "width": 174,
+          "height": 208,
+          "right": 1127,
+          "bottom": 431
+        },
+        ".block-overview": {
+          "x": 1144,
+          "y": 283,
+          "width": 161,
+          "height": 87,
+          "right": 1304,
+          "bottom": 370
+        },
+        ".action-overview": {
+          "x": 1321,
+          "y": 278,
+          "width": 87,
+          "height": 98,
+          "right": 1408,
+          "bottom": 375
+        }
+      },
+      "overlaps": [],
+      "paths": [
+        {
+          "i": 0,
+          "length": 163.6004180908203,
+          "rect": {
+            "x": 633.09375,
+            "y": 339,
+            "width": 38,
+            "height": 152,
+            "right": 671.09375,
+            "bottom": 491
+          }
+        },
+        {
+          "i": 1,
+          "length": 205.06500244140625,
+          "rect": {
+            "x": 741.71875,
+            "y": 177,
+            "width": 60.078125,
+            "height": 69.5,
+            "right": 801.796875,
+            "bottom": 246.5
+          }
+        },
+        {
+          "i": 2,
+          "length": 185.05284118652344,
+          "rect": {
+            "x": 741.71875,
+            "y": 224,
+            "width": 60.078125,
+            "height": 52.5,
+            "right": 801.796875,
+            "bottom": 276.5
+          }
+        },
+        {
+          "i": 3,
+          "length": 172.50772094726562,
+          "rect": {
+            "x": 741.71875,
+            "y": 271,
+            "width": 60.078125,
+            "height": 35.5,
+            "right": 801.796875,
+            "bottom": 306.5
+          }
+        },
+        {
+          "i": 4,
+          "length": 171.06622314453125,
+          "rect": {
+            "x": 741.71875,
+            "y": 311.5,
+            "width": 60.078125,
+            "height": 31.5,
+            "right": 801.796875,
+            "bottom": 343
+          }
+        },
+        {
+          "i": 5,
+          "length": 181.286865234375,
+          "rect": {
+            "x": 741.71875,
+            "y": 341.5,
+            "width": 60.078125,
+            "height": 48.5,
+            "right": 801.796875,
+            "bottom": 390
+          }
+        },
+        {
+          "i": 6,
+          "length": 199.87057495117188,
+          "rect": {
+            "x": 741.71875,
+            "y": 371.5,
+            "width": 60.078125,
+            "height": 65.5,
+            "right": 801.796875,
+            "bottom": 437
+          }
+        },
+        {
+          "i": 7,
+          "length": 223.45306396484375,
+          "rect": {
+            "x": 741.71875,
+            "y": 401.5,
+            "width": 60.078125,
+            "height": 82.5,
+            "right": 801.796875,
+            "bottom": 484
+          }
+        },
+        {
+          "i": 8,
+          "length": 250.00364685058594,
+          "rect": {
+            "x": 741.71875,
+            "y": 431.5,
+            "width": 60.078125,
+            "height": 99.5,
+            "right": 801.796875,
+            "bottom": 531
+          }
+        },
+        {
+          "i": 9,
+          "length": 100.0018310546875,
+          "rect": {
+            "x": 741.71875,
+            "y": 444,
+            "width": 60.078125,
+            "height": 74.5,
+            "right": 801.796875,
+            "bottom": 518.5
+          }
+        },
+        {
+          "i": 10,
+          "length": 248.35511779785156,
+          "rect": {
+            "x": 816.796875,
+            "y": 323.5,
+            "width": 135.78125,
+            "height": 195,
+            "right": 952.578125,
+            "bottom": 518.5
+          }
+        },
+        {
+          "i": 11,
+          "length": 241.70587158203125,
+          "rect": {
+            "x": 833.796875,
+            "y": 323.5,
+            "width": 118.78125,
+            "height": 195,
+            "right": 952.578125,
+            "bottom": 518.5
+          }
+        },
+        {
+          "i": 12,
+          "length": 350.96405029296875,
+          "rect": {
+            "x": 850.796875,
+            "y": 343,
+            "width": 299.015625,
+            "height": 175.5,
+            "right": 1149.8125,
+            "bottom": 518.5
+          }
+        },
+        {
+          "i": 13,
+          "length": 32.012813568115234,
+          "rect": {
+            "x": 1126.5,
+            "y": 323.5,
+            "width": 23.3125,
+            "height": 19.5,
+            "right": 1149.8125,
+            "bottom": 343
+          }
+        },
+        {
+          "i": 14,
+          "length": 34.13254928588867,
+          "rect": {
+            "x": 1297.703125,
+            "y": 320.5,
+            "width": 23.328125,
+            "height": 22.5,
+            "right": 1321.03125,
+            "bottom": 343
+          }
+        }
+      ],
+      "detailMinFont": null,
+      "learnedText": "learned · 1 block · 1 head · 8D",
+      "bodyText": "Cart-Pole Transformer\nlearned · 1 block · 1 head · 8D\nPHYSICS · 50 Hz\nCart-Pole + 8-frame history\n1.8 s\n−2.4 m\n0\n+2.4 m\nθ -0.1°\nx\n0.04 m\nẋ\n-0.01 m/s\nθ\n-0.1°\nθ̇\n0.2°/s\nselected\nt\nPause\nReset\n← Push\nPush →\nTransformer · 1 block · 1 head\n단계를 클릭하면 실제 live 계산을 펼칩니다\nLEARNED · → 0.0 N\n1\nEmbedding\nstate → token\nt−7\n8D\nt−6\n8D\nt−5\n8D\nt−4\n8D\nt−3\n8D\nt−2\n8D\nt−1\n8D\nt\n8D\n2\nQ · K · V\nthree learned views\nQ\nK\nV\n−7\n−6\n−5\n−4\n−3\n−2\n−1\nt\n3\nSelf Attention\nQK → mask → softmax\nQuery\nt\nlooks at\nt\n72.3%\n4\nBlock output\nresidual + MLP\nAttn out\n+\nResidual\n→\nMLP\n+\nHidden\n5\nAction head\nlast token only\n→\n0.0 N\ntanh(score) × 10\n읽는 순서\nQ 찾는 기준 K 비교 표지 V 가져올 내용\n1. Embedding\n\n[x,ẋ,θ,θ̇] → normalize → learned 4→8 projection + position.\n\n2. Q / K / V\n\nLayerNorm 뒤 같은 token을 세 learned projection으로 나눕니다.\n\n3. Attention\n\nQKᵀ/√d → causal mask → softmax. matrix를 가리키면 해당 time pair가 연결됩니다.\n\n4. Residual + MLP\n\nAttention output을 더하고 LN→Linear→GELU→Linear→residual을 통과합니다.\n\n5. Action\n\n마지막 hidden token만 읽어 tanh(score)×10 N force를 만듭니다.\n\n실시간 연결\n\n오른쪽 time token을 가리키면 왼쪽의 같은 과거 pose가 강조됩니다.\n\nCart-Pole에는 Transformer가 필요하지 않습니다. 이 모델은 sequence attention의 실제 learned tensor를 관찰하기 위한 교육용 모델이며 attention weight를 인과 설명으로 해석하지 않습니다.\nPolo Club Transformer Explainer의 MIT-licensed VectorCanvas, MatrixSvg, Sankey, attention expansion/animation 패턴을 vendoring·adaptation하여 사용합니다."
+    },
+    "desktop-attention": {
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "document": {
+        "scrollWidth": 1440,
+        "scrollHeight": 1000
+      },
+      "lab": {
+        "x": 16,
+        "y": 52,
+        "width": 1408,
+        "height": 593,
+        "right": 1424,
+        "bottom": 645
+      },
+      "sim": {
+        "x": 16,
+        "y": 52,
+        "width": 629,
+        "height": 593,
+        "right": 645,
+        "bottom": 645
+      },
+      "pipeline": {
+        "x": 655,
+        "y": 52,
+        "width": 769,
+        "height": 593,
+        "right": 1424,
+        "bottom": 645
+      },
+      "overview": {
+        "x": 667,
+        "y": 97,
+        "width": 745,
+        "height": 255,
+        "right": 1412,
+        "bottom": 352
+      },
+      "detail": {
+        "x": 667,
+        "y": 352,
+        "width": 745,
+        "height": 281,
+        "right": 1412,
+        "bottom": 633
+      },
+      "stages": {
+        ".embedding-overview": {
+          "x": 671,
+          "y": 196,
+          "width": 114,
+          "height": 262,
+          "right": 785,
+          "bottom": 458
+        },
+        ".qkv-overview": {
+          "x": 802,
+          "y": 122,
+          "width": 134,
+          "height": 409,
+          "right": 936,
+          "bottom": 531
+        },
+        ".attention-overview": {
+          "x": 953,
+          "y": 221,
+          "width": 174,
+          "height": 208,
+          "right": 1127,
+          "bottom": 429
+        },
+        ".block-overview": {
+          "x": 1144,
+          "y": 283,
+          "width": 161,
+          "height": 87,
+          "right": 1304,
+          "bottom": 370
+        },
+        ".action-overview": {
+          "x": 1321,
+          "y": 278,
+          "width": 87,
+          "height": 98,
+          "right": 1408,
+          "bottom": 375
+        }
+      },
+      "overlaps": [],
+      "paths": [
+        {
+          "i": 0,
+          "length": 252.49818420410156,
+          "rect": {
+            "x": 633.09375,
+            "y": 339,
+            "width": 38,
+            "height": 243.5625,
+            "right": 671.09375,
+            "bottom": 582.5625
+          }
+        },
+        {
+          "i": 1,
+          "length": 207.75341796875,
+          "rect": {
+            "x": 741.71875,
+            "y": 175,
+            "width": 60.078125,
+            "height": 71.5,
+            "right": 801.796875,
+            "bottom": 246.5
+          }
+        },
+        {
+          "i": 2,
+          "length": 187.092041015625,
+          "rect": {
+            "x": 741.71875,
+            "y": 222,
+            "width": 60.078125,
+            "height": 54.5,
+            "right": 801.796875,
+            "bottom": 276.5
+          }
+        },
+        {
+          "i": 3,
+          "length": 173.46742248535156,
+          "rect": {
+            "x": 741.71875,
+            "y": 269,
+            "width": 60.078125,
+            "height": 37.5,
+            "right": 801.796875,
+            "bottom": 306.5
+          }
+        },
+        {
+          "i": 4,
+          "length": 170.59381103515625,
+          "rect": {
+            "x": 741.71875,
+            "y": 311.5,
+            "width": 60.078125,
+            "height": 29.5,
+            "right": 801.796875,
+            "bottom": 341
+          }
+        },
+        {
+          "i": 5,
+          "length": 179.5729522705078,
+          "rect": {
+            "x": 741.71875,
+            "y": 341.5,
+            "width": 60.078125,
+            "height": 46.5,
+            "right": 801.796875,
+            "bottom": 388
+          }
+        },
+        {
+          "i": 6,
+          "length": 197.3723907470703,
+          "rect": {
+            "x": 741.71875,
+            "y": 371.5,
+            "width": 60.078125,
+            "height": 63.5,
+            "right": 801.796875,
+            "bottom": 435
+          }
+        },
+        {
+          "i": 7,
+          "length": 220.49578857421875,
+          "rect": {
+            "x": 741.71875,
+            "y": 401.5,
+            "width": 60.078125,
+            "height": 80.5,
+            "right": 801.796875,
+            "bottom": 482
+          }
+        },
+        {
+          "i": 8,
+          "length": 246.76788330078125,
+          "rect": {
+            "x": 741.71875,
+            "y": 431.5,
+            "width": 60.078125,
+            "height": 97.5,
+            "right": 801.796875,
+            "bottom": 529
+          }
+        },
+        {
+          "i": 9,
+          "length": 60.29690933227539,
+          "rect": {
+            "x": 741.71875,
+            "y": 324,
+            "width": 60.078125,
+            "height": 4.5,
+            "right": 801.796875,
+            "bottom": 328.5
+          }
+        },
+        {
+          "i": 10,
+          "length": 135.90196228027344,
+          "rect": {
+            "x": 816.796875,
+            "y": 323.5,
+            "width": 135.78125,
+            "height": 5,
+            "right": 952.578125,
+            "bottom": 328.5
+          }
+        },
+        {
+          "i": 11,
+          "length": 118.93519592285156,
+          "rect": {
+            "x": 833.796875,
+            "y": 323.5,
+            "width": 118.78125,
+            "height": 5,
+            "right": 952.578125,
+            "bottom": 328.5
+          }
+        },
+        {
+          "i": 12,
+          "length": 299.4079895019531,
+          "rect": {
+            "x": 850.796875,
+            "y": 328.5,
+            "width": 299.015625,
+            "height": 14.5,
+            "right": 1149.8125,
+            "bottom": 343
+          }
+        },
+        {
+          "i": 13,
+          "length": 32.012813568115234,
+          "rect": {
+            "x": 1126.5,
+            "y": 323.5,
+            "width": 23.3125,
+            "height": 19.5,
+            "right": 1149.8125,
+            "bottom": 343
+          }
+        },
+        {
+          "i": 14,
+          "length": 34.13254928588867,
+          "rect": {
+            "x": 1297.703125,
+            "y": 320.5,
+            "width": 23.328125,
+            "height": 22.5,
+            "right": 1321.03125,
+            "bottom": 343
+          }
+        }
+      ],
+      "detailMinFont": 8,
+      "learnedText": "learned · 1 block · 1 head · 8D",
+      "bodyText": "Cart-Pole Transformer\nlearned · 1 block · 1 head · 8D\nPHYSICS · 50 Hz\nCart-Pole + 8-frame history\n3.2 s\n−2.4 m\n0\n+2.4 m\nt−4 · θ -0.0°\nθ -0.0°\nẋ\nx\n0.01 m\nẋ\n-0.03 m/s\nθ\n-0.0°\nθ̇\n0.1°/s\nselected\nt−4\nPause\nReset\n← Push\nPush →\nTransformer · 1 block · 1 head\n단계를 클릭하면 실제 live 계산을 펼칩니다\nLEARNED · ← 0.0 N\n1\nEmbedding\nstate → token\nt−7\n8D\nt−6\n8D\nt−5\n8D\nt−4\n8D\nt−3\n8D\nt−2\n8D\nt−1\n8D\nt\n8D\n2\nQ · K · V\nthree learned views\nQ\nK\nV\n−7\n−6\n−5\n−4\n−3\n−2\n−1\nt\n3\nSelf Attention\nQK → mask → softmax\nQuery\nt−4\nlooks at\nt−4\n52.1%\n4\nBlock output\nresidual + MLP\nAttn out\n+\nResidual\n→\nMLP\n+\nHidden\n5\nAction head\nlast token only\n←\n0.0 N\ntanh(score) × 10\nSelf Attention\nQ와 K를 비교하고 미래를 mask한 뒤 softmax로 V를 얼마나 가져올지 결정합니다.\n×\n1\nDot product\nQKᵀ / √d\n\nQuery와 Key가 얼마나 비슷한지 모든 시간쌍을 비교합니다.\n\n2\nCausal mask\nfuture → −∞\n\n현재 시점은 미래 token을 볼 수 없습니다. 위쪽 삼각형이 차단됩니다.\n\n3\nSoftmax\nΣ a = 1\n\n점수를 양수 비율로 바꿉니다. 마지막 row가 지금 force를 만드는 attention입니다.\n\n읽는 순서\nQ 찾는 기준 K 비교 표지 V 가져올 내용\n1. Embedding\n\n[x,ẋ,θ,θ̇] → normalize → learned 4→8 projection + position.\n\n2. Q / K / V\n\nLayerNorm 뒤 같은 token을 세 learned projection으로 나눕니다.\n\n3. Attention\n\nQKᵀ/√d → causal mask → softmax. matrix를 가리키면 해당 time pair가 연결됩니다.\n\n4. Residual + MLP\n\nAttention output을 더하고 LN→Linear→GELU→Linear→residual을 통과합니다.\n\n5. Action\n\n마지막 hidden token만 읽어 tanh(score)×10 N force를 만듭니다.\n\n실시간 연결\n\n오른쪽 time token을 가리키면 왼쪽의 같은 과거 pose가 강조됩니다.\n\nCart-Pole에는 Transformer가 필요하지 않습니다. 이 모델은 sequence attention의 실제 learned tensor를 관찰하기 위한 교육용 모델이며 attention weight를 인과 설명으로 해석하지 않습니다.\nPolo Club Transformer Explainer의 MIT-licensed VectorCanvas, MatrixSvg, Sankey, attention expansion/animation 패턴을 vendoring·adaptation하여 사용합니다."
+    },
+    "mobile-overview": {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "document": {
+        "scrollWidth": 390,
+        "scrollHeight": 1653
+      },
+      "lab": {
+        "x": 10,
+        "y": 50,
+        "width": 370,
+        "height": 961,
+        "right": 380,
+        "bottom": 1011
+      },
+      "sim": {
+        "x": 10,
+        "y": 50,
+        "width": 370,
+        "height": 450,
+        "right": 380,
+        "bottom": 500
+      },
+      "pipeline": {
+        "x": 10,
+        "y": 510,
+        "width": 370,
+        "height": 501,
+        "right": 380,
+        "bottom": 1011
+      },
+      "overview": {
+        "x": 22,
+        "y": 555,
+        "width": 780,
+        "height": 444,
+        "right": 802,
+        "bottom": 999
+      },
+      "detail": null,
+      "stages": {
+        ".embedding-overview": {
+          "x": 26,
+          "y": 654,
+          "width": 125,
+          "height": 262,
+          "right": 151,
+          "bottom": 916
+        },
+        ".qkv-overview": {
+          "x": 161,
+          "y": 580,
+          "width": 145,
+          "height": 409,
+          "right": 306,
+          "bottom": 989
+        },
+        ".attention-overview": {
+          "x": 316,
+          "y": 681,
+          "width": 191,
+          "height": 208,
+          "right": 508,
+          "bottom": 889
+        },
+        ".block-overview": {
+          "x": 518,
+          "y": 741,
+          "width": 176,
+          "height": 87,
+          "right": 693,
+          "bottom": 828
+        },
+        ".action-overview": {
+          "x": 703,
+          "y": 736,
+          "width": 95,
+          "height": 98,
+          "right": 798,
+          "bottom": 833
+        }
+      },
+      "overlaps": [],
+      "paths": [
+        {
+          "i": 0,
+          "length": 568.283447265625,
+          "rect": {
+            "x": 26,
+            "y": 413,
+            "width": 342,
+            "height": 384,
+            "right": 368,
+            "bottom": 797
+          }
+        },
+        {
+          "i": 1,
+          "length": 203.15060424804688,
+          "rect": {
+            "x": 102.421875,
+            "y": 635,
+            "width": 58.875,
+            "height": 69.5,
+            "right": 161.296875,
+            "bottom": 704.5
+          }
+        },
+        {
+          "i": 2,
+          "length": 182.90000915527344,
+          "rect": {
+            "x": 102.421875,
+            "y": 682,
+            "width": 58.875,
+            "height": 52.5,
+            "right": 161.296875,
+            "bottom": 734.5
+          }
+        },
+        {
+          "i": 3,
+          "length": 170.14794921875,
+          "rect": {
+            "x": 102.421875,
+            "y": 729,
+            "width": 58.875,
+            "height": 35.5,
+            "right": 161.296875,
+            "bottom": 764.5
+          }
+        },
+        {
+          "i": 4,
+          "length": 168.67837524414062,
+          "rect": {
+            "x": 102.421875,
+            "y": 769.5,
+            "width": 58.875,
+            "height": 31.5,
+            "right": 161.296875,
+            "bottom": 801
+          }
+        },
+        {
+          "i": 5,
+          "length": 179.07803344726562,
+          "rect": {
+            "x": 102.421875,
+            "y": 799.5,
+            "width": 58.875,
+            "height": 48.5,
+            "right": 161.296875,
+            "bottom": 848
+          }
+        },
+        {
+          "i": 6,
+          "length": 197.90188598632812,
+          "rect": {
+            "x": 102.421875,
+            "y": 829.5,
+            "width": 58.875,
+            "height": 65.5,
+            "right": 161.296875,
+            "bottom": 895
+          }
+        },
+        {
+          "i": 7,
+          "length": 221.700439453125,
+          "rect": {
+            "x": 102.421875,
+            "y": 859.5,
+            "width": 58.875,
+            "height": 82.5,
+            "right": 161.296875,
+            "bottom": 942
+          }
+        },
+        {
+          "i": 8,
+          "length": 248.4288330078125,
+          "rect": {
+            "x": 102.421875,
+            "y": 889.5,
+            "width": 58.875,
+            "height": 99.5,
+            "right": 161.296875,
+            "bottom": 989
+          }
+        },
+        {
+          "i": 9,
+          "length": 99.21440887451172,
+          "rect": {
+            "x": 102.421875,
+            "y": 902,
+            "width": 58.875,
+            "height": 74.5,
+            "right": 161.296875,
+            "bottom": 976.5
+          }
+        },
+        {
+          "i": 10,
+          "length": 250.57081604003906,
+          "rect": {
+            "x": 176.296875,
+            "y": 781.5,
+            "width": 140.1875,
+            "height": 195,
+            "right": 316.484375,
+            "bottom": 976.5
+          }
+        },
+        {
+          "i": 11,
+          "length": 243.6282958984375,
+          "rect": {
+            "x": 193.296875,
+            "y": 781.5,
+            "width": 123.1875,
+            "height": 195,
+            "right": 316.484375,
+            "bottom": 976.5
+          }
+        },
+        {
+          "i": 12,
+          "length": 366.0574951171875,
+          "rect": {
+            "x": 210.296875,
+            "y": 801,
+            "width": 316.921875,
+            "height": 175.5,
+            "right": 527.21875,
+            "bottom": 976.5
+          }
+        },
+        {
+          "i": 13,
+          "length": 29.3171443939209,
+          "rect": {
+            "x": 507.5,
+            "y": 781.5,
+            "width": 19.71875,
+            "height": 19.5,
+            "right": 527.21875,
+            "bottom": 801
+          }
+        },
+        {
+          "i": 14,
+          "length": 31.564422607421875,
+          "rect": {
+            "x": 683.53125,
+            "y": 778.5,
+            "width": 19.71875,
+            "height": 22.5,
+            "right": 703.25,
+            "bottom": 801
+          }
+        }
+      ],
+      "detailMinFont": null,
+      "learnedText": "learned · 1 block · 1 head · 8D",
+      "bodyText": "Cart-Pole Transformer\nPHYSICS · 50 Hz\nCart-Pole + 8-frame history\n1.1 s\n−2.4 m\n0\n+2.4 m\nθ -0.0°\npolicy 0.4 N\nx\n0.04 m\nẋ\n-0.02 m/s\nθ\n-0.0°\nθ̇\n1.7°/s\nselected\nt\nPause\nReset\n← Push\nPush →\nTransformer · 1 block · 1 head\n단계를 클릭하면 실제 live 계산을 펼칩니다\nLEARNED · → 0.4 N\n1\nEmbedding\nstate → token\nt−7\n8D\nt−6\n8D\nt−5\n8D\nt−4\n8D\nt−3\n8D\nt−2\n8D\nt−1\n8D\nt\n8D\n2\nQ · K · V\nthree learned views\nQ\nK\nV\n−7\n−6\n−5\n−4\n−3\n−2\n−1\nt\n3\nSelf Attention\nQK → mask → softmax\nQuery\nt\nlooks at\nt\n72.8%\n4\nBlock output\nresidual + MLP\nAttn out\n+\nResidual\n→\nMLP\n+\nHidden\n5\nAction head\nlast token only\n→\n0.4 N\ntanh(score) × 10\n읽는 순서\nQ 찾는 기준 K 비교 표지 V 가져올 내용\n1. Embedding\n\n[x,ẋ,θ,θ̇] → normalize → learned 4→8 projection + position.\n\n2. Q / K / V\n\nLayerNorm 뒤 같은 token을 세 learned projection으로 나눕니다.\n\n3. Attention\n\nQKᵀ/√d → causal mask → softmax. matrix를 가리키면 해당 time pair가 연결됩니다.\n\n4. Residual + MLP\n\nAttention output을 더하고 LN→Linear→GELU→Linear→residual을 통과합니다.\n\n5. Action\n\n마지막 hidden token만 읽어 tanh(score)×10 N force를 만듭니다.\n\n실시간 연결\n\n오른쪽 time token을 가리키면 왼쪽의 같은 과거 pose가 강조됩니다.\n\nCart-Pole에는 Transformer가 필요하지 않습니다. 이 모델은 sequence attention의 실제 learned tensor를 관찰하기 위한 교육용 모델이며 attention weight를 인과 설명으로 해석하지 않습니다.\nPolo Club Transformer Explainer의 MIT-licensed VectorCanvas, MatrixSvg, Sankey, attention expansion/animation 패턴을 vendoring·adaptation하여 사용합니다."
+    }
+  },
+  "interactions": {
+    "live": {
+      "t0": "1.3 s",
+      "t1": "1.8 s",
+      "canvasChanged": true,
+      "matrixChanged": true
+    },
+    "expansions": {
+      "embedding": {
+        "detailCount": 1,
+        "containsExpected": true,
+        "textLength": 265
+      },
+      "qkv": {
+        "detailCount": 1,
+        "containsExpected": true,
+        "textLength": 154
+      },
+      "attention": {
+        "detailCount": 1,
+        "containsExpected": true,
+        "textLength": 271
+      },
+      "block": {
+        "detailCount": 1,
+        "containsExpected": true,
+        "textLength": 241
+      },
+      "action": {
+        "detailCount": 1,
+        "containsExpected": true,
+        "textLength": 157
+      }
+    },
+    "tokenLink": {
+      "ghostBefore": 1,
+      "ghostAfter": 1,
+      "selectedText": "selected\nt−5"
+    },
+    "push": {
+      "before": "ẋ\n-0.03 m/s",
+      "after": "ẋ\n-0.80 m/s",
+      "changed": true
+    },
+    "consoleErrors": []
+  }
+}
