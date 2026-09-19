@@ -1,0 +1,47 @@
+name: Train state+vision fusion Transformer
+
+on:
+  push:
+    branches: [feat/state-vision-fusion-v04]
+    paths:
+      - scripts/train_fusion_transformer.py
+      - .github/workflows/train-fusion-model.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: train-fusion-transformer
+  cancel-in-progress: true
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install deterministic CPU stack
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install numpy==2.1.3
+          python -m pip install torch==2.8.0 --index-url https://download.pytorch.org/whl/cpu
+      - name: Train and evaluate fusion policy
+        run: python scripts/train_fusion_transformer.py
+      - name: Commit fusion artifact
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/model/fusion-transformer.json docs/fusion-model.md
+          if git diff --cached --quiet; then
+            echo "No fusion artifact changes"
+          else
+            git commit -m "fusion: update trained typed-token model artifact"
+            git fetch origin feat/state-vision-fusion-v04
+            git rebase origin/feat/state-vision-fusion-v04
+            git push origin HEAD:feat/state-vision-fusion-v04
+          fi
