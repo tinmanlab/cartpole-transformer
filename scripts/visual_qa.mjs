@@ -257,13 +257,15 @@ async function runDesktop(browser) {
     const hiddenStateCount=await page.locator('.vision-hidden-state').count();
     const stateReadoutCount=await page.locator('.state-readout').count();
     const frameCount=await page.locator('.vision-stage-frame .vision-frame').count();
+    const patchGridCount=await page.locator('.vision-stage-patch .patch-grid').count();
     const patchCellCount=await page.locator('.vision-stage-patch .cell').count();
 
     if(pipelineCount!==1) pushError('vision mode: pipeline missing');
     if(hiddenStateCount!==1) pushError('vision mode: hidden-state label missing');
     if(stateReadoutCount!==0) pushError('vision mode: explicit state readout leaked into pixels-only mode');
     if(frameCount!==8) pushError('vision mode: expected 8 sampled frames, found '+frameCount);
-    if(patchCellCount!==256) pushError('vision mode: expected 256 patch cells, found '+patchCellCount);
+    if(patchGridCount!==2) pushError('vision mode: expected patch and delta grids, found '+patchGridCount);
+    if(patchCellCount!==512) pushError('vision mode: expected 512 visible patch+delta cells, found '+patchCellCount);
 
     const frameLabels=await page.locator('.vision-stage-frame .label').allInnerTexts();
     if(!frameLabels.some(x=>x.includes('420ms')) || !frameLabels.some(x=>x==='t')) {
@@ -298,7 +300,7 @@ async function runDesktop(browser) {
     if(truthCountAfter!==1) pushError('vision mode: ground-truth teaching reference cannot be revealed');
 
     report.interactions.visionMode={
-      available:true,pipelineCount,hiddenStateCount,stateReadoutCount,frameCount,patchCellCount,
+      available:true,pipelineCount,hiddenStateCount,stateReadoutCount,frameCount,patchGridCount,patchCellCount,
       outputChangedAfterPush:visionOutput0!==visionOutput1,
       detailCount:visionDetailCount,ablationCount,truthHiddenByDefault:truthCountBefore===0,truthRevealable:truthCountAfter===1
     };
