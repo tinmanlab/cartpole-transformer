@@ -134,6 +134,8 @@ This separation lets later state, image, video, and multimodal models reuse the 
 
 **v0.8 comprehensive visual QA is implemented.** State / Vision / Fusion / Compare / Decision Trace and every State detail stage are now swept at 1440/1024/768/390 px for typography, clipping, overlap, control size, viewport escape and horizontal overflow. The strict sweep covers 48 rendered states with zero errors/warnings, in addition to the existing state/vision/fusion/comparison/dynamics checks and screenshot-based manual review.
 
+**v0.9 readability repair.** The sweep now runs at 320/390/768/1024/1440px and measures the *effective* on-screen size of SVG `<text>` (via each element's own `getScreenCTM`) instead of trusting declared font-size, since viewBox scaling was silently shrinking Cart-Pole diagram labels on narrow screens; `CartPoleView` now counter-scales those labels to stay readable at every width, and the numeric labels that duplicated the HTML readout were dropped from the SVG (the arrows stay). A curated set of essential explanations and readouts (state readout, sim controls, `.steps`/`.claim`/`.qkv-key`, stage/panel headings, attention/force readouts) carries a stricter 14px text / 44px touch-target floor; this is scoped to that curated set, not every label in the app. The Fusion pipeline's token grid and 16×16 attention matrix reflow/scroll locally instead of clipping or forcing the page wider, and a Fusion mode-switch bug that could cascade into unrelated test failures (reusing a possibly-fallen episode from Vision mode) is fixed. Full browser QA (320–1440px, all modes) is green.
+
 ## License
 
 MIT. See [LICENSE](LICENSE).

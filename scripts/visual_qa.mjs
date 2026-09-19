@@ -221,6 +221,55 @@ async function auditLayout(page, name, { minFont=9.75 } = {}) {
     const clippedText=[];
     const viewportEscapes=[];
     const smallControls=[];
+    const tinySvgText=[];
+
+    // SVG <text> is styled in local user units; when the viewBox (or any
+    // ancestor <g transform>) scales down to fit a narrow container, declared
+    // font-size no longer equals rendered size on screen. Measure the real
+    // screen size via the text element's OWN screen-space transform
+    // (getScreenCTM), which folds in every ancestor transform, not just the
+    // root <svg>'s. This UI never rotates/skews text, so (c,d) is the
+    // vertical (font-size) axis scale factor to use.
+    for(const el of [...document.querySelectorAll('svg text')]){
+      if(!visible(el)) continue;
+      const text=(el.textContent||'').trim();
+      if(!text) continue;
+      const ctm=el.getScreenCTM();
+      if(!ctm) continue;
+      const scale=Math.hypot(ctm.c,ctm.d);
+      const declared=parseFloat(getComputedStyle(el).fontSize);
+      if(!Number.isFinite(declared)) continue;
+      const effective=declared*scale;
+      if(effective<minFont){
+        tinySvgText.push({class:cls(el),text:text.slice(0,60),declared:Number(declared.toFixed(2)),effective:Number(effective.toFixed(2))});
+      }
+    }
+
+    // Essential readouts and control labels have a stricter, curated 14px
+    // floor (design contract), separate from the blanket ~10px minFont floor
+    // above that still covers every other compact/eyebrow label in the app.
+    const coreFontSelectors='.state-readout span,.action-readout span,.vision-hidden-state,.sim-controls button,'+
+      '.steps b,.steps p,.claim,.qkv-key,.panel-head small,.stage-head>span,.stage-head>small,.attention-read,.attention-read strong,.force-value';
+    const coreTextTooSmall=[];
+    for(const el of [...document.querySelectorAll(coreFontSelectors)]){
+      if(!visible(el)) continue;
+      const fs=parseFloat(getComputedStyle(el).fontSize);
+      if(Number.isFinite(fs) && fs<14){
+        coreTextTooSmall.push({tag:el.tagName.toLowerCase(),class:cls(el),text:textPreview(el)||el.textContent.trim().slice(0,60),fontSize:Number(fs.toFixed(2))});
+      }
+    }
+
+    // Primary controls (Pause/Run, Step, Reset, Push) get a stricter 44px
+    // touch-target floor, separate from the blanket 28px smallControls floor.
+    const primaryControlSelectors='.sim-controls button';
+    const undersizedPrimaryControls=[];
+    for(const el of [...document.querySelectorAll(primaryControlSelectors)]){
+      if(!visible(el)) continue;
+      const r=el.getBoundingClientRect();
+      if(r.height<44 || r.width<44){
+        undersizedPrimaryControls.push({tag:el.tagName.toLowerCase(),class:cls(el),text:el.textContent.trim().slice(0,40),width:Number(r.width.toFixed(1)),height:Number(r.height.toFixed(1))});
+      }
+    }
 
     for(const el of [...document.querySelectorAll('body *')]){
       if(el.matches('script,style,noscript,template,svg,svg *,canvas')) continue;
@@ -314,6 +363,9 @@ async function auditLayout(page, name, { minFont=9.75 } = {}) {
       document:{scrollWidth:document.documentElement.scrollWidth,scrollHeight:document.documentElement.scrollHeight},
       tinyText,
       clippedText,
+      tinySvgText,
+      coreTextTooSmall,
+      undersizedPrimaryControls,
       smallControls,
       viewportEscapes,
       clippedContainers,
@@ -326,6 +378,9 @@ async function auditLayout(page, name, { minFont=9.75 } = {}) {
 
   if(data.document.scrollWidth>data.viewport.width+2) pushError(name+': page-level horizontal overflow '+data.document.scrollWidth+' > '+data.viewport.width);
   if(data.tinyText.length) pushError(name+': text below 10px '+JSON.stringify(data.tinyText.slice(0,12)));
+  if(data.tinySvgText.length) pushError(name+': SVG text renders below 10px on screen (effective size, not declared) '+JSON.stringify(data.tinySvgText.slice(0,12)));
+  if(data.coreTextTooSmall.length) pushError(name+': essential readout/control text below 14px '+JSON.stringify(data.coreTextTooSmall.slice(0,12)));
+  if(data.undersizedPrimaryControls.length) pushError(name+': primary control smaller than 44px touch target '+JSON.stringify(data.undersizedPrimaryControls.slice(0,12)));
   if(data.clippedText.length) pushError(name+': clipped visible text '+JSON.stringify(data.clippedText.slice(0,10)));
   if(data.smallControls.length) pushError(name+': controls shorter than 28px '+JSON.stringify(data.smallControls.slice(0,10)));
   if(data.viewportEscapes.length) pushError(name+': elements escape viewport '+JSON.stringify(data.viewportEscapes.slice(0,10)));
@@ -412,6 +467,9 @@ async function runDesktop(browser) {
   await page.goto(baseURL, { waitUntil:'networkidle', timeout:30000 });
   await waitLearned(page);
   await page.waitForTimeout(700);
+
+  const stateActionReadouts=await page.locator('.action-readout span').count();
+  if(stateActionReadouts!==2) pushError('state mode: expected exactly 2 action-readout cells (force+push), found '+stateActionReadouts);
 
   const t0=await page.locator('.time').innerText();
   const canvas0=await page.locator('.embedding-overview canvas').first().evaluate(el=>el.toDataURL());
@@ -615,10 +673,12 @@ async function runDesktop(browser) {
     const frameCount=await page.locator('.vision-stage-frame .vision-frame').count();
     const patchGridCount=await page.locator('.vision-stage-patch .patch-grid').count();
     const patchCellCount=await page.locator('.vision-stage-patch .cell').count();
+    const visionActionReadouts=await page.locator('.action-readout span').count();
 
     if(pipelineCount!==1) pushError('vision mode: pipeline missing');
     if(hiddenStateCount!==1) pushError('vision mode: hidden-state label missing');
     if(stateReadoutCount!==0) pushError('vision mode: explicit state readout leaked into pixels-only mode');
+    if(visionActionReadouts!==2) pushError('vision mode: expected exactly 2 action-readout cells (force+push) despite hidden state, found '+visionActionReadouts);
     if(frameCount!==8) pushError('vision mode: expected 8 sampled frames, found '+frameCount);
     if(patchGridCount!==2) pushError('vision mode: expected patch and delta grids, found '+patchGridCount);
     if(patchCellCount!==512) pushError('vision mode: expected 512 visible patch+delta cells, found '+patchCellCount);
@@ -685,8 +745,23 @@ async function runDesktop(browser) {
     await fusionButton.click();
     await page.waitForTimeout(260);
 
-    const pauseFusion=page.getByRole('button',{name:'Pause'});
-    if(await pauseFusion.count()) await pauseFusion.click();
+    // Mode-switch continuity: switching alone (before any Reset) must not
+    // rewind the shared episode clock. Checked here, once, before the
+    // deliberate fresh-episode reset below establishes a new baseline.
+    const timeAfterSwitch=parseFloat((await page.locator('.sim-card .time').innerText()).replace(' s',''));
+    const fusionSameEpisode=timeAfterSwitch>=timeBeforeFusion;
+    if(!fusionSameEpisode) pushError('fusion mode: mode switch reset or rewound the episode clock');
+
+    // `running` and `elapsed` are shared app state across modes: Vision's own
+    // Run/push exploration can legitimately run the pole to a terminal fall
+    // (status='fell') before Fusion is ever reached, which disables every
+    // control (Pause/Run/Step) and cascades into unrelated failures below.
+    // Qualify this mode from a known-fresh episode via the same public
+    // Reset/Pause controls a user would use, rather than trusting whatever
+    // state leaked over from the previous mode.
+    await page.getByRole('button',{name:'Reset'}).click();
+    await page.waitForTimeout(300);
+    await page.getByRole('button',{name:'Pause'}).click();
     await page.waitForTimeout(60);
     const fusionSync0=await readAtomicSnapshot(page);
     verifyAtomicSnapshot(fusionSync0,'fusion pause');
@@ -712,16 +787,16 @@ async function runDesktop(browser) {
     const fusionAttentionCells=await page.locator('.fusion-stage-attention .cell').count();
     const fusionScenarioButtons=await page.locator('.fusion-pipeline .scenario-bar button').count();
     const fusionStateReadout=await page.locator('.state-readout').count();
-    const timeAfterFusion=parseFloat((await page.locator('.sim-card .time').innerText()).replace(' s',''));
+    const fusionActionReadouts=await page.locator('.action-readout span').count();
 
     if(fusionModeAttr!=='fusion') pushError('fusion mode: main observation mode did not switch to fusion');
+    if(fusionActionReadouts!==2) pushError('fusion mode: expected exactly 2 action-readout cells (force+push), found '+fusionActionReadouts);
     if(fusionPipelineCount!==1) pushError('fusion mode: pipeline missing');
     if(fusionPairCount!==8) pushError('fusion mode: expected 8 aligned timestamp pairs, found '+fusionPairCount);
     if(fusionTokenCount!==16) pushError('fusion mode: expected 16 typed tokens, found '+fusionTokenCount);
     if(fusionAttentionCells!==256) pushError('fusion mode: expected 16x16 attention matrix, found '+fusionAttentionCells+' cells');
     if(fusionScenarioButtons!==5) pushError('fusion mode: expected 5 degradation controls, found '+fusionScenarioButtons);
     if(fusionStateReadout!==1) pushError('fusion mode: explicit state readout should be visible');
-    if(!(timeAfterFusion>=timeBeforeFusion)) pushError('fusion mode: mode switch reset or rewound the episode clock');
 
     await page.screenshot({path:path.join(outDir,'desktop-fusion-overview.jpg'),type:'jpeg',quality:82,fullPage:true});
 
@@ -764,7 +839,7 @@ async function runDesktop(browser) {
     report.interactions.fusionMode={
       available:true,modeAttr:fusionModeAttr,pipelineCount:fusionPipelineCount,pairCount:fusionPairCount,
       tokenCount:fusionTokenCount,attentionCells:fusionAttentionCells,scenarioButtons:fusionScenarioButtons,
-      stateReadoutCount:fusionStateReadout,sameEpisode:timeAfterFusion>=timeBeforeFusion,
+      stateReadoutCount:fusionStateReadout,sameEpisode:fusionSameEpisode,
       missingStateOff,partialVision,missingVisionOff,noisyActive,
       detailCount:fusionDetailCount,detailAttentionCells:fusionDetailCells,ablationCount:fusionAblations
     };
@@ -1029,6 +1104,7 @@ try {
   await runResponsiveLayoutAudit(browser,1024,'audit-laptop');
   await runResponsiveLayoutAudit(browser,768,'audit-tablet');
   await runResponsiveLayoutAudit(browser,390,'audit-mobile');
+  await runResponsiveLayoutAudit(browser,320,'audit-mobile-small');
 } catch (error) {
   pushError('unhandled visual QA exception: ' + (error?.stack || String(error)));
 } finally {
