@@ -10,27 +10,28 @@
   const N = 8;
   let state = resetState();
   let history = Array.from({length:N}, () => stateArray(state));
+  let selectedToken = N - 1;
   let learnedModel = null;
   let modelState = 'loading';
   let result = runAttention(history);
   let controllerForce = forceFromScore(result.actionScore);
   let disturbance = 0;
-  let appliedForce = controllerForce;
   let running = true;
   let elapsed = 0;
   let status = 'balancing';
   let raf = 0;
+
   const bridgePathMap = {
     state: [{
       from: '.sim-card .state-readout',
-      to: '.stage-raw .anchor',
+      to: '.embedding-overview .token-column',
       type: 'stroke',
       gradientId: 'gray-blue',
-      opacity: .95,
-      curve: 80
+      opacity: .72,
+      curve: 72
     }]
   };
-  $: bridgeRedrawKey = stateArray(state).map(v=>v.toFixed(4)).join('|') + result.modelType;
+  $: bridgeRedrawKey = modelState + '|' + selectedToken;
 
   function infer(sequence) {
     return learnedModel ? runLearnedAttention(sequence, learnedModel) : runAttention(sequence);
@@ -39,10 +40,10 @@
   function reset() {
     state = resetState((Math.random()-.5)*.09);
     history = Array.from({length:N}, () => stateArray(state));
+    selectedToken = N - 1;
     result = infer(history);
     controllerForce = forceFromScore(result.actionScore);
     disturbance = 0;
-    appliedForce = controllerForce;
     elapsed = 0;
     status = 'balancing';
     running = true;
@@ -74,7 +75,6 @@
         while (accumulator >= PHYSICS.tau) {
           result = infer(history);
           controllerForce = forceFromScore(result.actionScore);
-          appliedForce = controllerForce + disturbance;
           state = stepCartPole(state, controllerForce, PHYSICS.tau, disturbance);
           history = [...history.slice(1), stateArray(state)];
           elapsed += PHYSICS.tau;
@@ -99,38 +99,56 @@
 
 <svelte:head>
   <title>Cart-Pole Transformer Explainer</title>
-  <meta name="description" content="Live Cart-Pole simulation beside a step-by-step Transformer attention dataflow."/>
+  <meta name="description" content="Live Cart-Pole simulation beside a detailed interactive Transformer walkthrough."/>
 </svelte:head>
 
 <main>
   <header class="topbar">
     <strong>Cart-Pole Transformer</strong>
-    <span>{modelState === 'learned' ? 'learned 1-head tiny Transformer' : modelState === 'loading' ? 'loading learned model…' : 'transparent fallback'}</span>
+    <span>{modelState === 'learned' ? 'learned · 1 block · 1 head · 8D' : modelState === 'loading' ? 'loading learned model…' : 'transparent fallback'}</span>
   </header>
 
   <section class="lab-grid" aria-label="live Cart-Pole and Transformer visualization">
     <UpstreamSankeyFlow pathMap={bridgePathMap} redrawKey={bridgeRedrawKey}/>
-    <CartPoleView {state} force={appliedForce} {running} {elapsed} {status} onToggle={toggle} onReset={reset} onPush={push} onPushEnd={pushEnd}/>
-    <Pipeline {history} {result} {controllerForce}/>
+    <CartPoleView
+      {state}
+      {history}
+      {selectedToken}
+      {controllerForce}
+      {disturbance}
+      {running}
+      {elapsed}
+      {status}
+      onToggle={toggle}
+      onReset={reset}
+      onPush={push}
+      onPushEnd={pushEnd}
+    />
+    <Pipeline
+      {history}
+      {result}
+      {controllerForce}
+      {selectedToken}
+      onSelectToken={(i)=>selectedToken=i}
+    />
   </section>
 
   <section class="explain">
     <div class="explain-head">
-      <h2>이 순서만 보면 됩니다</h2>
-      <div class="qkv-key"><span class="q">Q</span> 찾는 기준 <span class="k">K</span> 비교용 표지 <span class="v">V</span> 가져올 내용</div>
+      <h2>읽는 순서</h2>
+      <div class="qkv-key"><span class="q">Q</span> 찾는 기준 <span class="k">K</span> 비교 표지 <span class="v">V</span> 가져올 내용</div>
     </div>
     <div class="steps">
-      <article><b>1. Raw state</b><p>시뮬레이터가 <code>[x, ẋ, θ, θ̇]</code> 네 숫자를 냅니다.</p></article>
-      <article><b>2. Encode</b><p>먼저 고정 scale로 normalize합니다. learned 모델에서는 그 4개 숫자를 <code>Linear 4→8 + position</code>으로 8차원 token으로 바꿉니다.</p></article>
-      <article><b>3. Q / K / V</b><p>encoded token에 실제 학습된 <code>WQ, WK, WV</code>를 곱합니다.</p></article>
-      <article><b>4. QK → mask → softmax</b><p>Polo Club 원본처럼 score, causal mask, attention weight가 순서대로 보입니다.</p></article>
-      <article><b>5. Weighted V</b><p>attention 비율만큼 V를 섞어 context를 만듭니다.</p></article>
-      <article><b>6. Force</b><p>context를 action head가 읽어 cart force를 만들고 다시 physics에 넣습니다.</p></article>
+      <article><b>1. Embedding</b><p><code>[x,ẋ,θ,θ̇]</code> → normalize → learned 4→8 projection + position.</p></article>
+      <article><b>2. Q / K / V</b><p>LayerNorm 뒤 같은 token을 세 learned projection으로 나눕니다.</p></article>
+      <article><b>3. Attention</b><p><code>QKᵀ/√d → causal mask → softmax</code>. matrix를 가리키면 해당 time pair가 연결됩니다.</p></article>
+      <article><b>4. Residual + MLP</b><p>Attention output을 더하고 LN→Linear→GELU→Linear→residual을 통과합니다.</p></article>
+      <article><b>5. Action</b><p>마지막 hidden token만 읽어 <code>tanh(score)×10 N</code> force를 만듭니다.</p></article>
+      <article><b>실시간 연결</b><p>오른쪽 time token을 가리키면 왼쪽의 같은 과거 pose가 강조됩니다.</p></article>
     </div>
-    <div class="formula-line"><code>raw state → normalize → learned embedding + position → Q/K/V → QKᵀ/√d → causal mask → softmax → Σ(a·V) → force</code></div>
   </section>
 
-  <div class="claim">Cart-Pole에는 Transformer가 필요하지 않습니다. learned mode는 sequence attention을 관찰하기 위한 교육용 비교 모델이며 attention weight를 정책 행동의 인과 설명으로 해석하지 않습니다.</div>
+  <div class="claim">Cart-Pole에는 Transformer가 필요하지 않습니다. 이 모델은 sequence attention의 실제 learned tensor를 관찰하기 위한 교육용 모델이며 attention weight를 인과 설명으로 해석하지 않습니다.</div>
 
-  <footer>Polo Club Transformer Explainer의 MIT-licensed VectorCanvas, MatrixSvg, Sankey 경로 방식을 vendoring·adaptation하여 사용합니다.</footer>
+  <footer>Polo Club Transformer Explainer의 MIT-licensed VectorCanvas, MatrixSvg, Sankey, attention expansion/animation 패턴을 vendoring·adaptation하여 사용합니다.</footer>
 </main>
