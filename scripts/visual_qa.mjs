@@ -372,6 +372,8 @@ async function runDesktop(browser) {
 
     await page.getByRole('button',{name:'Clean'}).click();
     await page.waitForTimeout(80);
+    await page.getByRole('button',{name:'Reset'}).click();
+    await page.waitForTimeout(350);
 
     await page.locator('.fusion-stage-attention').click();
     await page.waitForTimeout(160);
