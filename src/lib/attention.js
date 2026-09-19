@@ -12,8 +12,11 @@ const WK = [
   [0.24, 0.08, 0.05, 0.12],
 ];
 
-function normalize([x, xDot, theta, thetaDot]) {
-  return [x / 2.4, xDot / 3.0, theta / 0.38, thetaDot / 3.5];
+export const STATE_FIELDS = ['x', 'xDot', 'theta', 'thetaDot'];
+export const NORMALIZATION_SCALE = [2.4, 3.0, 0.38, 3.5];
+
+function normalize(state) {
+  return state.map((value, i) => value / NORMALIZATION_SCALE[i]);
 }
 function matVec(M, v) {
   return M.map(row => row.reduce((sum, w, i) => sum + w * v[i], 0));
@@ -29,7 +32,8 @@ function softmax(xs) {
 }
 
 export function runAttention(history) {
-  const tokens = history.map(normalize);
+  const rawTokens = history.map(state => [...state]);
+  const tokens = rawTokens.map(normalize);
   const q = tokens.map(v => matVec(WQ, v));
   const k = tokens.map(v => matVec(WK, v));
   const v = tokens.map(t => [...t]);
@@ -54,7 +58,7 @@ export function runAttention(history) {
     8.00 * context[2] +
     3.00 * context[3];
 
-  return { tokens, q, k, v, raw, weights, context, actionScore };
+  return { rawTokens, tokens, q, k, v, raw, weights, context, actionScore };
 }
 
 export function forceFromScore(score) {
