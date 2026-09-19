@@ -64,7 +64,7 @@ The interaction and visual-explanation approach is inspired by and may selective
 - https://github.com/poloclub/transformer-explainer
 - Baseline inspected: `bfe50afba10b9b560b84143ee1107d977defa74f`
 
-The current visualization directly vendors/adapts the upstream `VectorCanvas.svelte`, `MatrixSvg.svelte`, and the generic gradient/path/redraw machinery from `Sankey.svelte`, pinned to commit `bfe50afba10b9b560b84143ee1107d977defa74f`. Cart-Pole-specific code only adapts model tensors and DOM selectors.
+The current visualization directly vendors/adapts the upstream `VectorCanvas.svelte`, `MatrixSvg.svelte`, generic gradient/path/redraw machinery from `Sankey.svelte`, and the staged attention expansion/GSAP pattern from `AttentionMatrix.svelte`, pinned to commit `bfe50afba10b9b560b84143ee1107d977defa74f`. Cart-Pole-specific code adapts the learned tensors, time-token selection, and DOM selectors.
 
 Transformer Explainer is MIT licensed. File-level attribution and the exact reuse boundary are recorded in [NOTICE.md](NOTICE.md).
 
@@ -80,7 +80,7 @@ This separation lets later state, image, video, and multimodal models reuse the 
 
 ## Status
 
-**v0.2 learned state Transformer is live on GitHub Pages.** Training, closed-loop evaluation, browser-runtime structural checks, causal-mask checks, softmax checks, a <10 ms average inference acceptance benchmark, production build, and Pages deployment are all automated. The next frontier is **v0.3 vision-only frame/video tokens**.
+**v0.2 learned state Transformer is live on GitHub Pages.** The live view now links eight historical Cart-Pole poses to eight time tokens and provides upstream-style expandable `Embedding`, `Q/K/V`, `Attention`, `Residual + MLP`, and `Action` calculations. Training, closed-loop evaluation, browser-runtime structural checks, causal-mask checks, softmax checks, a <10 ms average inference acceptance benchmark, production build, and Pages deployment are automated. The next frontier remains **v0.3 vision-only frame/video tokens** after this state-mode explainer is visually reviewed.
 
 ## License
 
