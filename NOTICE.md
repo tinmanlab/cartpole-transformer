@@ -25,5 +25,6 @@ The following files in this repository contain substantial adaptations of upstre
 - `src/upstream/VectorCanvas.svelte` ← `src/components/common/VectorCanvas.svelte`
 - `src/upstream/MatrixSvg.svelte` ← `src/components/common/MatrixSvg.svelte`
 - `src/upstream/SankeyFlow.svelte` ← the generic gradient/path/draw machinery in `src/components/Sankey.svelte`
+- `src/upstream/AttentionExpansion.svelte` ← the staged QK → scaling/mask → softmax expansion/GSAP interaction pattern in `src/components/AttentionMatrix.svelte`
 
-The Cart-Pole-specific code supplies state/token/model data and selector mappings. The D3 matrix rendering, canvas vector rendering, DOM-to-DOM path construction, gradient treatment, resize redraw strategy, and hover/highlight interaction are intentionally derived from Transformer Explainer rather than independently re-invented.
+The Cart-Pole-specific code supplies state/token/model data and selector mappings. The D3 matrix rendering, canvas vector rendering, DOM-to-DOM path construction, gradient treatment, resize redraw strategy, hover/highlight interaction, and click-to-expand attention calculation sequence are intentionally derived from Transformer Explainer rather than independently re-invented.
