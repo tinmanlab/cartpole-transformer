@@ -8,7 +8,7 @@ The project starts deliberately small and now includes both a transparent fallba
 
 **https://tinmanlab.github.io/cartpole-transformer/**
 
-The live page provides two observation modes: **State** uses the learned state Transformer, while **Vision** hides explicit simulator state from the controller and runs a trained pixels-only temporal Transformer. State mode falls back to the transparent toy controller only if its learned artifact cannot be loaded.
+The live page provides three synchronized observation modes: **State**, **Vision**, and **Fusion**. State uses explicit simulator state, Vision hides explicit state and uses rendered frame history, and Fusion places aligned state/vision tokens into one time-causal self-attention block. State mode falls back to the transparent toy controller only if its learned artifact cannot be loaded.
 
 ## Why Cart-Pole?
 
@@ -45,8 +45,15 @@ Eight frames are sampled 60 ms apart, spanning 0.42 s. Simulator state is withhe
 
 Validation shows why temporal context matters: repeating the latest frame instead of using real history increases x_dot MAE from 0.145 to 0.194 m/s and theta_dot MAE from 0.147 to 0.220 rad/s. Closed-loop mean episode length is 321/500 steps with full visual history versus 121/500 with the latest frame repeated. This is an educational temporal-vision result, not a claim that the visual policy matches the state policy. See [docs/vision-model.md](docs/vision-model.md).
 
-### 0.4 — State + vision
-Fuse explicit simulator state with visual observations. Compare state tokens, visual tokens, self-attention/cross-attention, and the resulting action.
+### 0.4 — State + vision fusion — complete
+The simplest typed-token fusion is implemented without a separate cross-attention block. Each of eight aligned timestamps contributes two tokens:
+
+- State token: normalized `[x, x_dot, theta, theta_dot]` + availability bit
+- Vision token: 256 patch means + 256 Δpatch values + availability bit
+
+This produces 16 typed tokens in one time-causal self-attention matrix. Same-time State↔Vision attention is allowed; all future timestamps are masked.
+
+The clean fusion and state-only baseline both complete 500/500 steps. Vision-only reaches 329/500 mean steps. Under partial vision, adding state raises mean closed-loop duration from 177 to 500 steps. Under the deterministic biased noisy-state ablation, however, adding vision lowers average state-estimation MAE (0.080→0.058) but **worsens** closed-loop duration (146→117 steps). That negative result is retained instead of adding gating or cross-attention solely to improve the demo. See [docs/fusion-model.md](docs/fusion-model.md).
 
 ### Later
 Video history, missing/noisy sensors, partial observability, multimodal fusion strategies, attention-head comparison, and extensions to more complex control tasks.
@@ -86,7 +93,7 @@ This separation lets later state, image, video, and multimodal models reuse the 
 
 ## Status
 
-**v0.3 state + vision learning modes are implemented.** State mode exposes the learned Transformer down to selected-cell arithmetic. Vision mode hides explicit simulator state, renders eight synchronized frames, exposes patch and Δpatch features, learned frame tokens, temporal attention, inferred motion/state, and a latest-frame ablation. Deterministic training, model/runtime checks, desktop/mobile browser QA, screenshot artifacts, and Pages deployment are automated. The next frontier is **v0.4 state + vision fusion**, but only after preserving the current simple two-mode baseline as the comparison reference.
+**v0.4 State / Vision / Fusion modes are implemented.** All three modes run on the same live Cart-Pole episode and preserve their independent baselines. Fusion uses 16 synchronized typed tokens in one self-attention block, exposes modality-to-modality attention, and includes clean/noisy/missing-state plus partial/missing-vision ablations. Deterministic training, state/vision/fusion runtime checks, desktop/mobile browser QA, screenshot artifacts, and Pages deployment are automated. The current result intentionally preserves the noisy-state fusion failure as evidence that simple multimodal fusion is not automatically more robust.
 
 ## License
 
