@@ -39,8 +39,11 @@ export function runAttention(history) {
   const k = tokens.map(v => matVec(WK, v));
   const v = tokens.map(t => [...t]);
 
-  const raw = q.map((qi, i) =>
-    k.map((kj, j) => j > i ? -Infinity : dot(qi, kj) / Math.sqrt(qi.length) + 1.20 * j)
+  const scores = q.map(qi =>
+    k.map((kj, j) => dot(qi, kj) / Math.sqrt(qi.length) + 1.20 * j)
+  );
+  const raw = scores.map((row, i) =>
+    row.map((value, j) => j > i ? -Infinity : value)
   );
   const weights = raw.map(row => {
     const finite = row.map(x => Number.isFinite(x) ? x : -1e9);
@@ -59,7 +62,7 @@ export function runAttention(history) {
     8.00 * context[2] +
     3.00 * context[3];
 
-  return { modelType: 'transparent-toy', encoderType: 'scale-only', rawTokens, normalizedTokens, tokens, q, k, v, raw, weights, context, actionScore };
+  return { modelType: 'transparent-toy', encoderType: 'scale-only', rawTokens, normalizedTokens, tokens, q, k, v, scores, raw, weights, context, actionScore };
 }
 
 export function forceFromScore(score) {
