@@ -149,16 +149,23 @@ def sample_state_buffer(buffer: list[np.ndarray]) -> np.ndarray:
 def make_dataset(episodes: int = 170, horizon: int = 220):
     rng = np.random.default_rng(SEED)
     state_seq, vision_seq, targets = [], [], []
+    sample_idx = np.arange(SEQ_LEN) * FRAME_STRIDE
 
     for episode in range(episodes):
         state = initial_state(rng, hard=(episode % 4 == 0), zero_velocity=(episode % 3 == 0))
-        buffer = [state.copy() for _ in range(BUFFER_LEN)]
+        first_patch = patch_features(render_frame(state))
+        state_buffer = np.repeat(state[None, :], BUFFER_LEN, axis=0)
+        patch_buffer = np.repeat(first_patch[None, :], BUFFER_LEN, axis=0)
         pulse_left, disturbance = 0, 0.0
 
         for step in range(horizon):
-            sampled = sample_state_buffer(buffer)
-            state_seq.append(sampled / STATE_SCALE)
-            vision_seq.append(vision_features_from_state_buffer(sampled))
+            sampled_state = state_buffer[sample_idx]
+            sampled_patch = patch_buffer[sample_idx]
+            delta = np.zeros_like(sampled_patch)
+            delta[1:] = sampled_patch[1:] - sampled_patch[:-1]
+
+            state_seq.append(sampled_state / STATE_SCALE)
+            vision_seq.append(np.concatenate([sampled_patch, delta], axis=-1))
             targets.append(np.clip(state / STATE_SCALE, -1.0, 1.0))
 
             if pulse_left <= 0 and step > 8 and rng.random() < 0.020:
@@ -170,10 +177,15 @@ def make_dataset(episodes: int = 170, horizon: int = 220):
                 disturbance = 0.0
 
             state = physics_step(state, expert_force(state), disturbance)
-            buffer = buffer[1:] + [state.copy()]
+            next_patch = patch_features(render_frame(state))
+            state_buffer = np.concatenate([state_buffer[1:], state[None, :]], axis=0)
+            patch_buffer = np.concatenate([patch_buffer[1:], next_patch[None, :]], axis=0)
+
             if terminal(state):
                 state = initial_state(rng, hard=False, zero_velocity=True)
-                buffer = [state.copy() for _ in range(BUFFER_LEN)]
+                first_patch = patch_features(render_frame(state))
+                state_buffer = np.repeat(state[None, :], BUFFER_LEN, axis=0)
+                patch_buffer = np.repeat(first_patch[None, :], BUFFER_LEN, axis=0)
                 pulse_left, disturbance = 0, 0.0
 
     return (
@@ -350,99 +362,167 @@ def train_model(state_x, vision_x, targets):
 
 
 @torch.no_grad()
-def predict(model, s, v, scenario="clean"):
-    s = torch.from_numpy(s[None].astype(np.float32))
-    v = torch.from_numpy(v[None].astype(np.float32))
-    sa = torch.ones((1, SEQ_LEN, 1))
-    va = torch.ones((1, SEQ_LEN, 1))
+def apply_eval_scenario(s: torch.Tensor, v: torch.Tensor, scenario: str):
+    s = s.clone()
+    v = v.clone()
+    b = s.shape[0]
+    sa = torch.ones((b, SEQ_LEN, 1), dtype=s.dtype)
+    va = torch.ones((b, SEQ_LEN, 1), dtype=v.dtype)
 
     if scenario == "state_only":
         v.zero_(); va.zero_()
     elif scenario == "vision_only":
         s.zero_(); sa.zero_()
     elif scenario == "noisy_state":
-        # deterministic corruption at eval
-        pattern = torch.linspace(-1, 1, STATE_DIM)[None,None,:]
+        pattern = torch.linspace(-1, 1, STATE_DIM, dtype=s.dtype)[None, None, :]
         s = s + 0.18 * pattern
         v.zero_(); va.zero_()
     elif scenario == "noisy_state_plus_vision":
-        pattern = torch.linspace(-1, 1, STATE_DIM)[None,None,:]
+        pattern = torch.linspace(-1, 1, STATE_DIM, dtype=s.dtype)[None, None, :]
         s = s + 0.18 * pattern
-    elif scenario == "partial_vision":
-        s.zero_(); sa.zero_()
+    elif scenario in ("partial_vision", "partial_vision_plus_state"):
+        if scenario == "partial_vision":
+            s.zero_(); sa.zero_()
+        mask = torch.ones(VISION_DIM, dtype=v.dtype)
         for gy in range(GRID_SIZE):
             for gx in range(GRID_SIZE // 2, GRID_SIZE):
                 idx = gy * GRID_SIZE + gx
-                v[:,:,idx] = 0
-                v[:,:,PATCH_DIM+idx] = 0
-    elif scenario == "partial_vision_plus_state":
-        for gy in range(GRID_SIZE):
-            for gx in range(GRID_SIZE // 2, GRID_SIZE):
-                idx = gy * GRID_SIZE + gx
-                v[:,:,idx] = 0
-                v[:,:,PATCH_DIM+idx] = 0
+                mask[idx] = 0
+                mask[PATCH_DIM + idx] = 0
+        v = v * mask[None, None, :]
 
-    score, state_pred, weights = model(s, v, sa, va)
-    force = 10 * math.tanh(float(score[0]))
-    return force, state_pred[0].cpu().numpy() * STATE_SCALE, weights[0].cpu().numpy()
+    return s, v, sa, va
 
 
 @torch.no_grad()
-def validation_ablation(model, val):
+def predict_batch(model, s, v, scenario="clean"):
+    if not torch.is_tensor(s):
+        s = torch.from_numpy(np.asarray(s, dtype=np.float32))
+    else:
+        s = s.float()
+    if not torch.is_tensor(v):
+        v = torch.from_numpy(np.asarray(v, dtype=np.float32))
+    else:
+        v = v.float()
+
+    s, v, sa, va = apply_eval_scenario(s, v, scenario)
+    score, state_pred, weights = model(s, v, sa, va)
+    force = 10.0 * torch.tanh(score)
+    return force.cpu().numpy(), state_pred.cpu().numpy(), weights.cpu().numpy()
+
+
+@torch.no_grad()
+def predict(model, s, v, scenario="clean"):
+    force, state_pred, weights = predict_batch(model, s[None], v[None], scenario)
+    return float(force[0]), state_pred[0] * STATE_SCALE, weights[0]
+
+
+@torch.no_grad()
+def validation_ablation(model, val, batch_size: int = 512):
     s, v, y = val
     scenarios = [
-        "clean","state_only","vision_only",
-        "noisy_state","noisy_state_plus_vision",
-        "partial_vision","partial_vision_plus_state"
+        "clean", "state_only", "vision_only",
+        "noisy_state", "noisy_state_plus_vision",
+        "partial_vision", "partial_vision_plus_state",
     ]
     metrics = {}
     for scenario in scenarios:
-        pred = []
-        for i in range(len(s)):
-            _, ps, _ = predict(model, s[i], v[i], scenario)
-            pred.append(ps / STATE_SCALE)
-        p = np.stack(pred)
+        preds = []
+        for start in range(0, len(s), batch_size):
+            _, pred, _ = predict_batch(
+                model,
+                s[start:start + batch_size],
+                v[start:start + batch_size],
+                scenario,
+            )
+            preds.append(pred)
+        p = np.concatenate(preds, axis=0)
         metrics[scenario] = {
             "state_mae": float(np.mean(np.abs(p - y))),
-            "xdot_mae": float(np.mean(np.abs((p[:,1]-y[:,1]) * STATE_SCALE[1]))),
-            "thetadot_mae": float(np.mean(np.abs((p[:,3]-y[:,3]) * STATE_SCALE[3]))),
+            "xdot_mae": float(np.mean(np.abs((p[:, 1] - y[:, 1]) * STATE_SCALE[1]))),
+            "thetadot_mae": float(np.mean(np.abs((p[:, 3] - y[:, 3]) * STATE_SCALE[3]))),
         }
     return metrics
 
 
-def sampled_histories(buffer: list[np.ndarray]):
-    sampled = sample_state_buffer(buffer)
-    return sampled / STATE_SCALE, vision_features_from_state_buffer(sampled)
+def physics_step_batch(states: np.ndarray, controls: np.ndarray, disturbances: np.ndarray) -> np.ndarray:
+    gravity, mass_cart, mass_pole, half_len = 9.8, 1.0, 0.1, 0.5
+    total_mass = mass_cart + mass_pole
+    pole_mass_length = mass_pole * half_len
+
+    force = np.clip(controls, -10.0, 10.0) + disturbances
+    x = states[:, 0]
+    xdot = states[:, 1]
+    theta = states[:, 2]
+    thetadot = states[:, 3]
+    costheta = np.cos(theta)
+    sintheta = np.sin(theta)
+    temp = (force + pole_mass_length * thetadot * thetadot * sintheta) / total_mass
+    theta_acc = (gravity * sintheta - costheta * temp) / (
+        half_len * (4.0 / 3.0 - mass_pole * costheta * costheta / total_mass)
+    )
+    x_acc = temp - pole_mass_length * theta_acc * costheta / total_mass
+
+    return np.stack([
+        x + TAU * xdot,
+        xdot + TAU * x_acc,
+        theta + TAU * thetadot,
+        thetadot + TAU * theta_acc,
+    ], axis=-1).astype(np.float32)
 
 
 def evaluate_closed_loop(model, scenario: str, episodes: int = 40, horizon: int = 500):
     rng = np.random.default_rng(SEED + 133)
-    lengths = []
-    for _ in range(episodes):
-        state = initial_state(rng, hard=True, zero_velocity=True)
-        buffer = [state.copy() for _ in range(BUFFER_LEN)]
-        pulse_left, disturbance = 0, 0.0
-        steps = 0
-        for step in range(horizon):
-            s, v = sampled_histories(buffer)
-            force, _, _ = predict(model, s, v, scenario)
+    sample_idx = np.arange(SEQ_LEN) * FRAME_STRIDE
 
-            if pulse_left <= 0 and step > 18 and rng.random() < 0.012:
-                pulse_left = int(rng.integers(3, 7))
-                disturbance = float(rng.choice([-4.0, 4.0]))
-            if pulse_left > 0:
-                pulse_left -= 1
-            else:
-                disturbance = 0.0
+    states = np.stack([
+        initial_state(rng, hard=True, zero_velocity=True)
+        for _ in range(episodes)
+    ]).astype(np.float32)
+    first_patches = np.stack([patch_features(render_frame(s)) for s in states]).astype(np.float32)
+    state_buffer = np.repeat(states[:, None, :], BUFFER_LEN, axis=1)
+    patch_buffer = np.repeat(first_patches[:, None, :], BUFFER_LEN, axis=1)
 
-            state = physics_step(state, force, disturbance)
-            buffer = buffer[1:] + [state.copy()]
-            steps = step + 1
-            if terminal(state):
-                break
-        lengths.append(steps)
+    active = np.ones(episodes, dtype=bool)
+    lengths = np.full(episodes, horizon, dtype=np.int32)
+    pulse_left = np.zeros(episodes, dtype=np.int32)
+    disturbances = np.zeros(episodes, dtype=np.float32)
 
-    a = np.asarray(lengths)
+    for step in range(horizon):
+        sampled_state = state_buffer[:, sample_idx, :] / STATE_SCALE
+        sampled_patch = patch_buffer[:, sample_idx, :]
+        delta = np.zeros_like(sampled_patch)
+        delta[:, 1:, :] = sampled_patch[:, 1:, :] - sampled_patch[:, :-1, :]
+        vision = np.concatenate([sampled_patch, delta], axis=-1)
+
+        controls, _, _ = predict_batch(model, sampled_state, vision, scenario)
+        controls = controls.astype(np.float32)
+
+        if step > 18:
+            for i in np.flatnonzero(active):
+                if pulse_left[i] <= 0 and rng.random() < 0.012:
+                    pulse_left[i] = int(rng.integers(3, 7))
+                    disturbances[i] = float(rng.choice([-4.0, 4.0]))
+
+        has_pulse = pulse_left > 0
+        pulse_left[has_pulse] -= 1
+        disturbances[~has_pulse] = 0.0
+        disturbances[~active] = 0.0
+
+        next_states = physics_step_batch(states, controls, disturbances)
+        states[active] = next_states[active]
+
+        new_patches = np.stack([patch_features(render_frame(s)) for s in states]).astype(np.float32)
+        state_buffer = np.concatenate([state_buffer[:, 1:, :], states[:, None, :]], axis=1)
+        patch_buffer = np.concatenate([patch_buffer[:, 1:, :], new_patches[:, None, :]], axis=1)
+
+        just_failed = active & ((np.abs(states[:, 0]) > 2.4) | (np.abs(states[:, 2]) > 0.38))
+        lengths[just_failed] = step + 1
+        active[just_failed] = False
+        if not active.any():
+            break
+
+    a = lengths.astype(np.float32)
     return {
         "episodes": episodes,
         "horizon_steps": horizon,
