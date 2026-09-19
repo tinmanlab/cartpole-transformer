@@ -8,7 +8,7 @@ The project starts deliberately small and now includes both a transparent fallba
 
 **https://tinmanlab.github.io/cartpole-transformer/**
 
-The live page provides three synchronized observation modes: **State**, **Vision**, and **Fusion**. State uses explicit simulator state, Vision hides explicit state and uses rendered frame history, and Fusion places aligned state/vision tokens into one time-causal self-attention block. State mode falls back to the transparent toy controller only if its learned artifact cannot be loaded.
+The live page provides **State**, **Vision**, **Fusion**, and **Compare** modes. State uses explicit simulator state, Vision hides explicit state and uses rendered frame history, Fusion places aligned state/vision tokens into one time-causal self-attention block, and Compare runs the three learned controllers in independent environments with an identical deterministic initial state and disturbance schedule. State mode falls back to the transparent toy controller only if its learned artifact cannot be loaded.
 
 ## Why Cart-Pole?
 
@@ -55,8 +55,22 @@ This produces 16 typed tokens in one time-causal self-attention matrix. Same-tim
 
 The clean fusion and state-only baseline both complete 500/500 steps. Vision-only reaches 329/500 mean steps. Under partial vision, adding state raises mean closed-loop duration from 177 to 500 steps. Under the deterministic biased noisy-state ablation, however, adding vision lowers average state-estimation MAE (0.080→0.058) but **worsens** closed-loop duration (146→117 steps). That negative result is retained instead of adding gating or cross-attention solely to improve the demo. See [docs/fusion-model.md](docs/fusion-model.md).
 
+### 0.5 — Deterministic side-by-side replay — complete
+Compare mode runs State, Vision, and Fusion in three independent Cart-Pole environments from the exact same initial condition:
+
+`[x, x_dot, theta, theta_dot] = [0, 0, 0.08, 0]`
+
+All three receive the same ±4 N disturbance pulses at the same simulation ticks. Every tick is recorded, so the run can be paused, scrubbed and replayed synchronously. If a controller falls, its failed pose is frozen while the common replay clock and the other controllers continue.
+
+For the fixed 10 s replay currently used by the lab:
+- State survives 10.0 s.
+- Vision falls at 4.26 s.
+- Fusion survives 10.0 s.
+
+These numbers describe one deterministic replay configuration, not a general controller ranking. The UI therefore exposes raw survival, maximum/mean pole angle and control effort without declaring a winner.
+
 ### Later
-Video history, missing/noisy sensors, partial observability, multimodal fusion strategies, attention-head comparison, and extensions to more complex control tasks.
+Additional replay scenarios, video history, partial observability, attention-head comparison, and extensions to more complex control tasks.
 
 ## Beginner contract
 
@@ -93,7 +107,7 @@ This separation lets later state, image, video, and multimodal models reuse the 
 
 ## Status
 
-**v0.4 State / Vision / Fusion modes are implemented.** All three modes run on the same live Cart-Pole episode and preserve their independent baselines. Fusion uses 16 synchronized typed tokens in one self-attention block, exposes modality-to-modality attention, and includes clean/noisy/missing-state plus partial/missing-vision ablations. Deterministic training, state/vision/fusion runtime checks, desktop/mobile browser QA, screenshot artifacts, and Pages deployment are automated. The current result intentionally preserves the noisy-state fusion failure as evidence that simple multimodal fusion is not automatically more robust.
+**v0.5 deterministic comparison replay is implemented.** State / Vision / Fusion remain independent explainers, while Compare executes all three learned controllers from an identical initial state under one shared tick-indexed disturbance schedule. The trace is deterministic, pause/scrub/replay capable, and freezes failed controllers while the shared clock continues. State/vision/fusion/comparison runtime checks, desktop/mobile browser QA, screenshot artifacts, and Pages deployment are automated.
 
 ## License
 
