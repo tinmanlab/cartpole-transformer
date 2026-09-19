@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-19T08:59:12.696Z",
+  "generatedAt": "2026-09-19T09:15:09.953Z",
   "baseURL": "http://127.0.0.1:4173/cartpole-transformer/",
   "errors": [],
   "warnings": [],
@@ -141,7 +141,7 @@
       ],
       "detailMinFont": null,
       "learnedText": "learned state · 1 head · 8D",
-      "bodyText": "Cart-Pole Transformer\nState\nVision\nFusion\nCompare\nlearned state · 1 head · 8D\nPHYSICS · 50 Hz\nCart-Pole + 8-frame history\n2.0 s\n−2.4 m\n0\n+2.4 m\nθ -0.1°\nx\n0.04 m\nẋ\n-0.01 m/s\nθ\n-0.1°\nθ̇\n-0.2°/s\nselected\nt\nPause\nReset\n← Push\nPush →\nTransformer · 1 block · 1 head\n단계를 클릭하면 아래에서 live tensor 계산을 크게 펼칩니다\nLEARNED · ← 0.02 N\n1\nEmbedding\nstate → 8D token\nt−7\n8D\nt−6\n8D\nt−5\n8D\nt−4\n8D\nt−3\n8D\nt−2\n8D\nt−1\n8D\nt\n8D\n2\nQ · K · V\nlearned projections\nQ\nK\nV\n−7\n−6\n−5\n−4\n−3\n−2\n−1\nt\n3\nSelf Attention\nweights × V → context\n×\n→\nQ t → K t\n72.2%\n4\nTransformer block\nresidual + MLP\ncontext\n→\nWₒ + residual\n→\nLN · GELU MLP\n→\n-0.25 -0.19 0.95\n5\nAction\nfinal t only\n←\n0.02 N\ntanh(score) × 10\nState 읽는 순서\nQ 찾는 기준 K 비교 표지 V 가져올 내용\n1. Embedding\n\n[x,ẋ,θ,θ̇] → normalize → learned 4→8 projection + position.\n\n2. Q / K / V\n\nLayerNorm 뒤 같은 token을 세 learned projection으로 나눕니다.\n\n3. Attention\n\nQKᵀ/√d → causal mask → softmax. matrix cell을 가리키면 같은 시간쌍이 연결됩니다.\n\n4. Residual + MLP\n\nAttention output을 더하고 LN→Linear→GELU→Linear→residual을 통과합니다.\n\n5. Action\n\n마지막 hidden token만 읽어 tanh(score)×10 N force를 만듭니다.\n\n실시간 연결\n\ntime token 선택은 왼쪽 ghost pose와 전체 상세 계산에 동일하게 적용됩니다.\n\nCart-Pole에는 Transformer나 multimodal fusion이 필요하지 않습니다. 이 lab은 observation, temporal/multimodal attention, 그리고 동일 조건 replay에서 나타나는 실제 제어 차이를 관찰하기 위한 교육용 모델입니다.\nPolo Club Transformer Explainer의 MIT-licensed VectorCanvas, MatrixSvg, Sankey, attention expansion/animation 패턴을 vendoring·adaptation하여 사용합니다."
+      "bodyText": "Cart-Pole Transformer\nState\nVision\nFusion\nCompare\nlearned state · 1 head · 8D\nPHYSICS · 50 Hz · TICK 97\nCart-Pole + 8-frame history\n1.9 s\n−2.4 m\n0\n+2.4 m\nθ -0.1°\nx\n0.04 m\nẋ\n-0.01 m/s\nθ\n-0.1°\nθ̇\n-0.2°/s\nselected\nt\nPause\nStep\nReset\n← Push\nPush →\nTransformer · 1 block · 1 head\n단계를 클릭하면 아래에서 live tensor 계산을 크게 펼칩니다\nLEARNED · ← 0.02 N\n1\nEmbedding\nstate → 8D token\nt−7\n8D\nt−6\n8D\nt−5\n8D\nt−4\n8D\nt−3\n8D\nt−2\n8D\nt−1\n8D\nt\n8D\n2\nQ · K · V\nlearned projections\nQ\nK\nV\n−7\n−6\n−5\n−4\n−3\n−2\n−1\nt\n3\nSelf Attention\nweights × V → context\n×\n→\nQ t → K t\n72.2%\n4\nTransformer block\nresidual + MLP\ncontext\n→\nWₒ + residual\n→\nLN · GELU MLP\n→\n-0.25 -0.19 0.95\n5\nAction\nfinal t only\n←\n0.02 N\ntanh(score) × 10\nState 읽는 순서\nQ 찾는 기준 K 비교 표지 V 가져올 내용\n1. Embedding\n\n[x,ẋ,θ,θ̇] → normalize → learned 4→8 projection + position.\n\n2. Q / K / V\n\nLayerNorm 뒤 같은 token을 세 learned projection으로 나눕니다.\n\n3. Attention\n\nQKᵀ/√d → causal mask → softmax. matrix cell을 가리키면 같은 시간쌍이 연결됩니다.\n\n4. Residual + MLP\n\nAttention output을 더하고 LN→Linear→GELU→Linear→residual을 통과합니다.\n\n5. Action\n\n마지막 hidden token만 읽어 tanh(score)×10 N force를 만듭니다.\n\n실시간 연결\n\ntime token 선택은 왼쪽 ghost pose와 전체 상세 계산에 동일하게 적용됩니다.\n\nCart-Pole에는 Transformer나 multimodal fusion이 필요하지 않습니다. 이 lab은 observation, temporal/multimodal attention, 그리고 동일 조건 replay에서 나타나는 실제 제어 차이를 관찰하기 위한 교육용 모델입니다.\nPolo Club Transformer Explainer의 MIT-licensed VectorCanvas, MatrixSvg, Sankey, attention expansion/animation 패턴을 vendoring·adaptation하여 사용합니다."
     },
     "desktop-attention": {
       "viewport": {
@@ -287,7 +287,7 @@
       ],
       "detailMinFont": 10,
       "learnedText": "learned state · 1 head · 8D",
-      "bodyText": "Cart-Pole Transformer\nState\nVision\nFusion\nCompare\nlearned state · 1 head · 8D\nPHYSICS · 50 Hz\nCart-Pole + 8-frame history\n5.6 s\n−2.4 m\n0\n+2.4 m\nt−2 · θ 0.1°\nθ 0.1°\nx\n-0.04 m\nẋ\n-0.02 m/s\nθ\n0.1°\nθ̇\n0.0°/s\nselected\nt−2\nPause\nReset\n← Push\nPush →\nTransformer · 1 block · 1 head\n단계를 클릭하면 아래에서 live tensor 계산을 크게 펼칩니다\nLEARNED · → 0.01 N\n1\nEmbedding\nstate → 8D token\nt−7\n8D\nt−6\n8D\nt−5\n8D\nt−4\n8D\nt−3\n8D\nt−2\n8D\nt−1\n8D\nt\n8D\n2\nQ · K · V\nlearned projections\nQ\nK\nV\n−7\n−6\n−5\n−4\n−3\n−2\n−1\nt\n3\nSelf Attention\nweights × V → context\n0.0%\n×\n→\nQ t−4 → K t−2\n0.0%\n4\nTransformer block\nresidual + MLP\ncontext\n→\nWₒ + residual\n→\nLN · GELU MLP\n→\n0.30 -0.25 0.44\n5\nAction\nfinal t only\n→\n0.01 N\ntanh(score) × 10\nLIVE TENSOR DETAIL · t−2\nSelf Attention\n\n실제 Q·K score에 causal mask와 softmax를 적용하고, 그 weight로 실제 V를 섞습니다.\n\n×\n1\nDot product\nQKᵀ / √d\n\nQuery와 Key가 얼마나 비슷한지 모든 시간쌍을 비교합니다.\n\n2\nCausal mask\nfuture → −∞\n\n현재 시점은 미래 token을 볼 수 없습니다. 위쪽 삼각형이 차단됩니다.\n\n3\nSoftmax\nΣ a = 1\n\n점수를 양수 비율로 바꿉니다. 마지막 row가 지금 force를 만드는 attention입니다.\n\nSELECTED ATTENTION CELL · ACTUAL LIVE ARITHMETIC\nQ t−4 × K t−2\n\nmatrix 한 칸이 어떤 계산을 뜻하는지 이 경로만 따라가면 됩니다.\n\nCAUSALLY MASKED\n0%\nQuery\nt−7\nt−6\nt−5\nt−4\nt−3\nt−2\nt−1\nt\nKey\nt−7\nt−6\nt−5\nt−4\nt−3\nt−2\nt−1\nt\nA\nQ와 K 원소별 곱\nQ t−4\n×\nK t−2\nd0\n-2.913 × 0.336\n-0.979\nd1\n1.094 × -0.478\n-0.523\nd2\n-1.362 × 0.733\n-0.998\nd3\n-2.219 × -0.724\n1.607\nd4\n-0.595 × 0.554\n-0.330\nd5\n-2.980 × 1.287\n-3.835\nd6\n0.770 × 1.012\n0.779\nd7\n-0.488 × 0.513\n-0.250\n→\nB\n합하고 √d로 나눔\nΣ(QᵢKᵢ)\n-4.52830\n÷ √8\n2.82843\n= score\n-1.60100\n\n이 값이 Q·Kᵀ matrix의 선택한 한 칸입니다.\n\n→\nC\nCausal mask\nt−2 is future of t−4\n-1.60100 → −∞\n따라서 softmax weight = 0\n→\nD\nStable softmax\nrow max\n-2.11274\nscore − max\n-999999997.88726\nexp(·)\n0.000e+0\nΣ exp\n1.91913\nweight\n0.000%\nt−7\n20.7%\nt−6\n7.9%\nt−5\n19.4%\nt−4\n52.1%\nt−3\n0.0%\nt−2\n0.0%\nt−1\n0.0%\nt\n0.0%\n→\nE\nweight × V\nV t−2\n× 0.00%\n이 Key의 기여량\nΣ all keys →\nContext · Q t−4\nV = [-0.69, 0.24, -0.82, 0.44, -0.76, -0.87, -0.86, 0.51]\ncontribution = [0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000]\ncontext = [-0.539, -0.112, -0.583, 0.267, -0.788, -1.063, -0.651, 0.707]\nState 읽는 순서\nQ 찾는 기준 K 비교 표지 V 가져올 내용\n1. Embedding\n\n[x,ẋ,θ,θ̇] → normalize → learned 4→8 projection + position.\n\n2. Q / K / V\n\nLayerNorm 뒤 같은 token을 세 learned projection으로 나눕니다.\n\n3. Attention\n\nQKᵀ/√d → causal mask → softmax. matrix cell을 가리키면 같은 시간쌍이 연결됩니다.\n\n4. Residual + MLP\n\nAttention output을 더하고 LN→Linear→GELU→Linear→residual을 통과합니다.\n\n5. Action\n\n마지막 hidden token만 읽어 tanh(score)×10 N force를 만듭니다.\n\n실시간 연결\n\ntime token 선택은 왼쪽 ghost pose와 전체 상세 계산에 동일하게 적용됩니다.\n\nCart-Pole에는 Transformer나 multimodal fusion이 필요하지 않습니다. 이 lab은 observation, temporal/multimodal attention, 그리고 동일 조건 replay에서 나타나는 실제 제어 차이를 관찰하기 위한 교육용 모델입니다.\nPolo Club Transformer Explainer의 MIT-licensed VectorCanvas, MatrixSvg, Sankey, attention expansion/animation 패턴을 vendoring·adaptation하여 사용합니다."
+      "bodyText": "Cart-Pole Transformer\nState\nVision\nFusion\nCompare\nlearned state · 1 head · 8D\nPHYSICS · 50 Hz · TICK 256\nCart-Pole + 8-frame history\n5.1 s\n−2.4 m\n0\n+2.4 m\nt−2 · θ 0.1°\nθ 0.1°\nẋ\nx\n-0.03 m\nẋ\n-0.02 m/s\nθ\n0.1°\nθ̇\n0.0°/s\nselected\nt−2\nPause\nStep\nReset\n← Push\nPush →\nTransformer · 1 block · 1 head\n단계를 클릭하면 아래에서 live tensor 계산을 크게 펼칩니다\nLEARNED · → 0.01 N\n1\nEmbedding\nstate → 8D token\nt−7\n8D\nt−6\n8D\nt−5\n8D\nt−4\n8D\nt−3\n8D\nt−2\n8D\nt−1\n8D\nt\n8D\n2\nQ · K · V\nlearned projections\nQ\nK\nV\n−7\n−6\n−5\n−4\n−3\n−2\n−1\nt\n3\nSelf Attention\nweights × V → context\n0.0%\n×\n→\nQ t−4 → K t−2\n0.0%\n4\nTransformer block\nresidual + MLP\ncontext\n→\nWₒ + residual\n→\nLN · GELU MLP\n→\n0.31 -0.25 0.44\n5\nAction\nfinal t only\n→\n0.01 N\ntanh(score) × 10\nLIVE TENSOR DETAIL · t−2\nSelf Attention\n\n실제 Q·K score에 causal mask와 softmax를 적용하고, 그 weight로 실제 V를 섞습니다.\n\n×\n1\nDot product\nQKᵀ / √d\n\nQuery와 Key가 얼마나 비슷한지 모든 시간쌍을 비교합니다.\n\n2\nCausal mask\nfuture → −∞\n\n현재 시점은 미래 token을 볼 수 없습니다. 위쪽 삼각형이 차단됩니다.\n\n3\nSoftmax\nΣ a = 1\n\n점수를 양수 비율로 바꿉니다. 마지막 row가 지금 force를 만드는 attention입니다.\n\nSELECTED ATTENTION CELL · ACTUAL LIVE ARITHMETIC\nQ t−4 × K t−2\n\nmatrix 한 칸이 어떤 계산을 뜻하는지 이 경로만 따라가면 됩니다.\n\nCAUSALLY MASKED\n0%\nQuery\nt−7\nt−6\nt−5\nt−4\nt−3\nt−2\nt−1\nt\nKey\nt−7\nt−6\nt−5\nt−4\nt−3\nt−2\nt−1\nt\nA\nQ와 K 원소별 곱\nQ t−4\n×\nK t−2\nd0\n-2.913 × 0.337\n-0.981\nd1\n1.095 × -0.479\n-0.525\nd2\n-1.361 × 0.733\n-0.997\nd3\n-2.219 × -0.724\n1.607\nd4\n-0.595 × 0.553\n-0.329\nd5\n-2.981 × 1.287\n-3.835\nd6\n0.769 × 1.011\n0.777\nd7\n-0.488 × 0.513\n-0.250\n→\nB\n합하고 √d로 나눔\nΣ(QᵢKᵢ)\n-4.53278\n÷ √8\n2.82843\n= score\n-1.60258\n\n이 값이 Q·Kᵀ matrix의 선택한 한 칸입니다.\n\n→\nC\nCausal mask\nt−2 is future of t−4\n-1.60258 → −∞\n따라서 softmax weight = 0\n→\nD\nStable softmax\nrow max\n-2.11416\nscore − max\n-999999997.88584\nexp(·)\n0.000e+0\nΣ exp\n1.91944\nweight\n0.000%\nt−7\n20.7%\nt−6\n7.9%\nt−5\n19.4%\nt−4\n52.1%\nt−3\n0.0%\nt−2\n0.0%\nt−1\n0.0%\nt\n0.0%\n→\nE\nweight × V\nV t−2\n× 0.00%\n이 Key의 기여량\nΣ all keys →\nContext · Q t−4\nV = [-0.69, 0.24, -0.82, 0.44, -0.76, -0.87, -0.85, 0.51]\ncontribution = [0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000]\ncontext = [-0.539, -0.113, -0.584, 0.266, -0.787, -1.063, -0.650, 0.707]\nState 읽는 순서\nQ 찾는 기준 K 비교 표지 V 가져올 내용\n1. Embedding\n\n[x,ẋ,θ,θ̇] → normalize → learned 4→8 projection + position.\n\n2. Q / K / V\n\nLayerNorm 뒤 같은 token을 세 learned projection으로 나눕니다.\n\n3. Attention\n\nQKᵀ/√d → causal mask → softmax. matrix cell을 가리키면 같은 시간쌍이 연결됩니다.\n\n4. Residual + MLP\n\nAttention output을 더하고 LN→Linear→GELU→Linear→residual을 통과합니다.\n\n5. Action\n\n마지막 hidden token만 읽어 tanh(score)×10 N force를 만듭니다.\n\n실시간 연결\n\ntime token 선택은 왼쪽 ghost pose와 전체 상세 계산에 동일하게 적용됩니다.\n\nCart-Pole에는 Transformer나 multimodal fusion이 필요하지 않습니다. 이 lab은 observation, temporal/multimodal attention, 그리고 동일 조건 replay에서 나타나는 실제 제어 차이를 관찰하기 위한 교육용 모델입니다.\nPolo Club Transformer Explainer의 MIT-licensed VectorCanvas, MatrixSvg, Sankey, attention expansion/animation 패턴을 vendoring·adaptation하여 사용합니다."
     },
     "mobile-overview": {
       "viewport": {
@@ -426,7 +426,7 @@
       ],
       "detailMinFont": null,
       "learnedText": "learned state · 1 head · 8D",
-      "bodyText": "Cart-Pole Transformer\nState\nVision\nFusion\nCompare\nPHYSICS · 50 Hz\nCart-Pole + 8-frame history\n1.1 s\n−2.4 m\n0\n+2.4 m\nθ -0.1°\nẋ\npolicy 0.3 N\nx\n0.04 m\nẋ\n-0.03 m/s\nθ\n-0.1°\nθ̇\n2.4°/s\nselected\nt\nPause\nReset\n← Push\nPush →\nTransformer · 1 block · 1 head\n단계를 클릭하면 아래에서 live tensor 계산을 크게 펼칩니다\nLEARNED · → 0.26 N\n1\nEmbedding\nstate → 8D token\nt−7\n8D\nt−6\n8D\nt−5\n8D\nt−4\n8D\nt−3\n8D\nt−2\n8D\nt−1\n8D\nt\n8D\n2\nQ · K · V\nlearned projections\nQ\nK\nV\n−7\n−6\n−5\n−4\n−3\n−2\n−1\nt\n3\nSelf Attention\nweights × V → context\n×\n→\nQ t → K t\n72.6%\n4\nTransformer block\nresidual + MLP\ncontext\n→\nWₒ + residual\n→\nLN · GELU MLP\n→\n-0.27 -0.20 0.97\n5\nAction\nfinal t only\n→\n0.26 N\ntanh(score) × 10\nState 읽는 순서\nQ 찾는 기준 K 비교 표지 V 가져올 내용\n1. Embedding\n\n[x,ẋ,θ,θ̇] → normalize → learned 4→8 projection + position.\n\n2. Q / K / V\n\nLayerNorm 뒤 같은 token을 세 learned projection으로 나눕니다.\n\n3. Attention\n\nQKᵀ/√d → causal mask → softmax. matrix cell을 가리키면 같은 시간쌍이 연결됩니다.\n\n4. Residual + MLP\n\nAttention output을 더하고 LN→Linear→GELU→Linear→residual을 통과합니다.\n\n5. Action\n\n마지막 hidden token만 읽어 tanh(score)×10 N force를 만듭니다.\n\n실시간 연결\n\ntime token 선택은 왼쪽 ghost pose와 전체 상세 계산에 동일하게 적용됩니다.\n\nCart-Pole에는 Transformer나 multimodal fusion이 필요하지 않습니다. 이 lab은 observation, temporal/multimodal attention, 그리고 동일 조건 replay에서 나타나는 실제 제어 차이를 관찰하기 위한 교육용 모델입니다.\nPolo Club Transformer Explainer의 MIT-licensed VectorCanvas, MatrixSvg, Sankey, attention expansion/animation 패턴을 vendoring·adaptation하여 사용합니다."
+      "bodyText": "Cart-Pole Transformer\nState\nVision\nFusion\nCompare\nPHYSICS · 50 Hz · TICK 53\nCart-Pole + 8-frame history\n1.1 s\n−2.4 m\n0\n+2.4 m\nθ -0.1°\nẋ\npolicy 0.4 N\nx\n0.04 m\nẋ\n-0.03 m/s\nθ\n-0.1°\nθ̇\n2.4°/s\nselected\nt\nPause\nStep\nReset\n← Push\nPush →\nTransformer · 1 block · 1 head\n단계를 클릭하면 아래에서 live tensor 계산을 크게 펼칩니다\nLEARNED · → 0.39 N\n1\nEmbedding\nstate → 8D token\nt−7\n8D\nt−6\n8D\nt−5\n8D\nt−4\n8D\nt−3\n8D\nt−2\n8D\nt−1\n8D\nt\n8D\n2\nQ · K · V\nlearned projections\nQ\nK\nV\n−7\n−6\n−5\n−4\n−3\n−2\n−1\nt\n3\nSelf Attention\nweights × V → context\n×\n→\nQ t → K t\n72.8%\n4\nTransformer block\nresidual + MLP\ncontext\n→\nWₒ + residual\n→\nLN · GELU MLP\n→\n-0.28 -0.20 0.98\n5\nAction\nfinal t only\n→\n0.39 N\ntanh(score) × 10\nState 읽는 순서\nQ 찾는 기준 K 비교 표지 V 가져올 내용\n1. Embedding\n\n[x,ẋ,θ,θ̇] → normalize → learned 4→8 projection + position.\n\n2. Q / K / V\n\nLayerNorm 뒤 같은 token을 세 learned projection으로 나눕니다.\n\n3. Attention\n\nQKᵀ/√d → causal mask → softmax. matrix cell을 가리키면 같은 시간쌍이 연결됩니다.\n\n4. Residual + MLP\n\nAttention output을 더하고 LN→Linear→GELU→Linear→residual을 통과합니다.\n\n5. Action\n\n마지막 hidden token만 읽어 tanh(score)×10 N force를 만듭니다.\n\n실시간 연결\n\ntime token 선택은 왼쪽 ghost pose와 전체 상세 계산에 동일하게 적용됩니다.\n\nCart-Pole에는 Transformer나 multimodal fusion이 필요하지 않습니다. 이 lab은 observation, temporal/multimodal attention, 그리고 동일 조건 replay에서 나타나는 실제 제어 차이를 관찰하기 위한 교육용 모델입니다.\nPolo Club Transformer Explainer의 MIT-licensed VectorCanvas, MatrixSvg, Sankey, attention expansion/animation 패턴을 vendoring·adaptation하여 사용합니다."
     },
     "mobile-attention": {
       "viewport": {
@@ -572,7 +572,7 @@
       ],
       "detailMinFont": 10,
       "learnedText": "learned state · 1 head · 8D",
-      "bodyText": "Cart-Pole Transformer\nState\nVision\nFusion\nCompare\nPHYSICS · 50 Hz\nCart-Pole + 8-frame history\n1.6 s\n−2.4 m\n0\n+2.4 m\nt−2 · θ -0.1°\nθ -0.1°\npolicy -0.1 N\nx\n0.04 m\nẋ\n0.00 m/s\nθ\n-0.1°\nθ̇\n-0.6°/s\nselected\nt−2\nPause\nReset\n← Push\nPush →\nTransformer · 1 block · 1 head\n단계를 클릭하면 아래에서 live tensor 계산을 크게 펼칩니다\nLEARNED · ← 0.06 N\n1\nEmbedding\nstate → 8D token\nt−7\n8D\nt−6\n8D\nt−5\n8D\nt−4\n8D\nt−3\n8D\nt−2\n8D\nt−1\n8D\nt\n8D\n2\nQ · K · V\nlearned projections\nQ\nK\nV\n−7\n−6\n−5\n−4\n−3\n−2\n−1\nt\n3\nSelf Attention\nweights × V → context\n0.0%\n×\n→\nQ t−3 → K t−2\n0.0%\n4\nTransformer block\nresidual + MLP\ncontext\n→\nWₒ + residual\n→\nLN · GELU MLP\n→\n0.31 -0.24 0.45\n5\nAction\nfinal t only\n←\n0.06 N\ntanh(score) × 10\nLIVE TENSOR DETAIL · t−2\nSelf Attention\n\n실제 Q·K score에 causal mask와 softmax를 적용하고, 그 weight로 실제 V를 섞습니다.\n\n×\n1\nDot product\nQKᵀ / √d\n\nQuery와 Key가 얼마나 비슷한지 모든 시간쌍을 비교합니다.\n\n2\nCausal mask\nfuture → −∞\n\n현재 시점은 미래 token을 볼 수 없습니다. 위쪽 삼각형이 차단됩니다.\n\n3\nSoftmax\nΣ a = 1\n\n점수를 양수 비율로 바꿉니다. 마지막 row가 지금 force를 만드는 attention입니다.\n\nSELECTED ATTENTION CELL · ACTUAL LIVE ARITHMETIC\nQ t−3 × K t−2\n\nmatrix 한 칸이 어떤 계산을 뜻하는지 이 경로만 따라가면 됩니다.\n\nCAUSALLY MASKED\n0%\nQuery\nt−7\nt−6\nt−5\nt−4\nt−3\nt−2\nt−1\nt\nKey\nt−7\nt−6\nt−5\nt−4\nt−3\nt−2\nt−1\nt\nA\nQ와 K 원소별 곱\nQ t−3\n×\nK t−2\nd0\n-2.898 × 0.328\n-0.951\nd1\n1.306 × -0.482\n-0.630\nd2\n-1.705 × 0.728\n-1.241\nd3\n-2.293 × -0.732\n1.678\nd4\n-0.251 × 0.546\n-0.137\nd5\n-2.997 × 1.276\n-3.824\nd6\n0.405 × 1.017\n0.412\nd7\n-0.634 × 0.508\n-0.322\n→\nB\n합하고 √d로 나눔\nΣ(QᵢKᵢ)\n-5.01573\n÷ √8\n2.82843\n= score\n-1.77333\n\n이 값이 Q·Kᵀ matrix의 선택한 한 칸입니다.\n\n→\nC\nCausal mask\nt−2 is future of t−3\n-1.77333 → −∞\n따라서 softmax weight = 0\n→\nD\nStable softmax\nrow max\n-2.19540\nscore − max\n-999999997.80460\nexp(·)\n0.000e+0\nΣ exp\n2.80750\nweight\n0.000%\nt−7\n18.8%\nt−6\n4.7%\nt−5\n11.3%\nt−4\n29.6%\nt−3\n35.6%\nt−2\n0.0%\nt−1\n0.0%\nt\n0.0%\n→\nE\nweight × V\nV t−2\n× 0.00%\n이 Key의 기여량\nΣ all keys →\nContext · Q t−3\nV = [-0.69, 0.24, -0.82, 0.44, -0.76, -0.87, -0.85, 0.51]\ncontribution = [0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000]\ncontext = [-0.541, -0.060, -0.653, 0.278, -0.760, -1.021, -0.700, 0.629]\nState 읽는 순서\nQ 찾는 기준 K 비교 표지 V 가져올 내용\n1. Embedding\n\n[x,ẋ,θ,θ̇] → normalize → learned 4→8 projection + position.\n\n2. Q / K / V\n\nLayerNorm 뒤 같은 token을 세 learned projection으로 나눕니다.\n\n3. Attention\n\nQKᵀ/√d → causal mask → softmax. matrix cell을 가리키면 같은 시간쌍이 연결됩니다.\n\n4. Residual + MLP\n\nAttention output을 더하고 LN→Linear→GELU→Linear→residual을 통과합니다.\n\n5. Action\n\n마지막 hidden token만 읽어 tanh(score)×10 N force를 만듭니다.\n\n실시간 연결\n\ntime token 선택은 왼쪽 ghost pose와 전체 상세 계산에 동일하게 적용됩니다.\n\nCart-Pole에는 Transformer나 multimodal fusion이 필요하지 않습니다. 이 lab은 observation, temporal/multimodal attention, 그리고 동일 조건 replay에서 나타나는 실제 제어 차이를 관찰하기 위한 교육용 모델입니다.\nPolo Club Transformer Explainer의 MIT-licensed VectorCanvas, MatrixSvg, Sankey, attention expansion/animation 패턴을 vendoring·adaptation하여 사용합니다."
+      "bodyText": "Cart-Pole Transformer\nState\nVision\nFusion\nCompare\nPHYSICS · 50 Hz · TICK 80\nCart-Pole + 8-frame history\n1.6 s\n−2.4 m\n0\n+2.4 m\nt−2 · θ -0.1°\nθ -0.1°\npolicy -0.1 N\nx\n0.04 m\nẋ\n0.00 m/s\nθ\n-0.1°\nθ̇\n-0.6°/s\nselected\nt−2\nPause\nStep\nReset\n← Push\nPush →\nTransformer · 1 block · 1 head\n단계를 클릭하면 아래에서 live tensor 계산을 크게 펼칩니다\nLEARNED · ← 0.09 N\n1\nEmbedding\nstate → 8D token\nt−7\n8D\nt−6\n8D\nt−5\n8D\nt−4\n8D\nt−3\n8D\nt−2\n8D\nt−1\n8D\nt\n8D\n2\nQ · K · V\nlearned projections\nQ\nK\nV\n−7\n−6\n−5\n−4\n−3\n−2\n−1\nt\n3\nSelf Attention\nweights × V → context\n0.0%\n×\n→\nQ t−3 → K t−2\n0.0%\n4\nTransformer block\nresidual + MLP\ncontext\n→\nWₒ + residual\n→\nLN · GELU MLP\n→\n0.32 -0.24 0.45\n5\nAction\nfinal t only\n←\n0.09 N\ntanh(score) × 10\nLIVE TENSOR DETAIL · t−2\nSelf Attention\n\n실제 Q·K score에 causal mask와 softmax를 적용하고, 그 weight로 실제 V를 섞습니다.\n\n×\n1\nDot product\nQKᵀ / √d\n\nQuery와 Key가 얼마나 비슷한지 모든 시간쌍을 비교합니다.\n\n2\nCausal mask\nfuture → −∞\n\n현재 시점은 미래 token을 볼 수 없습니다. 위쪽 삼각형이 차단됩니다.\n\n3\nSoftmax\nΣ a = 1\n\n점수를 양수 비율로 바꿉니다. 마지막 row가 지금 force를 만드는 attention입니다.\n\nSELECTED ATTENTION CELL · ACTUAL LIVE ARITHMETIC\nQ t−3 × K t−2\n\nmatrix 한 칸이 어떤 계산을 뜻하는지 이 경로만 따라가면 됩니다.\n\nCAUSALLY MASKED\n0%\nQuery\nt−7\nt−6\nt−5\nt−4\nt−3\nt−2\nt−1\nt\nKey\nt−7\nt−6\nt−5\nt−4\nt−3\nt−2\nt−1\nt\nA\nQ와 K 원소별 곱\nQ t−3\n×\nK t−2\nd0\n-2.899 × 0.327\n-0.948\nd1\n1.305 × -0.483\n-0.630\nd2\n-1.703 × 0.729\n-1.242\nd3\n-2.293 × -0.731\n1.676\nd4\n-0.253 × 0.544\n-0.138\nd5\n-2.997 × 1.276\n-3.824\nd6\n0.408 × 1.020\n0.416\nd7\n-0.632 × 0.508\n-0.321\n→\nB\n합하고 √d로 나눔\nΣ(QᵢKᵢ)\n-5.01247\n÷ √8\n2.82843\n= score\n-1.77217\n\n이 값이 Q·Kᵀ matrix의 선택한 한 칸입니다.\n\n→\nC\nCausal mask\nt−2 is future of t−3\n-1.77217 → −∞\n따라서 softmax weight = 0\n→\nD\nStable softmax\nrow max\n-2.19379\nscore − max\n-999999997.80621\nexp(·)\n0.000e+0\nΣ exp\n2.80665\nweight\n0.000%\nt−7\n18.8%\nt−6\n4.6%\nt−5\n11.3%\nt−4\n29.6%\nt−3\n35.6%\nt−2\n0.0%\nt−1\n0.0%\nt\n0.0%\n→\nE\nweight × V\nV t−2\n× 0.00%\n이 Key의 기여량\nΣ all keys →\nContext · Q t−3\nV = [-0.69, 0.24, -0.82, 0.44, -0.76, -0.88, -0.85, 0.51]\ncontribution = [0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000]\ncontext = [-0.543, -0.061, -0.651, 0.278, -0.760, -1.022, -0.699, 0.631]\nState 읽는 순서\nQ 찾는 기준 K 비교 표지 V 가져올 내용\n1. Embedding\n\n[x,ẋ,θ,θ̇] → normalize → learned 4→8 projection + position.\n\n2. Q / K / V\n\nLayerNorm 뒤 같은 token을 세 learned projection으로 나눕니다.\n\n3. Attention\n\nQKᵀ/√d → causal mask → softmax. matrix cell을 가리키면 같은 시간쌍이 연결됩니다.\n\n4. Residual + MLP\n\nAttention output을 더하고 LN→Linear→GELU→Linear→residual을 통과합니다.\n\n5. Action\n\n마지막 hidden token만 읽어 tanh(score)×10 N force를 만듭니다.\n\n실시간 연결\n\ntime token 선택은 왼쪽 ghost pose와 전체 상세 계산에 동일하게 적용됩니다.\n\nCart-Pole에는 Transformer나 multimodal fusion이 필요하지 않습니다. 이 lab은 observation, temporal/multimodal attention, 그리고 동일 조건 replay에서 나타나는 실제 제어 차이를 관찰하기 위한 교육용 모델입니다.\nPolo Club Transformer Explainer의 MIT-licensed VectorCanvas, MatrixSvg, Sankey, attention expansion/animation 패턴을 vendoring·adaptation하여 사용합니다."
     }
   },
   "interactions": {
@@ -589,7 +589,7 @@
       "embedding": {
         "detailCount": 1,
         "containsExpected": true,
-        "textLength": 374,
+        "textLength": 372,
         "liveChanged": true
       },
       "qkv": {
@@ -621,15 +621,15 @@
       "allowed": {
         "row": 7,
         "col": 5,
-        "dotSum": -5.521044772876489,
+        "dotSum": -5.53657354682816,
         "scale": 2.8284271247461903,
-        "score": -1.9519840990677535,
+        "score": -1.9574743497501235,
         "masked": false,
-        "exp": 0.059973827911324495,
-        "denominator": 1.3819736997160943,
-        "weight": 0.04339722812644352,
-        "v0": -0.689157528717623,
-        "contribution0": -0.029907526488814735
+        "exp": 0.059940732373018765,
+        "denominator": 1.3817893518141524,
+        "weight": 0.04337906663871923,
+        "v0": -0.6895259336717777,
+        "contribution0": -0.029910991425873144
       },
       "masked": {
         "row": 2,
@@ -645,8 +645,163 @@
     },
     "push": {
       "before": "ẋ\n0.02 m/s",
-      "after": "ẋ\n-0.70 m/s",
+      "after": "ẋ\n-0.68 m/s",
       "changed": true
+    },
+    "atomicSync": {
+      "state": {
+        "before": {
+          "mode": "state",
+          "tick": 481,
+          "sim": [
+            -0.0813278754921006,
+            -0.2948476866400951,
+            0.04164413802738971,
+            0.2104489661875432
+          ],
+          "stateToken": [
+            -0.0813278754921006,
+            -0.2948476866400951,
+            0.04164413802738971,
+            0.2104489661875432
+          ],
+          "visionState": [
+            -0.0813278754921006,
+            -0.2948476866400951,
+            0.04164413802738971,
+            0.2104489661875432
+          ],
+          "actionScore": 0.957690790497759,
+          "force": 7.432450684629213
+        },
+        "after": {
+          "mode": "state",
+          "tick": 482,
+          "sim": [
+            -0.0872248292249025,
+            -0.15043732179510275,
+            0.045853117351140574,
+            0.0062610608981027716
+          ],
+          "stateToken": [
+            -0.0872248292249025,
+            -0.15043732179510275,
+            0.045853117351140574,
+            0.0062610608981027716
+          ],
+          "visionState": [
+            -0.0872248292249025,
+            -0.15043732179510275,
+            0.045853117351140574,
+            0.0062610608981027716
+          ],
+          "actionScore": 0.8977064725634891,
+          "force": 7.151792761523774
+        },
+        "stepDelta": 1
+      },
+      "vision": {
+        "before": {
+          "mode": "vision",
+          "tick": 41,
+          "sim": [
+            0.0023406450063278364,
+            -0.3048628961411861,
+            0.03559380107586475,
+            0.3831701762720484
+          ],
+          "stateToken": [
+            0.0023406450063278364,
+            -0.3048628961411861,
+            0.03559380107586475,
+            0.3831701762720484
+          ],
+          "visionState": [
+            0.0023406450063278364,
+            -0.3048628961411861,
+            0.03559380107586475,
+            0.3831701762720484
+          ],
+          "actionScore": 0.8214870055351486,
+          "force": 6.7587841096787855
+        },
+        "after": {
+          "mode": "vision",
+          "tick": 42,
+          "sim": [
+            -0.0037566129164958856,
+            -0.17350129289911534,
+            0.04325720460130572,
+            0.1967149446110112
+          ],
+          "stateToken": [
+            -0.0037566129164958856,
+            -0.17350129289911534,
+            0.04325720460130572,
+            0.1967149446110112
+          ],
+          "visionState": [
+            -0.0037566129164958856,
+            -0.17350129289911534,
+            0.04325720460130572,
+            0.1967149446110112
+          ],
+          "actionScore": 0.6018900531188114,
+          "force": 5.383931213897769
+        },
+        "stepDelta": 1
+      },
+      "fusion": {
+        "before": {
+          "mode": "fusion",
+          "tick": 199,
+          "sim": [
+            0.46822291567833946,
+            1.7641108893194795,
+            0.03271604235789954,
+            -0.810350210777669
+          ],
+          "stateToken": [
+            0.46822291567833946,
+            1.7641108893194795,
+            0.03271604235789954,
+            -0.810350210777669
+          ],
+          "visionState": [
+            0.46822291567833946,
+            1.7641108893194795,
+            0.03271604235789954,
+            -0.810350210777669
+          ],
+          "actionScore": -0.5341840395389474,
+          "force": -4.885728914669986
+        },
+        "after": {
+          "mode": "fusion",
+          "tick": 200,
+          "sim": [
+            0.503505133464729,
+            1.66833918598557,
+            0.016509038142346156,
+            -0.6571527293934148
+          ],
+          "stateToken": [
+            0.503505133464729,
+            1.66833918598557,
+            0.016509038142346156,
+            -0.6571527293934148
+          ],
+          "visionState": [
+            0.503505133464729,
+            1.66833918598557,
+            0.016509038142346156,
+            -0.6571527293934148
+          ],
+          "actionScore": -0.6219266387936768,
+          "force": -5.524680414945027
+        },
+        "stepDelta": 1
+      }
     },
     "visionMode": {
       "available": true,
