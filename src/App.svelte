@@ -45,6 +45,7 @@
   let visionPatchHistory = visionSamples.map(x=>x.patches);
   let visionResult = null;
   let visionRepeatedResult = null;
+  $: visionFrameIntervalMs = (visionModel?.frame_stride_seconds || PHYSICS.tau * 3) * 1000;
 
   let controllerForce = forceFromScore(result.actionScore);
   let disturbance = 0;
@@ -247,6 +248,7 @@
         selectedFrame={selectedVisionFrame}
         onSelectFrame={(i)=>selectedVisionFrame=i}
         onOpenDetail={()=>visionDetailOpen=true}
+        frameIntervalMs={visionFrameIntervalMs}
       />
     {/if}
   </section>
@@ -272,6 +274,7 @@
       groundTruthState={stateArray(state)}
       onSelectFrame={(i)=>selectedVisionFrame=i}
       onClose={()=>visionDetailOpen=false}
+      frameIntervalMs={visionFrameIntervalMs}
     />
   {/if}
 
