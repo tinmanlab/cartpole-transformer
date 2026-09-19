@@ -78,6 +78,13 @@ The transition order is now explicit:
 
 When paused, **Step** advances exactly one 20 ms physics tick. Browser QA numerically verifies state/token equality and `force = 10*tanh(active action score)` before and after Step in all three single-controller modes.
 
+### 0.7 — Exact one-step closed-loop decision trace — complete
+The live single-controller modes now connect the Transformer calculation to the plant in one exact 20 ms transition:
+
+`observation_t → controller score → policy force u_t → policy + disturbance → Cart-Pole dynamics → x_ddot / theta_ddot → Euler state_{t+1} → next policy force u_{t+1}`.
+
+The plant intermediates are returned directly by the environment's transition function; the explainer does not recompute lookalike dynamics. When paused, pressing **Step** populates the trace with the exact transition that was executed. State, Vision, and Fusion all reuse the same plant trace while keeping their different controller observations.
+
 ### Later
 Additional replay scenarios, video history, partial observability, attention-head comparison, and extensions to more complex control tasks.
 
@@ -116,7 +123,7 @@ This separation lets later state, image, video, and multimodal models reuse the 
 
 ## Status
 
-**v0.6 atomic live snapshots are implemented.** State / Vision / Fusion now keep the rendered pose, newest observation/token, model intermediates and displayed action on one simulation tick, with a paused one-tick Step control. Compare remains a separate deterministic replay environment. State/vision/fusion/comparison runtime checks, atomic snapshot browser assertions, desktop/mobile QA, screenshot artifacts, and Pages deployment are automated.
+**v0.7 closed-loop decision trace is implemented.** State / Vision / Fusion now show the exact observation→controller→policy force→plant dynamics→next-state transition used by each 20 ms Step, including separate external disturbance and next policy action. Compare remains a separate deterministic replay environment. State/vision/fusion/comparison/dynamics checks, exact transition browser assertions, desktop/mobile QA, screenshot artifacts, and Pages deployment are automated.
 
 ## License
 
