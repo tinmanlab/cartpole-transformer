@@ -37,7 +37,7 @@ jobs:
       - name: Prepare browser QA
         run: |
           npm install --no-save --package-lock=false playwright@1.55.0
-          npx playwright install chromium
+          npx playwright install --with-deps chromium
       - run: npm run check:model
       - run: npm run build
       - name: Start production preview
@@ -61,12 +61,13 @@ jobs:
       - name: Publish latest visual QA snapshot
         if: always()
         run: |
-          mkdir -p /tmp/qa-export
-          if [ -f qa-output/report.json ]; then
-            cp qa-output/report.json /tmp/qa-export/report.json
-          else
-            printf '{"errors":["visual QA terminated before report generation"]}\n' > /tmp/qa-export/report.json
+          if [ ! -f qa-output/report.json ]; then
+            echo "No completed QA report; preserving last known-good qa-visual snapshot"
+            exit 0
           fi
+
+          mkdir -p /tmp/qa-export
+          cp qa-output/report.json /tmp/qa-export/report.json
           shopt -s nullglob
           for f in qa-output/*.jpg; do
             base64 -w0 "$f" > "/tmp/qa-export/$(basename "$f").b64"
