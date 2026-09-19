@@ -319,6 +319,80 @@ async function runDesktop(browser) {
     await page.screenshot({path:path.join(outDir,'desktop-vision-detail-truth.jpg'),type:'jpeg',quality:84,fullPage:true});
   }
 
+  // Optional typed-token fusion mode becomes mandatory once its trained artifact is present.
+  const fusionButton=page.getByRole('button',{name:'Fusion'});
+  const fusionEnabled=await fusionButton.isEnabled().catch(()=>false);
+  report.interactions.fusionMode={available:fusionEnabled};
+
+  if(fusionEnabled){
+    const timeBeforeFusion=parseFloat((await page.locator('.time').innerText()).replace(' s',''));
+    await fusionButton.click();
+    await page.waitForTimeout(260);
+
+    const fusionModeAttr=await page.locator('main').getAttribute('data-observation-mode');
+    const fusionPipelineCount=await page.locator('.fusion-pipeline').count();
+    const fusionPairCount=await page.locator('.fusion-stage-observation .pair').count();
+    const fusionTokenCount=await page.locator('.fusion-stage-token .token').count();
+    const fusionAttentionCells=await page.locator('.fusion-stage-attention .cell').count();
+    const fusionScenarioButtons=await page.locator('.fusion-pipeline .scenario-bar button').count();
+    const fusionStateReadout=await page.locator('.state-readout').count();
+    const timeAfterFusion=parseFloat((await page.locator('.time').innerText()).replace(' s',''));
+
+    if(fusionModeAttr!=='fusion') pushError('fusion mode: main observation mode did not switch to fusion');
+    if(fusionPipelineCount!==1) pushError('fusion mode: pipeline missing');
+    if(fusionPairCount!==8) pushError('fusion mode: expected 8 aligned timestamp pairs, found '+fusionPairCount);
+    if(fusionTokenCount!==16) pushError('fusion mode: expected 16 typed tokens, found '+fusionTokenCount);
+    if(fusionAttentionCells!==256) pushError('fusion mode: expected 16x16 attention matrix, found '+fusionAttentionCells+' cells');
+    if(fusionScenarioButtons!==5) pushError('fusion mode: expected 5 degradation controls, found '+fusionScenarioButtons);
+    if(fusionStateReadout!==1) pushError('fusion mode: explicit state readout should be visible');
+    if(!(timeAfterFusion>=timeBeforeFusion)) pushError('fusion mode: mode switch reset or rewound the episode clock');
+
+    await page.screenshot({path:path.join(outDir,'desktop-fusion-overview.jpg'),type:'jpeg',quality:82,fullPage:true});
+
+    await page.getByRole('button',{name:'State missing'}).click();
+    await page.waitForTimeout(80);
+    const missingStateOff=await page.locator('.fusion-stage-observation .state-chip.off').count();
+    if(missingStateOff!==8) pushError('fusion mode: state-missing control did not disable 8 state observations');
+
+    await page.getByRole('button',{name:'Partial vision'}).click();
+    await page.waitForTimeout(80);
+    const partialVision=await page.locator('.fusion-stage-observation .vision-chip.partial').count();
+    if(partialVision!==8) pushError('fusion mode: partial-vision control did not mark 8 vision observations');
+
+    await page.getByRole('button',{name:'Vision missing'}).click();
+    await page.waitForTimeout(80);
+    const missingVisionOff=await page.locator('.fusion-stage-observation .vision-chip.off').count();
+    if(missingVisionOff!==8) pushError('fusion mode: vision-missing control did not disable 8 vision observations');
+
+    await page.getByRole('button',{name:'Noisy state'}).click();
+    await page.waitForTimeout(80);
+    const noisyActive=await page.getByRole('button',{name:'Noisy state'}).evaluate(el=>el.classList.contains('active'));
+    if(!noisyActive) pushError('fusion mode: noisy-state scenario did not activate');
+
+    await page.getByRole('button',{name:'Clean'}).click();
+    await page.waitForTimeout(80);
+
+    await page.locator('.fusion-stage-attention').click();
+    await page.waitForTimeout(160);
+    const fusionDetailCount=await page.locator('.fusion-detail-wide').count();
+    const fusionDetailCells=await page.locator('.fusion-detail-wide .attention-card .cell').count();
+    const fusionAblations=await page.locator('.fusion-detail-wide .ablation-grid > div').count();
+    const negativeResultText=await page.locator('.fusion-detail-wide .ablation').innerText().catch(()=>'');
+    if(fusionDetailCount!==1) pushError('fusion mode: detail drawer missing');
+    if(fusionDetailCells!==256) pushError('fusion mode: detail attention matrix is not 16x16');
+    if(fusionAblations!==7) pushError('fusion mode: expected 7 ablation results, found '+fusionAblations);
+    if(!negativeResultText.includes('Negative result retained')) pushError('fusion mode: noisy-state negative result is not explicitly retained');
+
+    report.interactions.fusionMode={
+      available:true,modeAttr:fusionModeAttr,pipelineCount:fusionPipelineCount,pairCount:fusionPairCount,
+      tokenCount:fusionTokenCount,attentionCells:fusionAttentionCells,scenarioButtons:fusionScenarioButtons,
+      stateReadoutCount:fusionStateReadout,sameEpisode:timeAfterFusion>=timeBeforeFusion,
+      missingStateOff,partialVision,missingVisionOff,noisyActive,
+      detailCount:fusionDetailCount,detailAttentionCells:fusionDetailCells,ablationCount:fusionAblations
+    };
+    await page.screenshot({path:path.join(outDir,'desktop-fusion-detail.jpg'),type:'jpeg',quality:84,fullPage:true});
+  }
+
   report.interactions.consoleErrors=consoleErrors;
   if(consoleErrors.length) pushError('browser console/page errors: '+consoleErrors.join(' | '));
   await page.close();
@@ -398,6 +472,42 @@ async function runMobile(browser) {
   } else {
     report.interactions.mobileVision={enabled:false};
     pushError('mobile vision: trained artifact exists but Vision button is disabled');
+  }
+
+  const mobileFusionButton=page.getByRole('button',{name:'Fusion'});
+  const mobileFusionEnabled=await mobileFusionButton.isEnabled().catch(()=>false);
+  if(mobileFusionEnabled){
+    await mobileFusionButton.click();
+    await page.waitForTimeout(220);
+
+    const mobileFusionPipeline=await page.locator('.fusion-pipeline').count();
+    const mobileFusionTokens=await page.locator('.fusion-stage-token .token').count();
+    const mobileFusionCells=await page.locator('.fusion-stage-attention .cell').count();
+    const mobileFusionSankeyDisplay=await page.locator('.fusion-pipeline .upstream-sankey').first().evaluate(el=>getComputedStyle(el).display).catch(()=>null);
+    const mobileFusionDoc=await page.evaluate(()=>({w:document.documentElement.scrollWidth,v:innerWidth}));
+
+    if(mobileFusionPipeline!==1) pushError('mobile fusion: pipeline missing');
+    if(mobileFusionTokens!==16) pushError('mobile fusion: expected 16 typed tokens, found '+mobileFusionTokens);
+    if(mobileFusionCells!==256) pushError('mobile fusion: expected 256 attention cells, found '+mobileFusionCells);
+    if(mobileFusionSankeyDisplay && mobileFusionSankeyDisplay!=='none') pushError('mobile fusion: Sankey must be hidden, display='+mobileFusionSankeyDisplay);
+    if(mobileFusionDoc.w>mobileFusionDoc.v+2) pushError('mobile fusion: overview causes page-level horizontal overflow');
+
+    await page.screenshot({path:path.join(outDir,'mobile-fusion-overview.jpg'),type:'jpeg',quality:80,fullPage:true});
+
+    await page.locator('.fusion-stage-attention').click();
+    await page.waitForTimeout(150);
+    const mobileFusionDetail=await page.locator('.fusion-detail-wide').count();
+    const mobileFusionDetailDoc=await page.evaluate(()=>({w:document.documentElement.scrollWidth,v:innerWidth}));
+    if(mobileFusionDetail!==1) pushError('mobile fusion: detail drawer missing');
+    if(mobileFusionDetailDoc.w>mobileFusionDetailDoc.v+2) pushError('mobile fusion: detail causes page-level horizontal overflow');
+
+    report.interactions.mobileFusion={
+      enabled:true,pipelineCount:mobileFusionPipeline,tokenCount:mobileFusionTokens,
+      attentionCells:mobileFusionCells,detailCount:mobileFusionDetail,sankeyDisplay:mobileFusionSankeyDisplay
+    };
+    await page.screenshot({path:path.join(outDir,'mobile-fusion-detail.jpg'),type:'jpeg',quality:80,fullPage:true});
+  } else {
+    report.interactions.mobileFusion={enabled:false};
   }
 
   await page.close();
