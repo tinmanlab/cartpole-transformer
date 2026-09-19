@@ -35,7 +35,7 @@ export function runAttention(history) {
   const v = tokens.map(t => [...t]);
 
   const raw = q.map((qi, i) =>
-    k.map((kj, j) => j > i ? -Infinity : dot(qi, kj) / Math.sqrt(qi.length) + 0.11 * j)
+    k.map((kj, j) => j > i ? -Infinity : dot(qi, kj) / Math.sqrt(qi.length) + 1.20 * j)
   );
   const weights = raw.map(row => {
     const finite = row.map(x => Number.isFinite(x) ? x : -1e9);
@@ -49,10 +49,10 @@ export function runAttention(history) {
   // An intentionally small, transparent attention-weighted state-feedback head.
   // Positive means push right; negative means push left.
   const actionScore =
-    0.35 * context[0] +
-    0.85 * context[1] +
-    8.2 * context[2] +
-    1.75 * context[3];
+    1.50 * context[0] +
+    0.50 * context[1] +
+    8.00 * context[2] +
+    3.00 * context[3];
 
   return { tokens, q, k, v, raw, weights, context, actionScore };
 }
