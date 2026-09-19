@@ -58,7 +58,7 @@
       <p>한 장에서는 위치와 각도는 보이지만, 어느 방향으로 움직이는지는 완전히 결정되지 않습니다.</p>
     </article>
 
-    <div class="arrow">→</div>
+    <div class="arrow" aria-hidden="true"></div>
 
     <article>
       <div class="step">B</div>
@@ -80,7 +80,7 @@
       {/if}
     </article>
 
-    <div class="arrow">→</div>
+    <div class="arrow" aria-hidden="true"></div>
 
     <article>
       <div class="step">C</div>
@@ -90,7 +90,7 @@
       <p>{patches.length} patch + {deltaPatches.length} Δpatch = {patches.length+deltaPatches.length}D를 learned Linear가 {token.length}D token으로 압축하고 time position을 더합니다.</p>
     </article>
 
-    <div class="arrow">→</div>
+    <div class="arrow" aria-hidden="true"></div>
 
     <article class="attention-article">
       <div class="step">D</div>
@@ -111,7 +111,7 @@
       </div>
     </article>
 
-    <div class="arrow">→</div>
+    <div class="arrow" aria-hidden="true"></div>
 
     <article class="inference-article">
       <div class="step">E</div>
@@ -146,8 +146,8 @@
 .vision-detail-wide{margin-top:10px;background:#fff;border:1px solid #e1e5ea;border-radius:16px;padding:18px 22px 22px;overflow:hidden}
 .detail-head{display:flex;justify-content:space-between;gap:20px;padding-bottom:14px;border-bottom:1px solid #edf0f3}.eyebrow{font-size:10px;letter-spacing:.08em;color:#7d6aaa}.detail-head h2{font-size:20px;margin:2px 0 5px}.detail-head p{font-size:12px;color:#667085;margin:0;line-height:1.5}.detail-head button{width:36px;height:36px;border:1px solid #dfe3e8;border-radius:9px;background:#fff;font-size:20px;color:#667085;cursor:pointer}
 .frame-history{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;padding:14px 0}.frame-history>button{border:0;background:transparent;padding:0;opacity:.58;cursor:pointer}.frame-history>button.active{opacity:1}
-.vision-flow{display:grid;grid-template-columns:1.1fr 28px 1.2fr 28px .9fr 28px 1.2fr 28px 1.2fr;gap:8px;align-items:stretch}.vision-flow article{position:relative;min-width:0;padding:14px;border:1px solid #e4e7ec;border-radius:10px;background:#fbfcfd;display:flex;flex-direction:column;align-items:center;gap:9px}.vision-flow h3{font-size:12px;margin:0;color:#4b5563}.vision-flow p{font-size:10px;line-height:1.45;color:#737d8b;margin:0;text-align:center}.step{position:absolute;top:8px;right:8px;width:22px;height:22px;line-height:22px;border-radius:50%;background:#293548;color:#fff;text-align:center;font-size:10px;font-weight:700}.arrow{display:flex;align-items:center;justify-content:center;color:#826db7;font-size:19px}
+.vision-flow{display:grid;grid-template-columns:1.1fr 28px 1.2fr 28px .9fr 28px 1.2fr 28px 1.2fr;gap:8px;align-items:stretch}.vision-flow article{position:relative;min-width:0;padding:14px;border:1px solid #e4e7ec;border-radius:10px;background:#fbfcfd;display:flex;flex-direction:column;align-items:center;gap:9px}.vision-flow h3{font-size:12px;margin:0;color:#4b5563}.vision-flow p{font-size:10px;line-height:1.45;color:#737d8b;margin:0;text-align:center}.step{position:absolute;top:8px;right:8px;width:22px;height:22px;line-height:22px;border-radius:50%;background:#293548;color:#fff;text-align:center;font-size:10px;font-weight:700}.arrow{display:flex;align-items:center;justify-content:center;color:#826db7;font-size:19px}.arrow::after{content:'→'}
 .token-large{position:relative;width:38px;height:132px;border:1px solid #dfe3e8;border-radius:5px;overflow:hidden}.vision-flow code{font:10px ui-monospace,SFMono-Regular,Menlo,monospace;color:#667085;word-break:break-all;text-align:center}.matrix{padding:6px;background:#fff;border:1px solid #e5e7eb;border-radius:8px}.weight-row{display:grid;grid-template-columns:repeat(4,1fr);gap:3px}.weight-row button{border:1px solid #e0e3e8;background:#fff;border-radius:5px;padding:5px;min-height:30px;display:flex;flex-direction:column;font-size:10px;color:#667085}.weight-row button.active{background:#ece7f7;border-color:#a895cf}.infer-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;width:100%}.infer-grid>div{padding:7px;border:1px solid #e3e6eb;border-radius:6px;background:#fff}.infer-grid span,.ablation span{font-size:10px;color:#7b8492;display:block}.infer-grid b,.ablation b{font:10px ui-monospace,SFMono-Regular,Menlo,monospace;color:#4b5563}.ablation{width:100%;padding:8px;border-radius:7px;background:#f3f0fa}.ablation h4{font-size:10px;margin:0 0 6px;color:#6b58a0}.ablation>div{display:grid;grid-template-columns:1fr auto 1fr auto;gap:4px;margin-top:4px}.truth-toggle{border:1px solid #dfe3e8;border-radius:6px;background:#fff;padding:6px 9px;min-height:30px;font-size:10px;color:#667085;cursor:pointer}.truth{display:grid;grid-template-columns:1fr 1fr;gap:4px;font:10px ui-monospace,SFMono-Regular,Menlo,monospace;color:#667085}
 .detail-patch-pair{display:flex;flex-direction:column;gap:10px;align-items:center}.detail-patch-pair>div{display:flex;flex-direction:column;align-items:center;gap:4px}.detail-patch-pair b{font-size:10px;color:#687386}.patch-read{font:10px ui-monospace,SFMono-Regular,Menlo,monospace;color:#667085}
-@media(max-width:980px){.vision-detail-wide{padding:14px;overflow:visible}.vision-flow{display:flex;flex-direction:column;gap:8px}.arrow{transform:none;height:24px;font-size:0;line-height:24px}.arrow::after{content:'↓';font-size:19px}.vision-flow article{width:100%}.detail-head h2{font-size:18px}}
+@media(max-width:980px){.vision-detail-wide{padding:14px;overflow:visible}.vision-flow{display:flex;flex-direction:column;gap:8px}.arrow{transform:none;height:24px;font-size:19px;line-height:24px}.arrow::after{content:'↓'}.vision-flow article{width:100%}.detail-head h2{font-size:18px}}
 </style>
