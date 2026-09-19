@@ -20,12 +20,14 @@ function geluTanh(x) {
   return 0.5 * x * (1 + Math.tanh(k * (x + 0.044715 * x * x * x)));
 }
 
-function softmax(row) {
+function softmaxDetails(row) {
   const finite = row.map(x => Number.isFinite(x) ? x : -1e9);
   const max = Math.max(...finite);
-  const exp = finite.map(x => Math.exp(x - max));
-  const sum = exp.reduce((a, b) => a + b, 0);
-  return exp.map(x => x / sum);
+  const shifted = finite.map(x => x - max);
+  const exp = shifted.map(x => Math.exp(x));
+  const denominator = exp.reduce((a, b) => a + b, 0);
+  const weights = exp.map(x => x / denominator);
+  return { max, shifted, exp, denominator, weights };
 }
 
 function normalize(rawTokens, scale) {
@@ -59,16 +61,23 @@ export function runLearnedAttention(history, model) {
   const v = norm1.map(x => matVec(w.v.weight, x, w.v.bias));
   const d = q[0].length;
 
-  const scores = q.map(qi =>
-    k.map(kj => qi.reduce((sum, x, j) => sum + x * kj[j], 0) / Math.sqrt(d))
+  const qkProducts = q.map(qi =>
+    k.map(kj => qi.map((x, j) => x * kj[j]))
+  );
+  const scores = qkProducts.map(row =>
+    row.map(products => products.reduce((sum, x) => sum + x, 0) / Math.sqrt(d))
   );
   const raw = scores.map((row, r) =>
     row.map((value, c) => c > r ? -Infinity : value)
   );
-  const weights = raw.map(softmax);
-  const perTokenContext = weights.map(row =>
+  const softmaxDetail = raw.map(softmaxDetails);
+  const weights = softmaxDetail.map(detail => detail.weights);
+  const weightedValueContributions = weights.map(row =>
+    row.map((weight, i) => v[i].map(value => weight * value))
+  );
+  const perTokenContext = weightedValueContributions.map(contributions =>
     Array.from({ length: d }, (_, dim) =>
-      v.reduce((sum, vi, i) => sum + row[i] * vi[dim], 0)
+      contributions.reduce((sum, vector) => sum + vector[dim], 0)
     )
   );
 
@@ -97,9 +106,15 @@ export function runLearnedAttention(history, model) {
     q,
     k,
     v,
+    qkProducts,
     scores,
     raw,
+    softmaxMax: softmaxDetail.map(detail => detail.max),
+    softmaxShifted: softmaxDetail.map(detail => detail.shifted),
+    softmaxExp: softmaxDetail.map(detail => detail.exp),
+    softmaxDenominators: softmaxDetail.map(detail => detail.denominator),
     weights,
+    weightedValueContributions,
     perTokenContext,
     context: perTokenContext[last],
     attended,
