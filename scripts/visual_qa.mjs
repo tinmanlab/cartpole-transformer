@@ -52,7 +52,7 @@ async function inspectView(page, name) {
       const r=p.getBoundingClientRect();
       return {i,length,rect:{x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom}};
     });
-    const detail = document.querySelector('.detail-panel');
+    const detail = document.querySelector('.transformer-detail-wide');
     const detailFonts = detail ? [...detail.querySelectorAll('b,span,small,p,code')].map(el=>parseFloat(getComputedStyle(el).fontSize)).filter(Number.isFinite) : [];
     return {
       viewport:{width:innerWidth,height:innerHeight},
@@ -61,7 +61,7 @@ async function inspectView(page, name) {
       sim:pick('.sim-card'),
       pipeline:pick('.pipeline-shell'),
       overview:pick('.overview'),
-      detail:pick('.detail-panel'),
+      detail:pick('.transformer-detail-wide'),
       stages,
       overlaps,
       paths,
@@ -76,11 +76,13 @@ async function inspectView(page, name) {
   report.views[name]=clean;
 
   if (data.document.scrollWidth > data.viewport.width + 2) pushWarning(name+': page-level horizontal overflow '+data.document.scrollWidth+' > '+data.viewport.width);
+  if (name === 'mobile-overview' && data.overview && data.overview.right > data.viewport.width + 2) pushError('mobile-overview: transformer overview escapes viewport');
   if (data.overlaps.length) pushWarning(name+': stage overlaps '+JSON.stringify(data.overlaps));
   if (data.paths.some(p=>!Number.isFinite(p.length)||p.length<8)) pushWarning(name+': zero/short Sankey path detected');
   if (data.detailMinFont !== null && data.detailMinFont < 9.5) pushError(name+': detail text too small, min '+data.detailMinFont+'px');
   if (name === 'desktop-overview' && data.paths.length > 10) pushError('desktop-overview: too many visible Sankey paths ('+data.paths.length+')');
-  if (name === 'desktop-attention' && data.detail && data.detail.height < 320) pushError('desktop-attention: detail panel too short ('+Math.round(data.detail.height)+'px)');
+  if (name === 'desktop-attention' && data.detail && data.detail.width < 1200) pushError('desktop-attention: full-width detail too narrow ('+Math.round(data.detail.width)+'px)');
+  if (name === 'desktop-attention' && data.detail && data.detail.height < 260) pushError('desktop-attention: detail panel too short ('+Math.round(data.detail.height)+'px)');
   if (name === 'desktop-attention' && data.overview) {
     for (const [sel,rect] of Object.entries(data.stages)) {
       if (!rect) continue;
@@ -139,13 +141,13 @@ async function runDesktop(browser) {
   for (const [name,sel,needle] of stageCases) {
     await page.locator(sel).click();
     await page.waitForTimeout(250);
-    const count=await page.locator('.detail-panel').count();
-    const txt=count?await page.locator('.detail-panel').innerText():'';
+    const count=await page.locator('.transformer-detail-wide').count();
+    const txt=count?await page.locator('.transformer-detail-wide').innerText():'';
     let liveChanged=null;
     if(count){
-      const fp0=await page.locator('.detail-panel').evaluate(el=>[...el.querySelectorAll('canvas')].map(c=>c.toDataURL()).join('|')+'#'+[...el.querySelectorAll('svg')].map(s=>s.innerHTML).join('|')+'#'+el.innerText);
+      const fp0=await page.locator('.transformer-detail-wide').evaluate(el=>[...el.querySelectorAll('canvas')].map(c=>c.toDataURL()).join('|')+'#'+[...el.querySelectorAll('svg')].map(s=>s.innerHTML).join('|')+'#'+el.innerText);
       await page.waitForTimeout(320);
-      const fp1=await page.locator('.detail-panel').evaluate(el=>[...el.querySelectorAll('canvas')].map(c=>c.toDataURL()).join('|')+'#'+[...el.querySelectorAll('svg')].map(s=>s.innerHTML).join('|')+'#'+el.innerText);
+      const fp1=await page.locator('.transformer-detail-wide').evaluate(el=>[...el.querySelectorAll('canvas')].map(c=>c.toDataURL()).join('|')+'#'+[...el.querySelectorAll('svg')].map(s=>s.innerHTML).join('|')+'#'+el.innerText);
       liveChanged=fp0!==fp1;
     }
     report.interactions.expansions[name]={detailCount:count,containsExpected:txt.includes(needle.split(' ')[0]),textLength:txt.length,liveChanged};
