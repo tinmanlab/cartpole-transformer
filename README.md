@@ -4,6 +4,12 @@ A beginner-first interactive lab for learning **Transformer attention by seeing 
 
 The project starts deliberately small: before using a trained Transformer, it makes every step of attention visible and editable.
 
+## Live demo
+
+**https://tinmanlab.github.io/cartpole-transformer/**
+
+The current v0.1 is a deliberately transparent toy-attention explainer, not a trained control policy.
+
 ## Why Cart-Pole?
 
 Text makes Q/K/V feel abstract. Cart-Pole gives each token a physical meaning:
@@ -72,7 +78,7 @@ This separation lets later state, image, video, and multimodal models reuse the 
 
 ## Status
 
-Repository bootstrap is complete. The first implementation target is **v0.1 state-only attention explainer**.
+**v0.1 state-only attention explainer is live on GitHub Pages.** The next implementation target is a tiny learned causal Transformer policy while preserving the same beginner-facing explainer.
 
 ## License
 
