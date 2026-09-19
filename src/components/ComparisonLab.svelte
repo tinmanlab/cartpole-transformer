@@ -199,7 +199,7 @@
   </div>
 
   <div class="replay-controls">
-    <button class="primary" type="button" on:click={toggle}>{running ? 'Pause' : finished && currentIndex===0 ? 'Replay' : 'Run'}</button>
+    <button class="primary" type="button" on:click={toggle}>{running ? 'Pause' : finished && currentIndex===trace.length-1 ? 'Replay' : 'Run'}</button>
     <button type="button" on:click={init}>Reset deterministic run</button>
     <button type="button" on:click={finishRun} disabled={finished}>Fast-forward to end</button>
     <button type="button" on:click={latest} disabled={currentIndex===trace.length-1}>Latest</button>
