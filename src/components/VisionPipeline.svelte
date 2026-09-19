@@ -17,6 +17,7 @@
   $: last = Math.max(0,n-1);
   $: selectedFrame = Math.min(Math.max(0,selectedFrame),last);
   $: patches = result.frameFeatures[selectedFrame] || [];
+  $: patchGridSize = Math.round(Math.sqrt(patches.length));
   $: token = result.tokens[selectedFrame] || [];
   $: inferredMotion = result.inferredMotion || [0,0];
   $: weightColor = d3.scaleSequential(d3.interpolatePurples)
@@ -71,9 +72,9 @@
     </button>
 
     <button class="stage vision-stage-patch" type="button" on:click={onOpenDetail}>
-      <div class="stage-head"><b>2</b><span>Patch features</span><small>4×4 average → 64D</small></div>
+      <div class="stage-head"><b>2</b><span>Patch features</span><small>2×2 average → 256D</small></div>
       <div class="patch-anchor patch-mini">
-        <VisionPatchGrid {patches} gridSize={8} cellSize={9}/>
+        <VisionPatchGrid {patches} gridSize={patchGridSize} patchSize={2} cellSize={patchGridSize > 8 ? 5 : 9}/>
       </div>
     </button>
 
