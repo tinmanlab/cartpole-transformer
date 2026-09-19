@@ -46,5 +46,5 @@
 
 <style>
 .vision-frame{display:inline-flex;flex-direction:column;align-items:center;gap:4px;padding:5px;border:1px solid #e2e5ea;border-radius:7px;background:#111827}
-.vision-frame.active{outline:2px solid #8b5cf6;outline-offset:2px}.label{font:9px ui-monospace,SFMono-Regular,Menlo,monospace;color:#cbd5e1}canvas{display:block;image-rendering:pixelated}
+.vision-frame.active{outline:2px solid #8b5cf6;outline-offset:2px}.label{font:10px ui-monospace,SFMono-Regular,Menlo,monospace;color:#cbd5e1}canvas{display:block;image-rendering:pixelated}
 </style>
