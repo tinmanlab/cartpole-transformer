@@ -23,12 +23,13 @@
 
   const bridgePathMap = {
     state: [{
-      from: '.sim-card .state-readout',
-      to: '.embedding-overview .token-column',
+      from: '.sim-card',
+      to: '.embedding-overview',
       type: 'stroke',
       gradientId: 'gray-blue',
-      opacity: .72,
-      curve: 72
+      opacity: .55,
+      curve: 28,
+      strokeWidth: 1.8
     }]
   };
   $: bridgeRedrawKey = modelState + '|' + selectedToken;
