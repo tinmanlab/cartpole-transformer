@@ -86,7 +86,7 @@ poloclub/transformer-explainer @ bfe50afba10b9b560b84143ee1107d977defa74f
     }],
     query: [{
       from: '.qkv-token.selected .q-slot',
-      to: '.attention-overview .matrix-target',
+      to: `.attention-overview .matrix-target .g-row-${selectedRow}`,
       type: 'stroke',
       gradientId: 'blue-purple',
       opacity: .85,
@@ -95,7 +95,7 @@ poloclub/transformer-explainer @ bfe50afba10b9b560b84143ee1107d977defa74f
     }],
     key: [{
       from: '.qkv-token.selected .k-slot',
-      to: '.attention-overview .matrix-target',
+      to: `.attention-overview .matrix-target .cell.row-${selectedRow}.col-${selectedCol}`,
       type: 'stroke',
       gradientId: 'blue-mix',
       opacity: .78,
@@ -112,7 +112,7 @@ poloclub/transformer-explainer @ bfe50afba10b9b560b84143ee1107d977defa74f
       strokeWidth: 1.8
     }],
     weightMix: [{
-      from: '.attention-overview .matrix-target',
+      from: `.attention-overview .matrix-target .cell.row-${selectedRow}.col-${selectedCol}`,
       to: '.attention-overview .context-target',
       type: 'stroke',
       gradientId: 'blue-purple',
@@ -320,17 +320,17 @@ poloclub/transformer-explainer @ bfe50afba10b9b560b84143ee1107d977defa74f
         />
       {:else if expandedStage === 'block'}
         <div class="block-detail">
-          <div class="block-step"><b>Attention context</b><div class="wide-vector"><UpstreamVectorCanvas data={contextSelected} colorScale="purple" active={true}/></div><small>Σ attention·V</small></div>
+          <div class="block-step"><b>Attention context</b><div class="wide-vector"><UpstreamVectorCanvas data={contextSelected} colorScale="purple" active={true}/></div><small>Σ attention·V</small><code>{contextSelected.slice(0,3).map(v=>v.toFixed(3)).join(' ')}</code></div>
           <span>→ Wₒ →</span>
-          <div class="block-step"><b>Attention out</b><div class="wide-vector"><UpstreamVectorCanvas data={attendedSelected} colorScale="purple" active={true}/></div></div>
+          <div class="block-step"><b>Attention out</b><div class="wide-vector"><UpstreamVectorCanvas data={attendedSelected} colorScale="purple" active={true}/></div><code>{attendedSelected.slice(0,3).map(v=>v.toFixed(3)).join(' ')}</code></div>
           <span>+ token →</span>
-          <div class="block-step"><b>Residual 1</b><div class="wide-vector"><UpstreamVectorCanvas data={residual1Selected} colorScale="blue" active={true}/></div></div>
+          <div class="block-step"><b>Residual 1</b><div class="wide-vector"><UpstreamVectorCanvas data={residual1Selected} colorScale="blue" active={true}/></div><code>{residual1Selected.slice(0,3).map(v=>v.toFixed(3)).join(' ')}</code></div>
           <span>→ LN →</span>
-          <div class="block-step"><b>Norm 2</b><div class="wide-vector"><UpstreamVectorCanvas data={norm2Selected} colorScale="gray" active={true}/></div></div>
+          <div class="block-step"><b>Norm 2</b><div class="wide-vector"><UpstreamVectorCanvas data={norm2Selected} colorScale="gray" active={true}/></div><code>{norm2Selected.slice(0,3).map(v=>v.toFixed(3)).join(' ')}</code></div>
           <span>→ Linear + GELU →</span>
-          <div class="block-step"><b>FFN 16D</b><div class="wide-vector ffn"><UpstreamVectorCanvas data={mlpUpSelected} colorScale="purple" active={true}/></div></div>
+          <div class="block-step"><b>FFN 16D</b><div class="wide-vector ffn"><UpstreamVectorCanvas data={mlpUpSelected} colorScale="purple" active={true}/></div><code>{mlpUpSelected.slice(0,3).map(v=>v.toFixed(3)).join(' ')}</code></div>
           <span>→ Linear → + →</span>
-          <div class="block-step"><b>Hidden 8D</b><div class="wide-vector final"><UpstreamVectorCanvas data={hiddenSelected} colorScale="blue" active={true}/></div></div>
+          <div class="block-step"><b>Hidden 8D</b><div class="wide-vector final"><UpstreamVectorCanvas data={hiddenSelected} colorScale="blue" active={true}/></div><code>{hiddenSelected.slice(0,3).map(v=>v.toFixed(3)).join(' ')}</code></div>
         </div>
       {:else if expandedStage === 'action'}
         <div class="action-detail">
@@ -354,12 +354,12 @@ poloclub/transformer-explainer @ bfe50afba10b9b560b84143ee1107d977defa74f
 .overview{position:relative;flex:1;display:grid;grid-template-columns:.82fr .92fr 1.45fr 1.18fr .62fr;gap:14px;align-items:center;padding:25px 4px 12px;min-height:390px;transition:opacity .2s}.pipeline-shell.has-detail .overview{flex:0 0 330px;min-height:330px}.overview.dimmed .stage:not(.expanded){opacity:.28}
 .stage{appearance:none;border:0;background:transparent;padding:0;position:relative;z-index:2;min-width:0;text-align:center;cursor:pointer;transition:opacity .18s,transform .18s;font:inherit}.stage:hover,.stage:focus-visible{transform:translateY(-2px)}.stage.expanded{opacity:1!important}.stage-head{display:grid;grid-template-columns:20px 1fr;column-gap:6px;align-items:center;margin-bottom:8px;text-align:left}.stage-head>b{grid-row:1/3;width:20px;height:20px;line-height:20px;border-radius:50%;background:#293548;color:#fff;font-size:9px;text-align:center}.stage-head>span{font-size:10px;font-weight:700;color:#4b5563}.stage-head>small{font-size:8px;color:#9299a5}
 .token-column{display:flex;flex-direction:column;gap:2px}.token-row,.qkv-row{height:29px;display:flex;align-items:center;justify-content:center;gap:4px;border-radius:5px;padding:1px 3px}.token-row.selected{background:#f1eefb}.time-label{width:20px;text-align:right;font:8px ui-monospace,SFMono-Regular,Menlo,monospace;color:#7b8492}.dim-label{font-size:7px;color:#a0a6b0}.vector{position:relative;width:19px;height:25px;border:1px solid #e0e3e8;border-radius:3px;overflow:hidden;background:white}.qkv-bundle{height:25px;display:grid;grid-template-columns:repeat(3,16px);gap:2px}.vector.mini{width:16px;height:25px}.qkv-labels{display:grid;grid-template-columns:repeat(3,16px);gap:2px;justify-content:center;margin:0 0 4px 24px;font-size:8px;font-weight:700}.q{color:#3971e8}.k{color:#d95757}.v{color:#34966a}
-.attention-core{display:grid;grid-template-columns:auto 36px;gap:7px;align-items:center;justify-content:center}.overview-matrix{display:flex;justify-content:center;padding:8px;border:1px solid #e5e7eb;background:#fbfbfd;border-radius:8px}.attention-mix{display:grid;grid-template-columns:auto 20px;grid-template-rows:1fr 1fr;gap:4px 3px;align-items:center;justify-content:center;font-size:9px;color:#7b8492}.attention-vector{width:20px;height:48px}.context-vector{outline:2px solid #ded7f2}.attention-read{display:flex;justify-content:center;align-items:center;gap:6px;margin-top:7px;font-size:8px;color:#7b8492}.attention-read strong{color:#7359b7;font-size:10px}
+.attention-core{display:grid;grid-template-columns:auto 36px;gap:7px;align-items:center;justify-content:center}.overview-matrix{display:flex;justify-content:center;padding:8px;border:1px solid #e5e7eb;background:#fbfbfd;border-radius:8px}.attention-mix{display:grid;grid-template-columns:8px 20px 8px 22px;gap:4px;align-items:center;justify-content:center;font-size:10px;color:#7b8492}.attention-vector{width:20px;height:48px}.context-vector{outline:2px solid #ded7f2}.attention-read{display:flex;justify-content:center;align-items:center;gap:6px;margin-top:7px;font-size:8px;color:#7b8492}.attention-read strong{color:#7359b7;font-size:10px}
 .block-chain{display:grid;grid-template-columns:1fr 9px 1fr 9px 1fr 9px 1fr;gap:3px;align-items:center}.block-chain>span{font-size:9px;color:#8f96a1}.block-chain>div{display:flex;flex-direction:column;align-items:center;gap:3px}.block-chain small{font-size:7px;color:#8b93a1}.block-chain .vector{height:60px;width:19px}
 .force-visual{font-size:44px;color:#8b5cf6;line-height:.85}.force-value{display:block;font:11px ui-monospace,SFMono-Regular,Menlo,monospace;color:#6d52aa;margin-top:7px}.action-overview>small{font-size:8px;color:#9299a5}
 .detail-panel{position:relative;z-index:4;flex:1;min-height:350px;border-top:1px solid #e3e7ed;background:#fcfcfe;padding:16px 18px 18px;border-radius:0 0 11px 11px;overflow-x:auto}.detail-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}.detail-head>div{display:flex;flex-direction:column;gap:4px}.detail-head b{font-size:14px}.detail-head span{font-size:11px;color:#687386;line-height:1.5;max-width:680px}.detail-head button{width:32px;height:32px;border:1px solid #dfe3e8;border-radius:8px;background:white;color:#667085;cursor:pointer;font-size:18px}
 .calc-line{display:flex;align-items:center;justify-content:center;gap:12px;min-width:760px}.calc-item{display:flex;flex-direction:column;align-items:center;gap:7px}.calc-item>b,.block-step>b{font-size:10px;color:#596273}.number-vector{display:flex;gap:4px}.number-vector span{min-width:42px;padding:7px 6px;border:1px solid #e2e5ea;border-radius:6px;background:white;font:10px ui-monospace,SFMono-Regular,Menlo,monospace}.number-vector small{display:block;font-size:9px;color:#9198a4}.wide-vector{position:relative;width:32px;height:92px;border:1px solid #dfe3e8;border-radius:4px;overflow:hidden;background:white}.wide-vector.final{outline:2px solid #dad3ee}.wide-vector.ffn{height:112px}.math-arrow{display:flex;flex-direction:column;align-items:center;color:#7d6bb2;font-size:18px}.math-arrow span{font-size:9px;color:#7d8593}.math-symbol{font-size:20px;color:#7d6bb2}.weight-peek{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:14px}.weight-peek>span{font-size:10px;color:#687386}
-.qkv-detail{display:grid;grid-template-columns:.8fr repeat(3,1fr);gap:14px;align-items:center;min-width:760px}.source-token{justify-self:center}.projection-card{border-left:1px solid #e3e6eb;padding-left:12px;display:grid;grid-template-columns:28px 1fr 30px;grid-template-rows:auto auto 1fr;gap:5px 8px;align-items:center}.projection-card>b{grid-row:1/3;font-size:20px}.projection-card>small{font-size:10px;color:#687386}.projection-card>span{font-size:9px;color:#7d8593}.projection-vector{position:relative;width:26px;height:82px;border:1px solid #dfe3e8;border-radius:4px;overflow:hidden;grid-row:1/4;grid-column:3}.block-detail{display:flex;align-items:center;justify-content:center;gap:11px;min-width:900px}.block-detail>span,.action-detail>span{font-size:10px;color:#7662ac;white-space:nowrap}.block-step{display:flex;flex-direction:column;align-items:center;gap:6px}.block-step>small{font-size:9px;color:#7d8593}.action-detail{display:flex;align-items:center;justify-content:center;gap:14px;min-width:680px}.action-result{padding:11px 14px;border-radius:8px;background:#f1eef9;color:#6c55a5;font-size:11px}.action-result b{font-size:15px}
+.qkv-detail{display:grid;grid-template-columns:.8fr repeat(3,1fr);gap:14px;align-items:center;min-width:760px}.source-token{justify-self:center}.projection-card{border-left:1px solid #e3e6eb;padding-left:12px;display:grid;grid-template-columns:28px 1fr 30px;grid-template-rows:auto auto 1fr;gap:5px 8px;align-items:center}.projection-card>b{grid-row:1/3;font-size:20px}.projection-card>small{font-size:10px;color:#687386}.projection-card>span{font-size:9px;color:#7d8593}.projection-vector{position:relative;width:26px;height:82px;border:1px solid #dfe3e8;border-radius:4px;overflow:hidden;grid-row:1/4;grid-column:3}.block-detail{display:flex;align-items:center;justify-content:center;gap:11px;min-width:900px}.block-detail>span,.action-detail>span{font-size:10px;color:#7662ac;white-space:nowrap}.block-step{display:flex;flex-direction:column;align-items:center;gap:6px}.block-step>small{font-size:9px;color:#7d8593}.block-step>code{font:9px ui-monospace,SFMono-Regular,Menlo,monospace;color:#697386;white-space:nowrap}.action-detail{display:flex;align-items:center;justify-content:center;gap:14px;min-width:680px}.action-result{padding:11px 14px;border-radius:8px;background:#f1eef9;color:#6c55a5;font-size:11px}.action-result b{font-size:15px}
 @media(max-width:1220px){.overview{gap:9px;grid-template-columns:.78fr .9fr 1.4fr 1.13fr .6fr}.block-chain{gap:1px}}
 @media(max-width:980px){.pipeline-shell{overflow-x:auto}.overview{min-width:800px}.detail-panel{min-width:800px}}
 </style>
