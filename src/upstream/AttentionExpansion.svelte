@@ -131,5 +131,5 @@ MIT License, Copyright (c) 2022 Polo Club of Data Science
 .calc p{margin:0;max-width:190px;font-size:10px;line-height:1.45;color:#687386;text-align:center}
 .arrow-svg{width:44px;height:30px;overflow:visible}
 .calc-arrow{fill:none;stroke:#8b5cf6;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-@media(max-width:850px){.attention-expansion{min-width:720px}}
+@media(max-width:850px){.attention-expansion{display:flex;flex-direction:column;min-width:0;gap:10px}.calc{width:100%}.arrow-svg{transform:rotate(90deg);width:32px;height:32px;align-self:center}.calc-title{max-width:240px}.calc p{max-width:260px}}
 </style>
