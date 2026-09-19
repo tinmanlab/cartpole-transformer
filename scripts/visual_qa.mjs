@@ -326,7 +326,7 @@ async function runDesktop(browser) {
 
   if(!fusionEnabled) pushError('fusion mode: trained artifact exists but Fusion button is disabled');
   if(fusionEnabled){
-    const timeBeforeFusion=parseFloat((await page.locator('.time').innerText()).replace(' s',''));
+    const timeBeforeFusion=parseFloat((await page.locator('.sim-card .time').innerText()).replace(' s',''));
     await fusionButton.click();
     await page.waitForTimeout(260);
 
@@ -337,7 +337,7 @@ async function runDesktop(browser) {
     const fusionAttentionCells=await page.locator('.fusion-stage-attention .cell').count();
     const fusionScenarioButtons=await page.locator('.fusion-pipeline .scenario-bar button').count();
     const fusionStateReadout=await page.locator('.state-readout').count();
-    const timeAfterFusion=parseFloat((await page.locator('.time').innerText()).replace(' s',''));
+    const timeAfterFusion=parseFloat((await page.locator('.sim-card .time').innerText()).replace(' s',''));
 
     if(fusionModeAttr!=='fusion') pushError('fusion mode: main observation mode did not switch to fusion');
     if(fusionPipelineCount!==1) pushError('fusion mode: pipeline missing');
