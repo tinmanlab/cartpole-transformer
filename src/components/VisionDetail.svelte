@@ -12,6 +12,7 @@
   export let groundTruthState = null;
   export let onSelectFrame = () => {};
   export let onClose = () => {};
+  export let frameIntervalMs = 60;
 
   let showGroundTruth = false;
   let selectedPatch = null;
@@ -27,7 +28,7 @@
   $: repeated=repeatedResult?.inferredState || [0,0,0,0];
   $: weightColor=d3.scaleSequential(d3.interpolatePurples).domain([0,Math.max(.001,d3.max(result.weights.flat()) || 1)]);
 
-  function label(i){return i===last?'t':'t−'+(last-i);}
+  function label(i){return i===last?'t':'−'+Math.round((last-i)*frameIntervalMs)+'ms';}
 </script>
 
 <section class="vision-detail-wide">
