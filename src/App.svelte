@@ -77,6 +77,16 @@
   let status = 'balancing';
   let raf = 0;
 
+  $: syncTick = Math.round(elapsed / PHYSICS.tau);
+  $: syncStateVector = stateArray(state);
+  $: syncStateToken = result?.rawTokens?.[result.rawTokens.length - 1] || [];
+  $: syncVisionState = fusionStateHistory?.[fusionStateHistory.length - 1] || [];
+  $: activeActionScore = mode === 'fusion'
+    ? fusionResult?.actionScore
+    : mode === 'vision'
+      ? visionResult?.actionScore
+      : result?.actionScore;
+
   function inferState(sequence) {
     return learnedModel ? runLearnedAttention(sequence, learnedModel) : runAttention(sequence);
   }
@@ -125,6 +135,50 @@
     return forceFromScore(result.actionScore);
   }
 
+  function refreshCurrentInference(updateForce = mode !== 'compare') {
+    result = inferState(history);
+    refreshVision();
+    if (updateForce) controllerForce = activeForce();
+  }
+
+  function advanceOneTick() {
+    if (mode === 'compare' || status === 'fell') return false;
+
+    // controllerForce belongs to the currently displayed snapshot and is the
+    // action applied on this transition.
+    state = stepCartPole(state, controllerForce, PHYSICS.tau, disturbance);
+    const nextStateArray = stateArray(state);
+    history = [...history.slice(1), nextStateArray];
+
+    const observation = visionObservationFromState(nextStateArray);
+    visionBuffer = [
+      ...visionBuffer.slice(1),
+      {
+        frame:[...observation.frame],
+        patches:[...observation.patches],
+        state:[...nextStateArray]
+      }
+    ];
+
+    elapsed += PHYSICS.tau;
+
+    // Recompute every explainer/model intermediate from the new current state
+    // before the browser can render the next snapshot.
+    refreshCurrentInference(true);
+
+    if (terminal(state)) {
+      status = 'fell';
+      running = false;
+      disturbance = 0;
+    }
+    return true;
+  }
+
+  function stepOnce() {
+    if (running || mode === 'compare' || status === 'fell') return;
+    advanceOneTick();
+  }
+
   function setMode(next) {
     if (next === 'vision' && visionModelState !== 'learned') return;
     if (next === 'fusion' && fusionModelState !== 'learned') return;
@@ -141,9 +195,7 @@
     selectedVisionFrame = VISION_SEQUENCE_LENGTH - 1;
     selectedFusionToken = VISION_SEQUENCE_LENGTH * 2 - 1;
 
-    result = inferState(history);
-    refreshVision();
-    if (next !== 'compare') controllerForce = activeForce();
+    refreshCurrentInference(next !== 'compare');
   }
 
   function setFusionScenario(next) {
@@ -186,17 +238,18 @@
     visionDetailOpen = false;
     fusionDetailOpen = false;
 
-    result = inferState(history);
-    refreshVision();
-    controllerForce = activeForce();
-
     disturbance = 0;
     elapsed = 0;
     status = 'balancing';
     running = true;
+
+    refreshCurrentInference(mode !== 'compare');
   }
 
-  function toggle(){ running = !running; }
+  function toggle(){
+    if (mode === 'compare' || status === 'fell') return;
+    running = !running;
+  }
   function push(v){ disturbance = v; }
   function pushEnd(){ disturbance = 0; }
 
@@ -208,8 +261,7 @@
         if (cancelled) return;
         learnedModel = model;
         modelState = 'learned';
-        result = inferState(history);
-        if (mode === 'state') controllerForce = activeForce();
+        refreshCurrentInference(mode !== 'compare');
       })
       .catch(() => {
         if (!cancelled) modelState = 'toy-fallback';
@@ -220,8 +272,7 @@
         if (cancelled) return;
         visionModel = model;
         visionModelState = 'learned';
-        refreshVision();
-        if (mode === 'vision') controllerForce = activeForce();
+        refreshCurrentInference(mode !== 'compare');
       })
       .catch(() => {
         if (!cancelled) visionModelState = 'unavailable';
@@ -232,8 +283,7 @@
         if (cancelled) return;
         fusionModel = model;
         fusionModelState = 'learned';
-        refreshFusion();
-        if (mode === 'fusion') controllerForce = activeForce();
+        refreshCurrentInference(mode !== 'compare');
       })
       .catch(() => {
         if (!cancelled) fusionModelState = 'unavailable';
@@ -247,33 +297,9 @@
       if (running && mode !== 'compare') {
         accumulator += delta;
         while (accumulator >= PHYSICS.tau) {
-          result = inferState(history);
-          refreshVision();
-          controllerForce = activeForce();
-
-          state = stepCartPole(state, controllerForce, PHYSICS.tau, disturbance);
-          const nextStateArray = stateArray(state);
-          history = [...history.slice(1), nextStateArray];
-
-          const observation = visionObservationFromState(nextStateArray);
-          visionBuffer = [
-            ...visionBuffer.slice(1),
-            {
-              frame:[...observation.frame],
-              patches:[...observation.patches],
-              state:[...nextStateArray]
-            }
-          ];
-
-          elapsed += PHYSICS.tau;
+          const advanced = advanceOneTick();
           accumulator -= PHYSICS.tau;
-
-          if (terminal(state)) {
-            status = 'fell';
-            running = false;
-            disturbance = 0;
-            break;
-          }
+          if (!advanced || status === 'fell') break;
         }
       }
 
@@ -293,7 +319,15 @@
   <meta name="description" content="State, pixels-only and typed-token state+vision Transformer learning modes for live Cart-Pole."/>
 </svelte:head>
 
-<main data-observation-mode={mode}>
+<main
+  data-observation-mode={mode}
+  data-sync-tick={syncTick}
+  data-sim-state={syncStateVector.join(',')}
+  data-state-token={syncStateToken.join(',')}
+  data-vision-sample-state={syncVisionState.join(',')}
+  data-active-action-score={activeActionScore ?? ''}
+  data-controller-force={controllerForce}
+>
   <header class="topbar">
     <strong>Cart-Pole Transformer</strong>
     <div class="mode-switch" role="group" aria-label="observation mode">
@@ -328,6 +362,7 @@
       {status}
       showStateOverlay={mode!=='vision'}
       onToggle={toggle}
+      onStep={stepOnce}
       onReset={reset}
       onPush={push}
       onPushEnd={pushEnd}
