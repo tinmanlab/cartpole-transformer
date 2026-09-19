@@ -197,14 +197,20 @@ async function runMobile(browser) {
   await page.close();
 }
 
-const launchOptions = { headless:true };\nif (process.env.QA_CHROME) launchOptions.executablePath = process.env.QA_CHROME;\nconst browser = await chromium.launch(launchOptions);
+let browser;
 try {
+  browser = await chromium.launch({ headless:true });
   await runDesktop(browser);
   await runMobile(browser);
+} catch (error) {
+  pushError('unhandled visual QA exception: ' + (error?.stack || String(error)));
 } finally {
-  await browser.close();
+  if (browser) {
+    try { await browser.close(); } catch (error) {
+      pushWarning('browser close failed: ' + String(error));
+    }
+  }
+  fs.writeFileSync(path.join(outDir,'report.json'),JSON.stringify(report,null,2));
+  console.log(JSON.stringify(report,null,2));
 }
-
-fs.writeFileSync(path.join(outDir,'report.json'),JSON.stringify(report,null,2));
-console.log(JSON.stringify(report,null,2));
 if (report.errors.length) process.exitCode=1;
