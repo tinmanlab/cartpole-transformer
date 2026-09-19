@@ -7,6 +7,7 @@
   export let running = true;
   export let elapsed = 0;
   export let status = 'balancing';
+  export let showStateOverlay = true;
   export let onToggle = () => {};
   export let onReset = () => {};
   export let onPush = () => {};
@@ -71,22 +72,24 @@
     <text x="653" y="326" text-anchor="middle">+2.4 m</text>
     <line x1="360" y1="58" x2="360" y2="304" stroke="#e7eaf0" stroke-width="1" stroke-dasharray="3 5"/>
 
-    <g class="history-poses">
-      {#each ghosts as g,i}
-        {#if i < last}
-          <g class:selected-ghost={i===selectedToken} opacity={i===selectedToken ? .82 : .05 + .035*i}>
-            <rect x={g.cx-42} y="240" width="84" height="24" rx="5" fill="none" stroke={i===selectedToken ? '#6574c9' : '#7d8795'} stroke-width={i===selectedToken ? 2.4 : 1.1}/>
-            <line x1={g.cx} y1="240" x2={g.tipX} y2={g.tipY+16} stroke={i===selectedToken ? '#6574c9' : '#7d8795'} stroke-width={i===selectedToken ? 5 : 3} stroke-linecap="round"/>
-          </g>
-        {/if}
-      {/each}
-    </g>
-
-    {#if selectedToken < last}
-      <g class="selected-history-label">
-        <circle cx={selectedPose.tipX} cy={selectedPose.tipY+16} r="5" fill="#6574c9"/>
-        <text x={selectedPose.tipX+9} y={selectedPose.tipY+12}>t−{last-selectedToken} · θ {selectedDeg.toFixed(1)}°</text>
+    {#if showStateOverlay}
+      <g class="history-poses">
+        {#each ghosts as g,i}
+          {#if i < last}
+            <g class:selected-ghost={i===selectedToken} opacity={i===selectedToken ? .82 : .05 + .035*i}>
+              <rect x={g.cx-42} y="240" width="84" height="24" rx="5" fill="none" stroke={i===selectedToken ? '#6574c9' : '#7d8795'} stroke-width={i===selectedToken ? 2.4 : 1.1}/>
+              <line x1={g.cx} y1="240" x2={g.tipX} y2={g.tipY+16} stroke={i===selectedToken ? '#6574c9' : '#7d8795'} stroke-width={i===selectedToken ? 5 : 3} stroke-linecap="round"/>
+            </g>
+          {/if}
+        {/each}
       </g>
+
+      {#if selectedToken < last}
+        <g class="selected-history-label">
+          <circle cx={selectedPose.tipX} cy={selectedPose.tipY+16} r="5" fill="#6574c9"/>
+          <text x={selectedPose.tipX+9} y={selectedPose.tipY+12}>t−{last-selectedToken} · θ {selectedDeg.toFixed(1)}°</text>
+        </g>
+      {/if}
     {/if}
 
     <g class:current-selected={selectedToken===last} class="current-pose">
@@ -102,10 +105,12 @@
       <circle cx={current.cx} cy="227" r="4" fill="#d7dce3"/>
     </g>
 
-    <path d={arcPath(state.theta)} fill="none" stroke="#9aa3b1" stroke-width="1.5" stroke-dasharray="3 3"/>
-    <text x={current.cx + (state.theta>=0?46:-64)} y="180">θ {deg.toFixed(1)}°</text>
+    {#if showStateOverlay}
+      <path d={arcPath(state.theta)} fill="none" stroke="#9aa3b1" stroke-width="1.5" stroke-dasharray="3 3"/>
+      <text x={current.cx + (state.theta>=0?46:-64)} y="180">θ {deg.toFixed(1)}°</text>
+    {/if}
 
-    {#if Math.abs(state.xDot) > .02}
+    {#if showStateOverlay && Math.abs(state.xDot) > .02}
       <line
         x1={current.cx}
         y1="211"
@@ -145,13 +150,17 @@
     {/if}
   </svg>
 
-  <div class="state-readout">
-    <span><b>x</b>{state.x.toFixed(2)} m</span>
-    <span><b>ẋ</b>{state.xDot.toFixed(2)} m/s</span>
-    <span><b>θ</b>{deg.toFixed(1)}°</span>
-    <span><b>θ̇</b>{(state.thetaDot*180/Math.PI).toFixed(1)}°/s</span>
-    <span class="selected-time"><b>selected</b>{selectedToken===last?'t':'t−'+(last-selectedToken)}</span>
-  </div>
+  {#if showStateOverlay}
+    <div class="state-readout">
+      <span><b>x</b>{state.x.toFixed(2)} m</span>
+      <span><b>ẋ</b>{state.xDot.toFixed(2)} m/s</span>
+      <span><b>θ</b>{deg.toFixed(1)}°</span>
+      <span><b>θ̇</b>{(state.thetaDot*180/Math.PI).toFixed(1)}°/s</span>
+      <span class="selected-time"><b>selected</b>{selectedToken===last?'t':'t−'+(last-selectedToken)}</span>
+    </div>
+  {:else}
+    <div class="vision-hidden-state">VISION-ONLY · state numbers hidden · controller sees rendered frames only</div>
+  {/if}
 
   <div class="sim-controls">
     <button class="primary" on:click={onToggle}>{running ? 'Pause' : 'Run'}</button>
