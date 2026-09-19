@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import CartPoleView from './components/CartPoleView.svelte';
   import Pipeline from './components/Pipeline.svelte';
+  import TransformerDetail from './components/TransformerDetail.svelte';
   import UpstreamSankeyFlow from './upstream/SankeyFlow.svelte';
   import { resetState, stepCartPole, terminal, stateArray, PHYSICS } from './lib/physics.js';
   import { runAttention, forceFromScore } from './lib/attention.js';
@@ -11,6 +12,9 @@
   let state = resetState();
   let history = Array.from({length:N}, () => stateArray(state));
   let selectedToken = N - 1;
+  let selectedRow = N - 1;
+  let selectedCol = N - 1;
+  let expandedStage = null;
   let learnedModel = null;
   let modelState = 'loading';
   let result = runAttention(history);
@@ -23,25 +27,40 @@
 
   const bridgePathMap = {
     state: [{
-      from: '.sim-card',
-      to: '.embedding-overview',
+      from: '.sim-card .state-readout',
+      to: '.embedding-overview .token-column',
       type: 'stroke',
       gradientId: 'gray-blue',
-      opacity: .55,
-      curve: 28,
-      strokeWidth: 1.8
+      opacity: .5,
+      curve: 24,
+      strokeWidth: 1.4
     }]
   };
-  $: bridgeRedrawKey = modelState + '|' + selectedToken;
+  $: bridgeRedrawKey = [modelState,selectedToken,expandedStage].join('|');
 
   function infer(sequence) {
     return learnedModel ? runLearnedAttention(sequence, learnedModel) : runAttention(sequence);
+  }
+
+  function selectToken(i) {
+    selectedToken = i;
+    selectedRow = i;
+    selectedCol = i;
+  }
+
+  function selectAttention(r,c) {
+    selectedRow = r;
+    selectedCol = c;
+    selectedToken = c;
   }
 
   function reset() {
     state = resetState((Math.random()-.5)*.09);
     history = Array.from({length:N}, () => stateArray(state));
     selectedToken = N - 1;
+    selectedRow = N - 1;
+    selectedCol = N - 1;
+    expandedStage = null;
     result = infer(history);
     controllerForce = forceFromScore(result.actionScore);
     disturbance = 0;
@@ -126,13 +145,29 @@
       onPushEnd={pushEnd}
     />
     <Pipeline
-      {history}
       {result}
       {controllerForce}
       {selectedToken}
-      onSelectToken={(i)=>selectedToken=i}
+      {selectedRow}
+      {selectedCol}
+      {expandedStage}
+      onSelectToken={selectToken}
+      onSelectAttention={selectAttention}
+      onExpandedStageChange={(stage)=>expandedStage=stage}
     />
   </section>
+
+  <TransformerDetail
+    {result}
+    {controllerForce}
+    {selectedToken}
+    {selectedRow}
+    {selectedCol}
+    {expandedStage}
+    onClose={()=>expandedStage=null}
+    onSelectToken={selectToken}
+    onSelectAttention={selectAttention}
+  />
 
   <section class="explain">
     <div class="explain-head">
@@ -142,10 +177,10 @@
     <div class="steps">
       <article><b>1. Embedding</b><p><code>[x,ẋ,θ,θ̇]</code> → normalize → learned 4→8 projection + position.</p></article>
       <article><b>2. Q / K / V</b><p>LayerNorm 뒤 같은 token을 세 learned projection으로 나눕니다.</p></article>
-      <article><b>3. Attention</b><p><code>QKᵀ/√d → causal mask → softmax</code>. matrix를 가리키면 해당 time pair가 연결됩니다.</p></article>
+      <article><b>3. Attention</b><p><code>QKᵀ/√d → causal mask → softmax</code>. matrix cell을 가리키면 같은 시간쌍이 연결됩니다.</p></article>
       <article><b>4. Residual + MLP</b><p>Attention output을 더하고 LN→Linear→GELU→Linear→residual을 통과합니다.</p></article>
       <article><b>5. Action</b><p>마지막 hidden token만 읽어 <code>tanh(score)×10 N</code> force를 만듭니다.</p></article>
-      <article><b>실시간 연결</b><p>오른쪽 time token을 가리키면 왼쪽의 같은 과거 pose가 강조됩니다.</p></article>
+      <article><b>실시간 연결</b><p>time token 선택은 왼쪽 ghost pose와 전체 상세 계산에 동일하게 적용됩니다.</p></article>
     </div>
   </section>
 
