@@ -23,6 +23,7 @@
   $: patches=result.frameFeatures[selectedFrame] || [];
   $: gridSize=Math.round(Math.sqrt(patches.length));
   $: token=result.tokens[selectedFrame] || [];
+  $: deltaPatches=result.deltaFeatures?.[selectedFrame] || patches.map(()=>0);
   $: latestWeights=result.weights[last] || [];
   $: inferred=result.inferredState || [0,0,0,0];
   $: repeated=repeatedResult?.inferredState || [0,0,0,0];
@@ -62,9 +63,18 @@
     <article>
       <div class="step">B</div>
       <h3>{gridSize}×{gridSize} patch features</h3>
-      <VisionPatchGrid {patches} {gridSize} patchSize={2} cellSize={7}
-        selected={selectedPatch}
-        onSelect={(row,col,value)=>selectedPatch={row,col,value}}/>
+      <div class="detail-patch-pair">
+        <div>
+          <b>frame patches</b>
+          <VisionPatchGrid {patches} {gridSize} patchSize={2} cellSize={6}
+            selected={selectedPatch}
+            onSelect={(row,col,value)=>selectedPatch={row,col,value}}/>
+        </div>
+        <div>
+          <b>Δ from previous sampled frame</b>
+          <VisionPatchGrid patches={deltaPatches} {gridSize} patchSize={2} cellSize={6} mode="delta"/>
+        </div>
+      </div>
       {#if selectedPatch}
         <div class="patch-read">patch [{selectedPatch.row},{selectedPatch.col}] mean = <b>{selectedPatch.value.toFixed(3)}</b></div>
       {/if}
@@ -77,7 +87,7 @@
       <h3>Learned frame token</h3>
       <div class="token-large"><UpstreamVectorCanvas data={token} colorScale="blue" active={true}/></div>
       <code>{token.slice(0,8).map(v=>v.toFixed(3)).join(' ')}</code>
-      <p>{patches.length} patch values를 learned Linear가 {token.length}D token으로 압축하고 time position을 더합니다.</p>
+      <p>{patches.length} patch + {deltaPatches.length} Δpatch = {patches.length+deltaPatches.length}D를 learned Linear가 {token.length}D token으로 압축하고 time position을 더합니다.</p>
     </article>
 
     <div class="arrow">→</div>
@@ -138,6 +148,6 @@
 .frame-history{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;padding:14px 0}.frame-history>button{border:0;background:transparent;padding:0;opacity:.58;cursor:pointer}.frame-history>button.active{opacity:1}
 .vision-flow{display:grid;grid-template-columns:1.1fr 28px 1.2fr 28px .9fr 28px 1.2fr 28px 1.2fr;gap:8px;align-items:stretch}.vision-flow article{position:relative;min-width:0;padding:14px;border:1px solid #e4e7ec;border-radius:10px;background:#fbfcfd;display:flex;flex-direction:column;align-items:center;gap:9px}.vision-flow h3{font-size:12px;margin:0;color:#4b5563}.vision-flow p{font-size:10px;line-height:1.45;color:#737d8b;margin:0;text-align:center}.step{position:absolute;top:8px;right:8px;width:20px;height:20px;line-height:20px;border-radius:50%;background:#293548;color:#fff;text-align:center;font-size:9px;font-weight:700}.arrow{display:flex;align-items:center;justify-content:center;color:#826db7;font-size:19px}
 .token-large{position:relative;width:38px;height:132px;border:1px solid #dfe3e8;border-radius:5px;overflow:hidden}.vision-flow code{font:10px ui-monospace,SFMono-Regular,Menlo,monospace;color:#667085;word-break:break-all;text-align:center}.matrix{padding:6px;background:#fff;border:1px solid #e5e7eb;border-radius:8px}.weight-row{display:grid;grid-template-columns:repeat(4,1fr);gap:3px}.weight-row button{border:1px solid #e0e3e8;background:#fff;border-radius:5px;padding:4px;display:flex;flex-direction:column;font-size:8px;color:#667085}.weight-row button.active{background:#ece7f7;border-color:#a895cf}.infer-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;width:100%}.infer-grid>div{padding:7px;border:1px solid #e3e6eb;border-radius:6px;background:#fff}.infer-grid span,.ablation span{font-size:8px;color:#858e9b;display:block}.infer-grid b,.ablation b{font:10px ui-monospace,SFMono-Regular,Menlo,monospace;color:#4b5563}.ablation{width:100%;padding:8px;border-radius:7px;background:#f3f0fa}.ablation h4{font-size:9px;margin:0 0 6px;color:#6b58a0}.ablation>div{display:grid;grid-template-columns:1fr auto 1fr auto;gap:4px;margin-top:4px}.truth-toggle{border:1px solid #dfe3e8;border-radius:6px;background:#fff;padding:6px 8px;font-size:9px;color:#667085;cursor:pointer}.truth{display:grid;grid-template-columns:1fr 1fr;gap:3px;font:9px ui-monospace,SFMono-Regular,Menlo,monospace;color:#667085}
-.patch-read{font:9px ui-monospace,SFMono-Regular,Menlo,monospace;color:#667085}
+.detail-patch-pair{display:flex;gap:10px;align-items:flex-start}.detail-patch-pair>div{display:flex;flex-direction:column;align-items:center;gap:4px}.detail-patch-pair b{font-size:8px;color:#687386}.patch-read{font:9px ui-monospace,SFMono-Regular,Menlo,monospace;color:#667085}
 @media(max-width:980px){.vision-detail-wide{padding:14px}.vision-flow{display:flex;flex-direction:column}.arrow{transform:rotate(90deg);height:24px}.vision-flow article{width:100%}.detail-head h2{font-size:18px}}
 </style>
