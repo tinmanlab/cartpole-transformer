@@ -6,6 +6,8 @@
   export let kind = 'state';
   export let active = false;
   export let label = '';
+  export let height = 74;
+  export let width = 26;
 
   let canvas;
   let ro;
@@ -52,7 +54,7 @@
   $: data, active, kind, canvas && draw();
 </script>
 
-<div class:active class="strip-wrap" title={label}>
+<div class:active class="strip-wrap" title={label} style={"height:"+height+"px;width:"+width+"px"}>
   <canvas bind:this={canvas}></canvas>
   {#if label}<span>{label}</span>{/if}
 </div>

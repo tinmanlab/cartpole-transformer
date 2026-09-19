@@ -12,7 +12,7 @@
   $: scale = mode === 'weights'
     ? d3.scaleSequential(d3.interpolatePurples).domain([0, Math.max(.001, d3.max(finite) || 1)])
     : d3.scaleLinear().domain([extent[0] || -1, 0, extent[1] || 1]).range(['#eef2ff','#ffffff','#7b61c9']).clamp(true);
-  const size = 25, gap = 3, pad = 26;
+  const size = 19, gap = 2, pad = 24;
   $: width = pad + n * (size + gap);
   $: height = pad + n * (size + gap);
 </script>
