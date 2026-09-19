@@ -3,7 +3,7 @@ name: Visual QA
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, 'fix/**']
     paths:
       - "src/**"
       - "public/model/**"
