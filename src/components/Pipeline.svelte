@@ -40,7 +40,6 @@ Detailed calculations live in TransformerDetail.svelte.
 
   function hoverCell(event,d) {
     onSelectAttention(d.rowIndex,d.colIndex);
-    onSelectToken(d.colIndex);
   }
 
   $: pathMap = {
