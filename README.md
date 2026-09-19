@@ -8,7 +8,7 @@ The project starts deliberately small and now includes both a transparent fallba
 
 **https://tinmanlab.github.io/cartpole-transformer/**
 
-The live page now prefers the learned tiny Transformer artifact and falls back to the transparent toy controller only if the learned artifact cannot be loaded.
+The live page provides two observation modes: **State** uses the learned state Transformer, while **Vision** hides explicit simulator state from the controller and runs a trained pixels-only temporal Transformer. State mode falls back to the transparent toy controller only if its learned artifact cannot be loaded.
 
 ## Why Cart-Pole?
 
@@ -36,8 +36,14 @@ A deterministic 1-block, 1-head causal Transformer (sequence 8, d_model 8, FFN 1
 
 Closed-loop evaluation: 80 randomized episodes with occasional ±4 N disturbance pulses, 500-step horizon. Both the learned Transformer and the simpler linear baseline achieved 500/500 mean, median and minimum steps (100% completion). See [docs/learned-model.md](docs/learned-model.md).
 
-### 0.3 — Vision-only
-Treat rendered Cart-Pole frames as visual tokens. Show how an image/frame becomes patches/features and how temporal attention uses several frames to infer motion.
+### 0.3 — Vision-only — complete
+The controller can switch to a genuinely pixels-only path:
+
+`32×32 frame → 16×16 patch means + Δpatch → 512D visual input → learned 24D frame token → 8-frame causal temporal attention → inferred [x, x_dot, theta, theta_dot] → transparent force law`.
+
+Eight frames are sampled 60 ms apart, spanning 0.42 s. Simulator state is withheld from the controller and is available only behind an explicit ground-truth teaching toggle.
+
+Validation shows why temporal context matters: repeating the latest frame instead of using real history increases x_dot MAE from 0.145 to 0.194 m/s and theta_dot MAE from 0.147 to 0.220 rad/s. Closed-loop mean episode length is 321/500 steps with full visual history versus 121/500 with the latest frame repeated. This is an educational temporal-vision result, not a claim that the visual policy matches the state policy. See [docs/vision-model.md](docs/vision-model.md).
 
 ### 0.4 — State + vision
 Fuse explicit simulator state with visual observations. Compare state tokens, visual tokens, self-attention/cross-attention, and the resulting action.
@@ -80,7 +86,7 @@ This separation lets later state, image, video, and multimodal models reuse the 
 
 ## Status
 
-**v0.2 learned state Transformer is live on GitHub Pages.** The live view now links eight historical Cart-Pole poses to eight time tokens and provides upstream-style expandable `Embedding`, `Q/K/V`, `Attention`, `Residual + MLP`, and `Action` calculations. Training, closed-loop evaluation, browser-runtime structural checks, causal-mask checks, softmax checks, a <10 ms average inference acceptance benchmark, production build, and Pages deployment are automated. The next frontier remains **v0.3 vision-only frame/video tokens** after this state-mode explainer is visually reviewed.
+**v0.3 state + vision learning modes are implemented.** State mode exposes the learned Transformer down to selected-cell arithmetic. Vision mode hides explicit simulator state, renders eight synchronized frames, exposes patch and Δpatch features, learned frame tokens, temporal attention, inferred motion/state, and a latest-frame ablation. Deterministic training, model/runtime checks, desktop/mobile browser QA, screenshot artifacts, and Pages deployment are automated. The next frontier is **v0.4 state + vision fusion**, but only after preserving the current simple two-mode baseline as the comparison reference.
 
 ## License
 
