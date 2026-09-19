@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "check:model": "node scripts/check_learned_model.mjs"
+    "check:model": "node scripts/check_learned_model.mjs",
+    "check:vision": "node scripts/check_vision_model.mjs"
   },
   "dependencies": {
     "d3": "^7.9.0",
