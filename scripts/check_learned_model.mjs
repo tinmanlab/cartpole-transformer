@@ -34,8 +34,16 @@ for (let r = 0; r < model.sequence_length; r++) {
   const sum = out.weights[r].reduce((a, b) => a + b, 0);
   assert(Math.abs(sum - 1) < 1e-6, 'softmax row does not sum to one');
 }
+for (let i = 0; i < 100; i++) runLearnedAttention(history, model);
+const runs = 2000;
+const start = performance.now();
+for (let i = 0; i < runs; i++) runLearnedAttention(history, model);
+const averageMs = (performance.now() - start) / runs;
+assert(averageMs < 10, 'learned inference is unexpectedly slow: ' + averageMs.toFixed(3) + ' ms');
+
 console.log('learned model runtime check passed', {
   seq: model.sequence_length,
   dModel: model.d_model,
   actionScore: out.actionScore,
+  averageInferenceMs: Number(averageMs.toFixed(4)),
 });
