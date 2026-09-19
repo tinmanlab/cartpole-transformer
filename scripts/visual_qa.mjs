@@ -136,6 +136,54 @@ function verifyAtomicSnapshot(snapshot, label) {
   }
 }
 
+async function readDecisionTrace(page) {
+  return page.locator('.decision-trace').evaluate(el=>{
+    const parse=value=>value ? value.split(',').map(Number) : [];
+    const d=el.dataset;
+    return {
+      hasTrace:d.hasTrace==='true',
+      mode:d.mode,
+      tickFrom:Number(d.tickFrom),
+      tickTo:Number(d.tickTo),
+      beforeState:parse(d.beforeState),
+      appliedActionScore:Number(d.appliedActionScore),
+      appliedPolicyForce:Number(d.appliedPolicyForce),
+      appliedControl:Number(d.appliedControl),
+      disturbance:Number(d.disturbance),
+      totalForce:Number(d.totalForce),
+      xAcc:Number(d.xAcc),
+      thetaAcc:Number(d.thetaAcc),
+      dt:Number(d.dt),
+      nextState:parse(d.nextState),
+      nextActionScore:Number(d.nextActionScore),
+      nextPolicyForce:Number(d.nextPolicyForce)
+    };
+  });
+}
+
+function verifyDecisionTrace(trace,before,after,label) {
+  const close=(a,b,eps=1e-9)=>Number.isFinite(a)&&Number.isFinite(b)&&Math.abs(a-b)<=eps;
+  const arraysClose=(a,b)=>a.length===4&&b.length===4&&a.every((v,i)=>close(v,b[i]));
+
+  if(!trace.hasTrace) pushError(label+': decision trace missing');
+  if(trace.mode!==before.mode) pushError(label+': decision trace mode mismatch');
+  if(trace.tickFrom!==before.tick || trace.tickTo!==after.tick) pushError(label+': trace ticks do not match Step');
+  if(!arraysClose(trace.beforeState,before.sim)) pushError(label+': trace beforeState mismatch');
+  if(!arraysClose(trace.nextState,after.sim)) pushError(label+': trace nextState mismatch');
+  if(!close(trace.appliedActionScore,before.actionScore)) pushError(label+': applied action score mismatch');
+  if(!close(trace.appliedPolicyForce,before.force)) pushError(label+': applied policy force mismatch');
+  if(!close(trace.nextActionScore,after.actionScore)) pushError(label+': next action score mismatch');
+  if(!close(trace.nextPolicyForce,after.force)) pushError(label+': next policy force mismatch');
+  if(!close(trace.totalForce,trace.appliedControl+trace.disturbance)) pushError(label+': policy + disturbance != total plant force');
+
+  if(trace.beforeState.length===4 && trace.nextState.length===4){
+    if(!close(trace.nextState[0],trace.beforeState[0]+trace.dt*trace.beforeState[1])) pushError(label+': x Euler integration mismatch');
+    if(!close(trace.nextState[1],trace.beforeState[1]+trace.dt*trace.xAcc)) pushError(label+': xDot Euler integration mismatch');
+    if(!close(trace.nextState[2],trace.beforeState[2]+trace.dt*trace.beforeState[3])) pushError(label+': theta Euler integration mismatch');
+    if(!close(trace.nextState[3],trace.beforeState[3]+trace.dt*trace.thetaAcc)) pushError(label+': thetaDot Euler integration mismatch');
+  }
+}
+
 async function runDesktop(browser) {
   const page = await browser.newPage({ viewport:{width:1440,height:1000}, deviceScaleFactor:1 });
   const consoleErrors=[];
@@ -290,15 +338,27 @@ async function runDesktop(browser) {
   const stepState=page.getByRole('button',{name:'Step'});
   const stateStepEnabled=await stepState.isEnabled().catch(()=>false);
   if(!stateStepEnabled) pushError('state pause: Step button is not enabled');
-  if(stateStepEnabled) await stepState.click();
+
+  const tracePush=page.getByRole('button',{name:'Push →'});
+  if(stateStepEnabled){
+    await tracePush.dispatchEvent('pointerdown');
+    await stepState.click();
+    await tracePush.dispatchEvent('pointerup');
+  }
   await page.waitForTimeout(80);
   const stateSync1=await readAtomicSnapshot(page);
   verifyAtomicSnapshot(stateSync1,'state step');
   if(stateSync1.tick!==stateSync0.tick+1) pushError('state Step did not advance exactly one tick');
 
+  const stateDecisionTrace=await readDecisionTrace(page);
+  verifyDecisionTrace(stateDecisionTrace,stateSync0,stateSync1,'state decision trace');
+  if(Math.abs(stateDecisionTrace.disturbance-6)>1e-9) pushError('state decision trace: expected +6 N disturbance during Step');
+
   report.interactions.atomicSync={
     state:{before:stateSync0,after:stateSync1,stepDelta:stateSync1.tick-stateSync0.tick}
   };
+  report.interactions.decisionTrace={state:stateDecisionTrace};
+  await page.screenshot({path:path.join(outDir,'desktop-decision-trace.jpg'),type:'jpeg',quality:84,fullPage:true});
 
   // Optional pixels-only mode becomes mandatory once the trained artifact is present.
   const visionButton=page.getByRole('button',{name:'Vision'});
@@ -322,7 +382,10 @@ async function runDesktop(browser) {
     const visionSync1=await readAtomicSnapshot(page);
     verifyAtomicSnapshot(visionSync1,'vision step');
     if(visionSync1.tick!==visionSync0.tick+1) pushError('vision Step did not advance exactly one tick');
+    const visionDecisionTrace=await readDecisionTrace(page);
+    verifyDecisionTrace(visionDecisionTrace,visionSync0,visionSync1,'vision decision trace');
     report.interactions.atomicSync.vision={before:visionSync0,after:visionSync1,stepDelta:visionSync1.tick-visionSync0.tick};
+    report.interactions.decisionTrace.vision=visionDecisionTrace;
     const runVision=page.getByRole('button',{name:'Run'});
     if(await runVision.count()) await runVision.click();
     await page.waitForTimeout(80);
@@ -415,7 +478,10 @@ async function runDesktop(browser) {
     const fusionSync1=await readAtomicSnapshot(page);
     verifyAtomicSnapshot(fusionSync1,'fusion step');
     if(fusionSync1.tick!==fusionSync0.tick+1) pushError('fusion Step did not advance exactly one tick');
+    const fusionDecisionTrace=await readDecisionTrace(page);
+    verifyDecisionTrace(fusionDecisionTrace,fusionSync0,fusionSync1,'fusion decision trace');
     report.interactions.atomicSync.fusion={before:fusionSync0,after:fusionSync1,stepDelta:fusionSync1.tick-fusionSync0.tick};
+    report.interactions.decisionTrace.fusion=fusionDecisionTrace;
     const runFusion=page.getByRole('button',{name:'Run'});
     if(await runFusion.count()) await runFusion.click();
     await page.waitForTimeout(80);
