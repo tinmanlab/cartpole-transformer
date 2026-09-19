@@ -93,13 +93,13 @@ Rendering primitives are adapted from Polo Club Transformer Explainer.
     <span>Query</span>
     <div class="selector-buttons">
       {#each Array(n) as _,i}
-        <button type="button" class:active={i===selectedRow} on:click={() => onSelect(i, selectedCol)}>{label(i)}</button>
+        <button type="button" class="trace-query-button" data-index={i} class:active={i===selectedRow} on:click={() => onSelect(i, selectedCol)}>{label(i)}</button>
       {/each}
     </div>
     <span>Key</span>
     <div class="selector-buttons">
       {#each Array(n) as _,i}
-        <button type="button" class:active={i===selectedCol} class:future={i>selectedRow} on:click={() => onSelect(selectedRow, i)}>{label(i)}</button>
+        <button type="button" class="trace-key-button" data-index={i} class:active={i===selectedCol} class:future={i>selectedRow} on:click={() => onSelect(selectedRow, i)}>{label(i)}</button>
       {/each}
     </div>
   </div>
@@ -185,7 +185,7 @@ Rendering primitives are adapted from Polo Club Transformer Explainer.
       </div>
       <div class="softmax-row">
         {#each result.weights[selectedRow] as w,i}
-          <button type="button" class:active={i===selectedCol} on:click={() => onSelect(selectedRow,i)}>
+          <button type="button" class="trace-softmax-button" data-index={i} class:active={i===selectedCol} on:click={() => onSelect(selectedRow,i)}>
             <span>{label(i)}</span><b>{(w*100).toFixed(1)}%</b>
           </button>
         {/each}
