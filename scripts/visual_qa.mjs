@@ -324,6 +324,7 @@ async function runDesktop(browser) {
   const fusionEnabled=await fusionButton.isEnabled().catch(()=>false);
   report.interactions.fusionMode={available:fusionEnabled};
 
+  if(!fusionEnabled) pushError('fusion mode: trained artifact exists but Fusion button is disabled');
   if(fusionEnabled){
     const timeBeforeFusion=parseFloat((await page.locator('.time').innerText()).replace(' s',''));
     await fusionButton.click();
@@ -508,6 +509,7 @@ async function runMobile(browser) {
     await page.screenshot({path:path.join(outDir,'mobile-fusion-detail.jpg'),type:'jpeg',quality:80,fullPage:true});
   } else {
     report.interactions.mobileFusion={enabled:false};
+    pushError('mobile fusion: trained artifact exists but Fusion button is disabled');
   }
 
   await page.close();
