@@ -11,11 +11,12 @@ export function resetState(angle = 0.045) {
   return { x: 0, xDot: 0, theta: angle, thetaDot: 0 };
 }
 
-export function stepCartPole(state, actionForce, dt = PHYSICS.tau) {
+export function stepCartPole(state, actionForce, dt = PHYSICS.tau, disturbance = 0) {
   const { gravity, massCart, massPole, halfPoleLength } = PHYSICS;
   const totalMass = massCart + massPole;
   const poleMassLength = massPole * halfPoleLength;
-  const force = Math.max(-PHYSICS.forceMag, Math.min(PHYSICS.forceMag, actionForce));
+  const control = Math.max(-PHYSICS.forceMag, Math.min(PHYSICS.forceMag, actionForce));
+  const force = control + disturbance;
   const { x, xDot, theta, thetaDot } = state;
   const costheta = Math.cos(theta);
   const sintheta = Math.sin(theta);
