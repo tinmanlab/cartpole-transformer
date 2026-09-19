@@ -42,7 +42,18 @@ for(const name of ['state','vision','fusion']){
   assert(Number.isFinite(s.survivalSeconds),'non-finite survival for '+name);
   assert(Number.isFinite(s.maxAbsTheta),'non-finite max angle for '+name);
   assert(Number.isFinite(s.controlEffort),'non-finite control effort for '+name);
+
+  if(s.failed){
+    const failTick=s.survivalSteps;
+    const frozen=JSON.stringify(a.trace[failTick].controllers[name].state);
+    for(let tick=failTick+1;tick<a.trace.length;tick++){
+      assert(JSON.stringify(a.trace[tick].controllers[name].state)===frozen,name+' state changed after failure at tick '+tick);
+      assert(a.trace[tick].controllers[name].force===0,name+' force is nonzero after failure at tick '+tick);
+    }
+  }
 }
+
+assert(summary.vision.failed===true,'deterministic comparison no longer exercises failed-controller freeze path');
 
 for(const pulse of COMPARISON_DISTURBANCE_PULSES){
   const snap=a.trace[pulse.start+1];
