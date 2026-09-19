@@ -107,7 +107,7 @@
         <small>같은 token → 서로 다른 역할</small>
       </div>
 
-      <div class="column attention-col" bind:this={attentionCol} on:click={toggleExpand} role="button" tabindex="0">
+      <div class="column attention-col" bind:this={attentionCol} on:click={toggleExpand} on:keydown={(e) => (e.key === 'Enter' || e.key === ' ') && toggleExpand()} role="button" tabindex="0">
         <div class="col-title">Self Attention</div>
         <div class="matrices">
           <div><b>Q · Kᵀ / √d</b><AttentionMatrix data={result.raw} mode="raw" {selectedRow} {selectedCol} onSelect={selectCell}/></div>
