@@ -161,7 +161,7 @@
       <article class:failed={c?.failed} class="controller-card" data-controller={name} data-disturbance={c?.disturbance ?? 0}>
         <div class="controller-head">
           <div><b>{names[name]}</b><span>{descriptions[name]}</span></div>
-          <strong>{c?.failed ? 'FELL' : finished ? 'DONE' : 'ACTIVE'}</strong>
+          <strong>{c?.failed ? 'FELL' : (snapshot?.tick || 0) >= COMPARISON_HORIZON_STEPS ? 'DONE' : 'ACTIVE'}</strong>
         </div>
 
         <svg viewBox="0 0 320 185" class="mini-sim" aria-label={names[name]+' comparison simulation'}>
@@ -214,7 +214,7 @@
     <span>{currentIndex} / {Math.max(0,trace.length-1)} recorded</span>
   </div>
 
-  {#if finished}
+  {#if finished && currentIndex === trace.length - 1}
     <div class="final-summary">
       <b>Completed deterministic 10 s replay.</b>
       <span>No controller is ranked here; the raw survival, angle and effort metrics stay visible above.</span>
@@ -224,7 +224,7 @@
 
 <style>
 .comparison-lab{background:#fff;border:1px solid #e1e5ea;border-radius:16px;padding:15px;overflow:hidden}
-.compare-head{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;padding-bottom:11px;border-bottom:1px solid #edf0f3}.eyebrow{font-size:9px;letter-spacing:.08em;color:#7f70aa}.compare-head h2{font-size:18px;margin:2px 0 3px}.compare-head p{font-size:10px;color:#717a88;margin:0}.compare-clock{text-align:right}.compare-clock b{display:block;font:18px ui-monospace,SFMono-Regular,Menlo,monospace}.compare-clock span{font-size:9px;color:#8b93a1}
+.compare-head{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;padding-bottom:11px;border-bottom:1px solid #edf0f3}.eyebrow{font-size:9px;letter-spacing:.08em;color:#7f70aa}.compare-head h2{font-size:18px;margin:2px 0 3px}.compare-head p{font-size:10px;color:#717a88;margin:0}.compare-clock{text-align:right;min-width:78px}.compare-clock b{display:block;white-space:nowrap;font:18px ui-monospace,SFMono-Regular,Menlo,monospace}.compare-clock span{font-size:9px;color:#8b93a1}
 .shared-disturbance{display:grid;grid-template-columns:130px 1fr;gap:12px;align-items:center;margin:11px 0}.disturbance-now span{display:block;font-size:8px;color:#89919d}.disturbance-now b{font:11px ui-monospace,SFMono-Regular,Menlo,monospace;color:#667085}.disturbance-now b.active{color:#b86713}.timeline{height:12px;border-radius:6px;background:#edf0f3;position:relative;overflow:hidden}.timeline i{position:absolute;top:0;bottom:0;background:#d7a05b}.timeline i.negative{background:#7da2cc}.timeline em{position:absolute;top:-2px;bottom:-2px;width:2px;background:#5d4b92;z-index:2}
 .controller-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.controller-card{border:1px solid #e3e7ed;border-radius:11px;padding:10px;background:#fbfcfd}.controller-card.failed{background:#f5f5f6}.controller-head{display:flex;justify-content:space-between;align-items:flex-start}.controller-head>div{display:flex;flex-direction:column}.controller-head b{font-size:13px}.controller-head span{font-size:8px;color:#8a93a2}.controller-head strong{font-size:8px;color:#3d8a64}.controller-card.failed .controller-head strong{color:#b65c5c}.mini-sim{width:100%;height:180px;display:block;margin-top:5px;background:linear-gradient(#fff,#f7f8fa);border-radius:8px;border:1px solid #edf0f3}
 .live-values,.metrics{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:7px}.live-values>div,.metrics>div{padding:5px 6px;border:1px solid #e6e9ed;border-radius:6px;background:#fff}.live-values span,.metrics span{display:block;font-size:7px;color:#89919d}.live-values b,.metrics b{font:9px ui-monospace,SFMono-Regular,Menlo,monospace;color:#4b5563}
