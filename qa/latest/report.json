@@ -1,12 +1,8 @@
 {
-  "generatedAt": "2026-09-19T05:17:44.227Z",
+  "generatedAt": "2026-09-19T05:20:37.102Z",
   "baseURL": "http://127.0.0.1:4173/cartpole-transformer/",
-  "errors": [
-    "simulation→Transformer bridge detours vertically by 145px"
-  ],
-  "warnings": [
-    "simulation→Transformer bridge length looks abnormal: 154.5"
-  ],
+  "errors": [],
+  "warnings": [],
   "views": {
     "desktop-overview": {
       "viewport": {
@@ -96,18 +92,6 @@
       "paths": [
         {
           "i": 0,
-          "length": 154.46282958984375,
-          "rect": {
-            "x": 507.265625,
-            "y": 345,
-            "width": 41,
-            "height": 145,
-            "right": 548.265625,
-            "bottom": 490
-          }
-        },
-        {
-          "i": 1,
           "length": 123.22744750976562,
           "rect": {
             "x": 631.140625,
@@ -119,7 +103,7 @@
           }
         },
         {
-          "i": 2,
+          "i": 1,
           "length": 153.0311737060547,
           "rect": {
             "x": 817.109375,
@@ -131,7 +115,7 @@
           }
         },
         {
-          "i": 3,
+          "i": 2,
           "length": 114.75703430175781,
           "rect": {
             "x": 1120.125,
@@ -143,7 +127,7 @@
           }
         },
         {
-          "i": 4,
+          "i": 3,
           "length": 60.377906799316406,
           "rect": {
             "x": 1256.65625,
@@ -254,18 +238,6 @@
       "paths": [
         {
           "i": 0,
-          "length": 154.46282958984375,
-          "rect": {
-            "x": 507.265625,
-            "y": 345,
-            "width": 41,
-            "height": 145,
-            "right": 548.265625,
-            "bottom": 490
-          }
-        },
-        {
-          "i": 1,
           "length": 123.10794067382812,
           "rect": {
             "x": 631.140625,
@@ -277,7 +249,7 @@
           }
         },
         {
-          "i": 2,
+          "i": 1,
           "length": 87.7511215209961,
           "rect": {
             "x": 817.109375,
@@ -289,7 +261,7 @@
           }
         },
         {
-          "i": 3,
+          "i": 2,
           "length": 114.75703430175781,
           "rect": {
             "x": 1120.125,
@@ -301,7 +273,7 @@
           }
         },
         {
-          "i": 4,
+          "i": 3,
           "length": 60.377906799316406,
           "rect": {
             "x": 1256.65625,
@@ -405,18 +377,6 @@
       "paths": [
         {
           "i": 0,
-          "length": 427.3146057128906,
-          "rect": {
-            "x": 0,
-            "y": 0,
-            "width": 0,
-            "height": 0,
-            "right": 0,
-            "bottom": 0
-          }
-        },
-        {
-          "i": 1,
           "length": 177.94393920898438,
           "rect": {
             "x": 283.0047607421875,
@@ -428,7 +388,7 @@
           }
         },
         {
-          "i": 2,
+          "i": 1,
           "length": 324.7809143066406,
           "rect": {
             "x": 81.40390014648438,
@@ -440,7 +400,7 @@
           }
         },
         {
-          "i": 3,
+          "i": 2,
           "length": 229.26390075683594,
           "rect": {
             "x": 308.8702392578125,
@@ -452,7 +412,7 @@
           }
         },
         {
-          "i": 4,
+          "i": 3,
           "length": 329.074462890625,
           "rect": {
             "x": 43.911346435546875,
@@ -477,15 +437,13 @@
       "matrixChanged": true
     },
     "bridge": {
-      "length": 154.46282958984375,
-      "width": 41,
-      "height": 145
+      "count": 0
     },
     "expansions": {
       "embedding": {
         "detailCount": 1,
         "containsExpected": true,
-        "textLength": 372,
+        "textLength": 374,
         "liveChanged": true
       },
       "qkv": {
