@@ -16,6 +16,7 @@
 <section
   class="decision-trace"
   data-has-trace={trace ? 'true' : 'false'}
+  data-mode={trace?.mode ?? ''}
   data-tick-from={trace?.tickFrom ?? ''}
   data-tick-to={trace?.tickTo ?? ''}
   data-before-state={trace?.beforeState?.join(',') ?? ''}
