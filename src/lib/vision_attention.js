@@ -78,7 +78,7 @@ export function runVisionAttention(patchHistory, model) {
 
   return {
     modelType: 'learned-vision-transformer',
-    encoderType: 'pixels->8x8-patches->linear',
+    encoderType: 'pixels->16x16-patches+delta->linear',
     frameFeatures,
     deltaFeatures,
     tokenInputs,
