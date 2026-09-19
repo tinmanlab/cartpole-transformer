@@ -163,7 +163,7 @@
 </div>
 
 <style>
-.sim-card{height:100%;min-height:450px;background:#fff;border:1px solid #e2e5ea;border-radius:16px;padding:11px;display:flex;flex-direction:column}
+.sim-card{height:auto;min-height:500px;background:#fff;border:1px solid #e2e5ea;border-radius:16px;padding:11px;display:flex;flex-direction:column}
 .sim-head{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:0 2px 8px;border-bottom:1px solid #eef0f3}.sim-head span{display:block;font-size:8px;letter-spacing:.09em;color:#8a93a2}.sim-head strong{display:block;font-size:12px;margin-top:1px}.time{font:10px ui-monospace,SFMono-Regular,Menlo,monospace;color:#667085}
 .sim{width:100%;height:auto;display:block;margin-top:8px;background:linear-gradient(180deg,#fdfefe,#f7f8fa);border-radius:11px;border:1px solid #edf0f4;flex:1;min-height:0}.sim text{font:9px ui-monospace,SFMono-Regular,Menlo,monospace;fill:#697386}.sim .force-label{fill:#7458b7}.sim .disturbance-label{fill:#b45f05}.current-pose.current-selected{filter:drop-shadow(0 0 3px rgba(101,116,201,.45))}.selected-history-label text{fill:#5968b7;font-weight:700}
 .state-readout{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-top:7px}.state-readout span{display:flex;justify-content:space-between;gap:4px;border:1px solid #e4e7ec;background:#fafbfc;border-radius:6px;padding:5px 6px;font:7px ui-monospace,SFMono-Regular,Menlo,monospace;color:#596273}.state-readout b{font-family:Inter,ui-sans-serif,system-ui;font-size:7px;color:#8b93a1}.state-readout .selected-time{background:#f2f0f9;color:#6855a1}
