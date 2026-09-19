@@ -71,6 +71,11 @@ def expert_force(state: np.ndarray) -> float:
     return 10.0 * math.tanh(float(np.dot(EXPERT_GAIN, z)))
 
 
+def js_round(value: float) -> int:
+    """Match JavaScript Math.round for raster parity."""
+    return int(math.floor(value + 0.5))
+
+
 def set_pixel(frame: np.ndarray, x: int, y: int, value: float) -> None:
     if 0 <= x < FRAME_SIZE and 0 <= y < FRAME_SIZE:
         frame[y, x] = max(float(frame[y, x]), float(value))
@@ -81,19 +86,19 @@ def render_frame(state: np.ndarray) -> np.ndarray:
     frame = np.zeros((FRAME_SIZE, FRAME_SIZE), dtype=np.float32)
     frame[27, 1 : FRAME_SIZE - 1] = 0.15
 
-    cx = int(round(16 + np.clip(x / 2.4, -1.0, 1.0) * 12))
+    cx = js_round(16 + np.clip(x / 2.4, -1.0, 1.0) * 12)
     for py in range(23, 27):
         for px in range(cx - 4, cx + 5):
             set_pixel(frame, px, py, 0.72)
 
     pivot_x, pivot_y = cx, 23
     pole_length = 11
-    tip_x = int(round(pivot_x + math.sin(theta) * pole_length))
-    tip_y = int(round(pivot_y - math.cos(theta) * pole_length))
+    tip_x = js_round(pivot_x + math.sin(theta) * pole_length)
+    tip_y = js_round(pivot_y - math.cos(theta) * pole_length)
     for i in range(37):
         t = i / 36
-        px = int(round(pivot_x + (tip_x - pivot_x) * t))
-        py = int(round(pivot_y + (tip_y - pivot_y) * t))
+        px = js_round(pivot_x + (tip_x - pivot_x) * t)
+        py = js_round(pivot_y + (tip_y - pivot_y) * t)
         for oy in range(-1, 2):
             for ox in range(-1, 2):
                 if abs(ox) + abs(oy) <= 1:
