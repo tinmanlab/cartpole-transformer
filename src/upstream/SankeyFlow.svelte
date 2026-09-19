@@ -13,6 +13,7 @@ MIT License, Copyright (c) 2022 Polo Club of Data Science
 
   let svgEl;
   let resizeObserver;
+  const gradientPrefix = 'sf-' + Math.random().toString(36).slice(2, 9) + '-';
 
   const gradientMap = {
     'gray-blue': {0:'#d1d5db',100:'#93c5fd'},
@@ -30,17 +31,17 @@ MIT License, Copyright (c) 2022 Polo Club of Data Science
     Object.keys(gradientMap).forEach(key => {
       const stops = gradientMap[key];
       const grad = defs.append('linearGradient')
-        .attr('id',key).attr('x1','0%').attr('y1','0%').attr('x2','100%').attr('y2','0%');
+        .attr('id',gradientPrefix+key).attr('x1','0%').attr('y1','0%').attr('x2','100%').attr('y2','0%');
       Object.keys(stops).forEach(stop => {
         grad.append('stop').attr('offset',stop+'%').attr('stop-color',stops[stop]);
       });
     });
 
     defs.append('marker')
-      .attr('id','arrow-head')
+      .attr('id',gradientPrefix+'arrow-head')
       .attr('viewBox','0 0 10 10')
       .attr('refX',9).attr('refY',5)
-      .attr('markerWidth',6).attr('markerHeight',6)
+      .attr('markerWidth',4.5).attr('markerHeight',4.5)
       .attr('orient','auto-start-reverse')
       .append('path').attr('d','M 0 0 L 10 5 L 0 10 z').attr('fill','#8b5cf6');
   }
@@ -95,9 +96,10 @@ MIT License, Copyright (c) 2022 Polo Club of Data Science
             const generator=item.pathGenerator || (item.type==='stroke'?centerPathGenerator:defaultPathGenerator);
             return {
               path:source&&target?generator(source,target,item.curve||70):'',
-              fill:item.type==='stroke'?'none':(item.gradientId?'url(#'+item.gradientId+')':item.fill),
-              stroke:item.type==='stroke'?(item.gradientId?'url(#'+item.gradientId+')':item.fill):'none',
+              fill:item.type==='stroke'?'none':(item.gradientId?'url(#'+gradientPrefix+item.gradientId+')':item.fill),
+              stroke:item.type==='stroke'?(item.gradientId?'url(#'+gradientPrefix+item.gradientId+')':item.fill):'none',
               opacity:item.opacity ?? .55,
+              strokeWidth:item.strokeWidth ?? 2,
               arrow:item.arrow !== false && item.type==='stroke'
             };
           });
@@ -108,9 +110,9 @@ MIT License, Copyright (c) 2022 Polo Club of Data Science
       .attr('d',d=>d.path)
       .attr('fill',d=>d.fill)
       .attr('stroke',d=>d.stroke)
-      .attr('stroke-width',d=>d.fill==='none'?3:0)
+      .attr('stroke-width',d=>d.fill==='none'?d.strokeWidth:0)
       .attr('opacity',d=>d.opacity)
-      .attr('marker-end',d=>d.arrow?'url(#arrow-head)':null);
+      .attr('marker-end',d=>d.arrow?'url(#'+gradientPrefix+'arrow-head)':null);
   }
 
   onMount(()=>{
