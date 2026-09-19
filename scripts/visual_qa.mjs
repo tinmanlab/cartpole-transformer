@@ -78,7 +78,17 @@ async function inspectView(page, name) {
   if (data.document.scrollWidth > data.viewport.width + 2) pushWarning(name+': page-level horizontal overflow '+data.document.scrollWidth+' > '+data.viewport.width);
   if (data.overlaps.length) pushWarning(name+': stage overlaps '+JSON.stringify(data.overlaps));
   if (data.paths.some(p=>!Number.isFinite(p.length)||p.length<8)) pushWarning(name+': zero/short Sankey path detected');
-  if (data.detailMinFont !== null && data.detailMinFont < 9) pushWarning(name+': detail text too small, min '+data.detailMinFont+'px');
+  if (data.detailMinFont !== null && data.detailMinFont < 9.5) pushError(name+': detail text too small, min '+data.detailMinFont+'px');
+  if (name === 'desktop-overview' && data.paths.length > 10) pushError('desktop-overview: too many visible Sankey paths ('+data.paths.length+')');
+  if (name === 'desktop-attention' && data.detail && data.detail.height < 320) pushError('desktop-attention: detail panel too short ('+Math.round(data.detail.height)+'px)');
+  if (name === 'desktop-attention' && data.overview) {
+    for (const [sel,rect] of Object.entries(data.stages)) {
+      if (!rect) continue;
+      if (rect.top < data.overview.y - 3 || rect.bottom > data.overview.bottom + 3) {
+        pushError('desktop-attention: '+sel+' escapes overview bounds');
+      }
+    }
+  }
   return data;
 }
 
@@ -111,7 +121,11 @@ async function runDesktop(browser) {
   if (canvas0===canvas1) pushWarning('embedding canvas did not visibly change over 500 ms');
   if (matrix0===matrix1) pushWarning('attention matrix DOM did not change over 500 ms');
 
-  await inspectView(page,'desktop-overview');
+  const overviewData=await inspectView(page,'desktop-overview');
+  const bridge=await page.locator('.lab-grid > .upstream-sankey path.sankey-path').first().evaluate(p=>{const r=p.getBoundingClientRect();return {length:p.getTotalLength(),width:r.width,height:r.height};});
+  report.interactions.bridge=bridge;
+  if (bridge.height > 70) pushError('simulation→Transformer bridge detours vertically by '+Math.round(bridge.height)+'px');
+  if (bridge.length < 10 || bridge.length > 140) pushWarning('simulation→Transformer bridge length looks abnormal: '+bridge.length.toFixed(1));
   await page.screenshot({path:path.join(outDir,'desktop-overview.jpg'),type:'jpeg',quality:80,fullPage:true});
 
   const stageCases = [
@@ -127,9 +141,17 @@ async function runDesktop(browser) {
     await page.waitForTimeout(250);
     const count=await page.locator('.detail-panel').count();
     const txt=count?await page.locator('.detail-panel').innerText():'';
-    report.interactions.expansions[name]={detailCount:count,containsExpected:txt.includes(needle.split(' ')[0]),textLength:txt.length};
+    let liveChanged=null;
+    if(count){
+      const fp0=await page.locator('.detail-panel').evaluate(el=>[...el.querySelectorAll('canvas')].map(c=>c.toDataURL()).join('|')+'#'+[...el.querySelectorAll('svg')].map(s=>s.innerHTML).join('|')+'#'+el.innerText);
+      await page.waitForTimeout(320);
+      const fp1=await page.locator('.detail-panel').evaluate(el=>[...el.querySelectorAll('canvas')].map(c=>c.toDataURL()).join('|')+'#'+[...el.querySelectorAll('svg')].map(s=>s.innerHTML).join('|')+'#'+el.innerText);
+      liveChanged=fp0!==fp1;
+    }
+    report.interactions.expansions[name]={detailCount:count,containsExpected:txt.includes(needle.split(' ')[0]),textLength:txt.length,liveChanged};
     if(!count) pushError(name+': click did not create detail panel');
-    if(count && txt.length<30) pushWarning(name+': detail panel appears empty/too sparse');
+    if(count && txt.length<30) pushError(name+': detail panel appears empty/too sparse');
+    if(count && liveChanged===false) pushWarning(name+': expanded visualization did not change over 320 ms');
     if(name==='attention') {
       await inspectView(page,'desktop-attention');
       await page.screenshot({path:path.join(outDir,'desktop-attention.jpg'),type:'jpeg',quality:82,fullPage:true});
