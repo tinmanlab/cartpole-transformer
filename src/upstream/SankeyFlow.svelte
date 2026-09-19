@@ -41,15 +41,14 @@ MIT License, Copyright (c) 2022 Polo Club of Data Science
       .attr('id',gradientPrefix+'arrow-head')
       .attr('viewBox','0 0 10 10')
       .attr('refX',9).attr('refY',5)
-      .attr('markerWidth',4.5).attr('markerHeight',4.5)
+      .attr('markerWidth',3.2).attr('markerHeight',3.2)
       .attr('orient','auto-start-reverse')
       .append('path').attr('d','M 0 0 L 10 5 L 0 10 z').attr('fill','#8b5cf6');
   }
 
   const pathAdjustor = (source,target,curve) => {
-    const distance = target.left - source.right;
-    const maxDistance = 100;
-    const curveOffset = distance > maxDistance ? curve : curve * (distance / maxDistance);
+    const distance = Math.max(0, target.left - source.right);
+    const curveOffset = Math.min(curve, Math.max(6, distance * 0.45));
     return {curveOffset};
   };
 
@@ -100,7 +99,8 @@ MIT License, Copyright (c) 2022 Polo Club of Data Science
               stroke:item.type==='stroke'?(item.gradientId?'url(#'+gradientPrefix+item.gradientId+')':item.fill):'none',
               opacity:item.opacity ?? .55,
               strokeWidth:item.strokeWidth ?? 2,
-              arrow:item.arrow !== false && item.type==='stroke'
+              arrow:item.arrow !== false && item.type==='stroke',
+              minArrowLength:item.minArrowLength ?? 30
             };
           });
         });
@@ -112,7 +112,11 @@ MIT License, Copyright (c) 2022 Polo Club of Data Science
       .attr('stroke',d=>d.stroke)
       .attr('stroke-width',d=>d.fill==='none'?d.strokeWidth:0)
       .attr('opacity',d=>d.opacity)
-      .attr('marker-end',d=>d.arrow?'url(#'+gradientPrefix+'arrow-head)':null);
+      .attr('marker-end',function(d){
+        let length=0;
+        try { length=this.getTotalLength(); } catch {}
+        return d.arrow && length >= d.minArrowLength ? 'url(#'+gradientPrefix+'arrow-head)' : null;
+      });
   }
 
   onMount(()=>{
