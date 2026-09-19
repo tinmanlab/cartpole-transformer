@@ -1,12 +1,8 @@
 {
-  "generatedAt": "2026-09-19T04:52:34.097Z",
+  "generatedAt": "2026-09-19T04:55:07.700Z",
   "baseURL": "http://127.0.0.1:4173/cartpole-transformer/",
-  "errors": [
-    "desktop-attention: detail text too small, min 8px"
-  ],
-  "warnings": [
-    "block: expanded visualization did not change over 320 ms"
-  ],
+  "errors": [],
+  "warnings": [],
   "views": {
     "desktop-overview": {
       "viewport": {
@@ -120,74 +116,74 @@
         },
         {
           "i": 2,
-          "length": 152.86985778808594,
+          "length": 115.39734649658203,
           "rect": {
             "x": 862.234375,
-            "y": 333,
-            "width": 79.71875,
-            "height": 124,
-            "right": 941.953125,
+            "y": 389,
+            "width": 88.71875,
+            "height": 68,
+            "right": 950.953125,
             "bottom": 457
           }
         },
         {
           "i": 3,
-          "length": 143.38291931152344,
+          "length": 196.05381774902344,
           "rect": {
             "x": 880.234375,
-            "y": 333,
-            "width": 61.71875,
-            "height": 124,
-            "right": 941.953125,
+            "y": 389,
+            "width": 182.71875,
+            "height": 68,
+            "right": 1062.953125,
             "bottom": 457
           }
         },
         {
           "i": 4,
-          "length": 259.6087341308594,
+          "length": 229.59349060058594,
           "rect": {
             "x": 898.234375,
-            "y": 307,
-            "width": 207.984375,
-            "height": 150,
-            "right": 1106.21875,
+            "y": 333,
+            "width": 189.71875,
+            "height": 124,
+            "right": 1087.953125,
             "bottom": 457
           }
         },
         {
           "i": 5,
-          "length": 33.678138732910156,
+          "length": 74.68900299072266,
           "rect": {
-            "x": 1085.953125,
+            "x": 1076.953125,
             "y": 333,
-            "width": 20.265625,
-            "height": 26,
-            "right": 1106.21875,
-            "bottom": 359
+            "width": 47,
+            "height": 56,
+            "right": 1123.953125,
+            "bottom": 389
           }
         },
         {
           "i": 6,
-          "length": 56.4485969543457,
+          "length": 16,
           "rect": {
-            "x": 1106.21875,
-            "y": 307,
-            "width": 20,
-            "height": 52,
-            "right": 1126.21875,
-            "bottom": 359
+            "x": 1107.953125,
+            "y": 333,
+            "width": 16,
+            "height": 0,
+            "right": 1123.953125,
+            "bottom": 333
           }
         },
         {
           "i": 7,
-          "length": 29.505735397338867,
+          "length": 17.59925079345703,
           "rect": {
-            "x": 1126.21875,
-            "y": 347.5,
-            "width": 26.703125,
-            "height": 11.5,
+            "x": 1143.953125,
+            "y": 333,
+            "width": 8.96875,
+            "height": 14.5,
             "right": 1152.921875,
-            "bottom": 359
+            "bottom": 347.5
           }
         },
         {
@@ -205,7 +201,7 @@
       ],
       "detailMinFont": null,
       "learnedText": "learned · 1 block · 1 head · 8D",
-      "bodyText": "Cart-Pole Transformer\nlearned · 1 block · 1 head · 8D\nPHYSICS · 50 Hz\nCart-Pole + 8-frame history\n1.8 s\n−2.4 m\n0\n+2.4 m\nθ -0.1°\npolicy 0.1 N\nx\n0.04 m\nẋ\n-0.01 m/s\nθ\n-0.1°\nθ̇\n0.1°/s\nselected\nt\nPause\nReset\n← Push\nPush →\nTransformer · 1 block · 1 head\n각 단계를 클릭하면 실제 live tensor 계산을 확대합니다\nLEARNED · → 0.1 N\n1\nEmbedding\nstate → token\nt−7\n8D\nt−6\n8D\nt−5\n8D\nt−4\n8D\nt−3\n8D\nt−2\n8D\nt−1\n8D\nt\n8D\n2\nQ · K · V\nlearned projections\nQ\nK\nV\n−7\n−6\n−5\n−4\n−3\n−2\n−1\nt\n3\nSelf Attention\nweights × V → context\n×\n→\nQ t → K t\n72.3%\n4\nTransformer block\nresidual + MLP\nAttn out\n+\nResidual\n→\nMLP\n+\nHidden\n5\nAction head\nfinal t only\n→\n0.1 N\ntanh(score) × 10\n읽는 순서\nQ 찾는 기준 K 비교 표지 V 가져올 내용\n1. Embedding\n\n[x,ẋ,θ,θ̇] → normalize → learned 4→8 projection + position.\n\n2. Q / K / V\n\nLayerNorm 뒤 같은 token을 세 learned projection으로 나눕니다.\n\n3. Attention\n\nQKᵀ/√d → causal mask → softmax. matrix를 가리키면 해당 time pair가 연결됩니다.\n\n4. Residual + MLP\n\nAttention output을 더하고 LN→Linear→GELU→Linear→residual을 통과합니다.\n\n5. Action\n\n마지막 hidden token만 읽어 tanh(score)×10 N force를 만듭니다.\n\n실시간 연결\n\n오른쪽 time token을 가리키면 왼쪽의 같은 과거 pose가 강조됩니다.\n\nCart-Pole에는 Transformer가 필요하지 않습니다. 이 모델은 sequence attention의 실제 learned tensor를 관찰하기 위한 교육용 모델이며 attention weight를 인과 설명으로 해석하지 않습니다.\nPolo Club Transformer Explainer의 MIT-licensed VectorCanvas, MatrixSvg, Sankey, attention expansion/animation 패턴을 vendoring·adaptation하여 사용합니다."
+      "bodyText": "Cart-Pole Transformer\nlearned · 1 block · 1 head · 8D\nPHYSICS · 50 Hz\nCart-Pole + 8-frame history\n1.8 s\n−2.4 m\n0\n+2.4 m\nθ -0.1°\nx\n0.04 m\nẋ\n-0.01 m/s\nθ\n-0.1°\nθ̇\n0.4°/s\nselected\nt\nPause\nReset\n← Push\nPush →\nTransformer · 1 block · 1 head\n각 단계를 클릭하면 실제 live tensor 계산을 확대합니다\nLEARNED · → 0.0 N\n1\nEmbedding\nstate → token\nt−7\n8D\nt−6\n8D\nt−5\n8D\nt−4\n8D\nt−3\n8D\nt−2\n8D\nt−1\n8D\nt\n8D\n2\nQ · K · V\nlearned projections\nQ\nK\nV\n−7\n−6\n−5\n−4\n−3\n−2\n−1\nt\n3\nSelf Attention\nweights × V → context\n×\n→\nQ t → K t\n72.2%\n4\nTransformer block\nresidual + MLP\nAttn out\n+\nResidual\n→\nMLP\n+\nHidden\n5\nAction head\nfinal t only\n→\n0.0 N\ntanh(score) × 10\n읽는 순서\nQ 찾는 기준 K 비교 표지 V 가져올 내용\n1. Embedding\n\n[x,ẋ,θ,θ̇] → normalize → learned 4→8 projection + position.\n\n2. Q / K / V\n\nLayerNorm 뒤 같은 token을 세 learned projection으로 나눕니다.\n\n3. Attention\n\nQKᵀ/√d → causal mask → softmax. matrix를 가리키면 해당 time pair가 연결됩니다.\n\n4. Residual + MLP\n\nAttention output을 더하고 LN→Linear→GELU→Linear→residual을 통과합니다.\n\n5. Action\n\n마지막 hidden token만 읽어 tanh(score)×10 N force를 만듭니다.\n\n실시간 연결\n\n오른쪽 time token을 가리키면 왼쪽의 같은 과거 pose가 강조됩니다.\n\nCart-Pole에는 Transformer가 필요하지 않습니다. 이 모델은 sequence attention의 실제 learned tensor를 관찰하기 위한 교육용 모델이며 attention weight를 인과 설명으로 해석하지 않습니다.\nPolo Club Transformer Explainer의 MIT-licensed VectorCanvas, MatrixSvg, Sankey, attention expansion/animation 패턴을 vendoring·adaptation하여 사용합니다."
     },
     "desktop-attention": {
       "viewport": {
@@ -314,86 +310,86 @@
         },
         {
           "i": 1,
-          "length": 103.89767456054688,
+          "length": 103.98993682861328,
           "rect": {
             "x": 742.453125,
             "y": 336,
             "width": 103.78125,
-            "height": 4.5,
+            "height": 6.0267333984375,
             "right": 846.234375,
-            "bottom": 340.5
+            "bottom": 342.0267333984375
           }
         },
         {
           "i": 2,
-          "length": 102.95938873291016,
+          "length": 89.06864166259766,
           "rect": {
             "x": 862.234375,
-            "y": 280.5,
-            "width": 79.71875,
-            "height": 60,
-            "right": 941.953125,
-            "bottom": 340.5
+            "y": 334.9732666015625,
+            "width": 88.71875,
+            "height": 7.053466796875,
+            "right": 950.953125,
+            "bottom": 342.0267333984375
           }
         },
         {
           "i": 3,
-          "length": 89.51609802246094,
+          "length": 150.9062042236328,
           "rect": {
             "x": 880.234375,
-            "y": 280.5,
-            "width": 61.71875,
-            "height": 60,
-            "right": 941.953125,
-            "bottom": 340.5
+            "y": 334.9732666015625,
+            "width": 150.71875,
+            "height": 7.053466796875,
+            "right": 1030.953125,
+            "bottom": 342.0267333984375
           }
         },
         {
           "i": 4,
-          "length": 226.47129821777344,
+          "length": 200.94146728515625,
           "rect": {
             "x": 898.234375,
-            "y": 254.5,
-            "width": 207.984375,
-            "height": 86,
-            "right": 1106.21875,
-            "bottom": 340.5
+            "y": 278.9732666015625,
+            "width": 189.71875,
+            "height": 63.053466796875,
+            "right": 1087.953125,
+            "bottom": 342.0267333984375
           }
         },
         {
           "i": 5,
-          "length": 33.678131103515625,
+          "length": 98.45703887939453,
           "rect": {
-            "x": 1085.953125,
-            "y": 280.5,
-            "width": 20.265625,
-            "height": 26,
-            "right": 1106.21875,
-            "bottom": 306.5
+            "x": 1044.953125,
+            "y": 278.9732666015625,
+            "width": 79,
+            "height": 56,
+            "right": 1123.953125,
+            "bottom": 334.9732666015625
           }
         },
         {
           "i": 6,
-          "length": 56.4485969543457,
+          "length": 16,
           "rect": {
-            "x": 1106.21875,
-            "y": 254.5,
-            "width": 20,
-            "height": 52,
-            "right": 1126.21875,
-            "bottom": 306.5
+            "x": 1107.953125,
+            "y": 278.9732666015625,
+            "width": 16,
+            "height": 0,
+            "right": 1123.953125,
+            "bottom": 278.9732666015625
           }
         },
         {
           "i": 7,
-          "length": 29.505733489990234,
+          "length": 18.931541442871094,
           "rect": {
-            "x": 1126.21875,
-            "y": 295,
-            "width": 26.703125,
-            "height": 11.5,
+            "x": 1143.953125,
+            "y": 278.9732666015625,
+            "width": 8.96875,
+            "height": 16.0267333984375,
             "right": 1152.921875,
-            "bottom": 306.5
+            "bottom": 295
           }
         },
         {
@@ -409,9 +405,9 @@
           }
         }
       ],
-      "detailMinFont": 8,
+      "detailMinFont": 10,
       "learnedText": "learned · 1 block · 1 head · 8D",
-      "bodyText": "Cart-Pole Transformer\nlearned · 1 block · 1 head · 8D\nPHYSICS · 50 Hz\nCart-Pole + 8-frame history\n4.4 s\n−2.4 m\n0\n+2.4 m\nt−2 · θ 0.0°\nθ 0.0°\nẋ\nx\n-0.02 m\nẋ\n-0.03 m/s\nθ\n0.0°\nθ̇\n0.0°/s\nselected\nt−2\nPause\nReset\n← Push\nPush →\nTransformer · 1 block · 1 head\n각 단계를 클릭하면 실제 live tensor 계산을 확대합니다\nLEARNED · → 0.0 N\n1\nEmbedding\nstate → token\nt−7\n8D\nt−6\n8D\nt−5\n8D\nt−4\n8D\nt−3\n8D\nt−2\n8D\nt−1\n8D\nt\n8D\n2\nQ · K · V\nlearned projections\nQ\nK\nV\n−7\n−6\n−5\n−4\n−3\n−2\n−1\nt\n3\nSelf Attention\nweights × V → context\n4.3%\n×\n→\nQ t → K t−2\n4.3%\n4\nTransformer block\nresidual + MLP\nAttn out\n+\nResidual\n→\nMLP\n+\nHidden\n5\nAction head\nfinal t only\n→\n0.0 N\ntanh(score) × 10\nSelf Attention\n실제 Q·K score에 causal mask와 softmax를 적용하고, 그 weight로 실제 V를 섞습니다.\n×\n1\nDot product\nQKᵀ / √d\n\nQuery와 Key가 얼마나 비슷한지 모든 시간쌍을 비교합니다.\n\n2\nCausal mask\nfuture → −∞\n\n현재 시점은 미래 token을 볼 수 없습니다. 위쪽 삼각형이 차단됩니다.\n\n3\nSoftmax\nΣ a = 1\n\n점수를 양수 비율로 바꿉니다. 마지막 row가 지금 force를 만드는 attention입니다.\n\n읽는 순서\nQ 찾는 기준 K 비교 표지 V 가져올 내용\n1. Embedding\n\n[x,ẋ,θ,θ̇] → normalize → learned 4→8 projection + position.\n\n2. Q / K / V\n\nLayerNorm 뒤 같은 token을 세 learned projection으로 나눕니다.\n\n3. Attention\n\nQKᵀ/√d → causal mask → softmax. matrix를 가리키면 해당 time pair가 연결됩니다.\n\n4. Residual + MLP\n\nAttention output을 더하고 LN→Linear→GELU→Linear→residual을 통과합니다.\n\n5. Action\n\n마지막 hidden token만 읽어 tanh(score)×10 N force를 만듭니다.\n\n실시간 연결\n\n오른쪽 time token을 가리키면 왼쪽의 같은 과거 pose가 강조됩니다.\n\nCart-Pole에는 Transformer가 필요하지 않습니다. 이 모델은 sequence attention의 실제 learned tensor를 관찰하기 위한 교육용 모델이며 attention weight를 인과 설명으로 해석하지 않습니다.\nPolo Club Transformer Explainer의 MIT-licensed VectorCanvas, MatrixSvg, Sankey, attention expansion/animation 패턴을 vendoring·adaptation하여 사용합니다."
+      "bodyText": "Cart-Pole Transformer\nlearned · 1 block · 1 head · 8D\nPHYSICS · 50 Hz\nCart-Pole + 8-frame history\n4.1 s\n−2.4 m\n0\n+2.4 m\nt−2 · θ 0.0°\nθ 0.0°\nẋ\nx\n-0.01 m\nẋ\n-0.03 m/s\nθ\n0.0°\nθ̇\n0.0°/s\nselected\nt−2\nPause\nReset\n← Push\nPush →\nTransformer · 1 block · 1 head\n각 단계를 클릭하면 실제 live tensor 계산을 확대합니다\nLEARNED · → 0.0 N\n1\nEmbedding\nstate → token\nt−7\n8D\nt−6\n8D\nt−5\n8D\nt−4\n8D\nt−3\n8D\nt−2\n8D\nt−1\n8D\nt\n8D\n2\nQ · K · V\nlearned projections\nQ\nK\nV\n−7\n−6\n−5\n−4\n−3\n−2\n−1\nt\n3\nSelf Attention\nweights × V → context\n4.4%\n×\n→\nQ t → K t−2\n4.3%\n4\nTransformer block\nresidual + MLP\nAttn out\n+\nResidual\n→\nMLP\n+\nHidden\n5\nAction head\nfinal t only\n→\n0.0 N\ntanh(score) × 10\nSelf Attention\n실제 Q·K score에 causal mask와 softmax를 적용하고, 그 weight로 실제 V를 섞습니다.\n×\n1\nDot product\nQKᵀ / √d\n\nQuery와 Key가 얼마나 비슷한지 모든 시간쌍을 비교합니다.\n\n2\nCausal mask\nfuture → −∞\n\n현재 시점은 미래 token을 볼 수 없습니다. 위쪽 삼각형이 차단됩니다.\n\n3\nSoftmax\nΣ a = 1\n\n점수를 양수 비율로 바꿉니다. 마지막 row가 지금 force를 만드는 attention입니다.\n\n읽는 순서\nQ 찾는 기준 K 비교 표지 V 가져올 내용\n1. Embedding\n\n[x,ẋ,θ,θ̇] → normalize → learned 4→8 projection + position.\n\n2. Q / K / V\n\nLayerNorm 뒤 같은 token을 세 learned projection으로 나눕니다.\n\n3. Attention\n\nQKᵀ/√d → causal mask → softmax. matrix를 가리키면 해당 time pair가 연결됩니다.\n\n4. Residual + MLP\n\nAttention output을 더하고 LN→Linear→GELU→Linear→residual을 통과합니다.\n\n5. Action\n\n마지막 hidden token만 읽어 tanh(score)×10 N force를 만듭니다.\n\n실시간 연결\n\n오른쪽 time token을 가리키면 왼쪽의 같은 과거 pose가 강조됩니다.\n\nCart-Pole에는 Transformer가 필요하지 않습니다. 이 모델은 sequence attention의 실제 learned tensor를 관찰하기 위한 교육용 모델이며 attention weight를 인과 설명으로 해석하지 않습니다.\nPolo Club Transformer Explainer의 MIT-licensed VectorCanvas, MatrixSvg, Sankey, attention expansion/animation 패턴을 vendoring·adaptation하여 사용합니다."
     },
     "mobile-overview": {
       "viewport": {
@@ -525,74 +521,74 @@
         },
         {
           "i": 2,
-          "length": 161.7325897216797,
+          "length": 126.97303771972656,
           "rect": {
             "x": 231.3125,
-            "y": 841,
-            "width": 94.25,
-            "height": 124,
-            "right": 325.5625,
+            "y": 897,
+            "width": 103.25,
+            "height": 68,
+            "right": 334.5625,
             "bottom": 965
           }
         },
         {
           "i": 3,
-          "length": 151.2942352294922,
+          "length": 209.5582275390625,
           "rect": {
             "x": 249.3125,
-            "y": 841,
-            "width": 76.25,
-            "height": 124,
-            "right": 325.5625,
+            "y": 897,
+            "width": 197.25,
+            "height": 68,
+            "right": 446.5625,
             "bottom": 965
           }
         },
         {
           "i": 4,
-          "length": 271.16815185546875,
+          "length": 241.50595092773438,
           "rect": {
             "x": 267.3125,
-            "y": 815,
-            "width": 222.515625,
-            "height": 150,
-            "right": 489.828125,
+            "y": 841,
+            "width": 204.25,
+            "height": 124,
+            "right": 471.5625,
             "bottom": 965
           }
         },
         {
           "i": 5,
-          "length": 33.67814254760742,
+          "length": 74.68900299072266,
           "rect": {
-            "x": 469.5625,
+            "x": 460.5625,
             "y": 841,
-            "width": 20.265625,
-            "height": 26,
-            "right": 489.828125,
-            "bottom": 867
+            "width": 47,
+            "height": 56,
+            "right": 507.5625,
+            "bottom": 897
           }
         },
         {
           "i": 6,
-          "length": 56.4485969543457,
+          "length": 16,
           "rect": {
-            "x": 489.828125,
-            "y": 815,
-            "width": 20,
-            "height": 52,
-            "right": 509.828125,
-            "bottom": 867
+            "x": 491.5625,
+            "y": 841,
+            "width": 16,
+            "height": 0,
+            "right": 507.5625,
+            "bottom": 841
           }
         },
         {
           "i": 7,
-          "length": 38.91254806518555,
+          "length": 24.639266967773438,
           "rect": {
-            "x": 509.828125,
-            "y": 855.5,
-            "width": 36.8125,
-            "height": 11.5,
+            "x": 527.5625,
+            "y": 841,
+            "width": 19.078125,
+            "height": 14.5,
             "right": 546.640625,
-            "bottom": 867
+            "bottom": 855.5
           }
         },
         {
@@ -610,12 +606,12 @@
       ],
       "detailMinFont": null,
       "learnedText": "learned · 1 block · 1 head · 8D",
-      "bodyText": "Cart-Pole Transformer\nPHYSICS · 50 Hz\nCart-Pole + 8-frame history\n1.1 s\n−2.4 m\n0\n+2.4 m\nθ -0.1°\nẋ\npolicy 0.2 N\nx\n0.04 m\nẋ\n-0.03 m/s\nθ\n-0.1°\nθ̇\n2.4°/s\nselected\nt\nPause\nReset\n← Push\nPush →\nTransformer · 1 block · 1 head\n각 단계를 클릭하면 실제 live tensor 계산을 확대합니다\nLEARNED · → 0.2 N\n1\nEmbedding\nstate → token\nt−7\n8D\nt−6\n8D\nt−5\n8D\nt−4\n8D\nt−3\n8D\nt−2\n8D\nt−1\n8D\nt\n8D\n2\nQ · K · V\nlearned projections\nQ\nK\nV\n−7\n−6\n−5\n−4\n−3\n−2\n−1\nt\n3\nSelf Attention\nweights × V → context\n×\n→\nQ t → K t\n72.6%\n4\nTransformer block\nresidual + MLP\nAttn out\n+\nResidual\n→\nMLP\n+\nHidden\n5\nAction head\nfinal t only\n→\n0.2 N\ntanh(score) × 10\n읽는 순서\nQ 찾는 기준 K 비교 표지 V 가져올 내용\n1. Embedding\n\n[x,ẋ,θ,θ̇] → normalize → learned 4→8 projection + position.\n\n2. Q / K / V\n\nLayerNorm 뒤 같은 token을 세 learned projection으로 나눕니다.\n\n3. Attention\n\nQKᵀ/√d → causal mask → softmax. matrix를 가리키면 해당 time pair가 연결됩니다.\n\n4. Residual + MLP\n\nAttention output을 더하고 LN→Linear→GELU→Linear→residual을 통과합니다.\n\n5. Action\n\n마지막 hidden token만 읽어 tanh(score)×10 N force를 만듭니다.\n\n실시간 연결\n\n오른쪽 time token을 가리키면 왼쪽의 같은 과거 pose가 강조됩니다.\n\nCart-Pole에는 Transformer가 필요하지 않습니다. 이 모델은 sequence attention의 실제 learned tensor를 관찰하기 위한 교육용 모델이며 attention weight를 인과 설명으로 해석하지 않습니다.\nPolo Club Transformer Explainer의 MIT-licensed VectorCanvas, MatrixSvg, Sankey, attention expansion/animation 패턴을 vendoring·adaptation하여 사용합니다."
+      "bodyText": "Cart-Pole Transformer\nPHYSICS · 50 Hz\nCart-Pole + 8-frame history\n1.0 s\n−2.4 m\n0\n+2.4 m\nθ -0.2°\nẋ\npolicy -0.2 N\nx\n0.05 m\nẋ\n-0.03 m/s\nθ\n-0.2°\nθ̇\n3.0°/s\nselected\nt\nPause\nReset\n← Push\nPush →\nTransformer · 1 block · 1 head\n각 단계를 클릭하면 실제 live tensor 계산을 확대합니다\nLEARNED · ← 0.2 N\n1\nEmbedding\nstate → token\nt−7\n8D\nt−6\n8D\nt−5\n8D\nt−4\n8D\nt−3\n8D\nt−2\n8D\nt−1\n8D\nt\n8D\n2\nQ · K · V\nlearned projections\nQ\nK\nV\n−7\n−6\n−5\n−4\n−3\n−2\n−1\nt\n3\nSelf Attention\nweights × V → context\n×\n→\nQ t → K t\n72.0%\n4\nTransformer block\nresidual + MLP\nAttn out\n+\nResidual\n→\nMLP\n+\nHidden\n5\nAction head\nfinal t only\n←\n0.2 N\ntanh(score) × 10\n읽는 순서\nQ 찾는 기준 K 비교 표지 V 가져올 내용\n1. Embedding\n\n[x,ẋ,θ,θ̇] → normalize → learned 4→8 projection + position.\n\n2. Q / K / V\n\nLayerNorm 뒤 같은 token을 세 learned projection으로 나눕니다.\n\n3. Attention\n\nQKᵀ/√d → causal mask → softmax. matrix를 가리키면 해당 time pair가 연결됩니다.\n\n4. Residual + MLP\n\nAttention output을 더하고 LN→Linear→GELU→Linear→residual을 통과합니다.\n\n5. Action\n\n마지막 hidden token만 읽어 tanh(score)×10 N force를 만듭니다.\n\n실시간 연결\n\n오른쪽 time token을 가리키면 왼쪽의 같은 과거 pose가 강조됩니다.\n\nCart-Pole에는 Transformer가 필요하지 않습니다. 이 모델은 sequence attention의 실제 learned tensor를 관찰하기 위한 교육용 모델이며 attention weight를 인과 설명으로 해석하지 않습니다.\nPolo Club Transformer Explainer의 MIT-licensed VectorCanvas, MatrixSvg, Sankey, attention expansion/animation 패턴을 vendoring·adaptation하여 사용합니다."
     }
   },
   "interactions": {
     "live": {
-      "t0": "1.3 s",
+      "t0": "1.2 s",
       "t1": "1.8 s",
       "canvasChanged": true,
       "matrixChanged": true
@@ -647,8 +643,8 @@
       "block": {
         "detailCount": 1,
         "containsExpected": true,
-        "textLength": 245,
-        "liveChanged": false
+        "textLength": 363,
+        "liveChanged": true
       },
       "action": {
         "detailCount": 1,
@@ -663,8 +659,8 @@
       "selectedText": "selected\nt−5"
     },
     "push": {
-      "before": "ẋ\n-0.00 m/s",
-      "after": "ẋ\n-0.69 m/s",
+      "before": "ẋ\n-0.01 m/s",
+      "after": "ẋ\n-0.77 m/s",
       "changed": true
     },
     "consoleErrors": []
