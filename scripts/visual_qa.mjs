@@ -184,6 +184,225 @@ function verifyDecisionTrace(trace,before,after,label) {
   }
 }
 
+
+async function waitAllModes(page) {
+  await page.waitForFunction(() => {
+    const wanted=['Vision','Fusion','Compare'];
+    return wanted.every(name=>{
+      const button=[...document.querySelectorAll('.mode-switch button')].find(b=>b.textContent.trim()===name);
+      return button && !button.disabled;
+    });
+  }, null, { timeout:15000 });
+}
+
+async function auditLayout(page, name, { minFont=9.75 } = {}) {
+  const data=await page.evaluate(({minFont})=>{
+    const visible=el=>{
+      const cs=getComputedStyle(el);
+      const r=el.getBoundingClientRect();
+      return cs.display!=='none' && cs.visibility!=='hidden' && Number(cs.opacity)!==0 && r.width>0 && r.height>0;
+    };
+    const scrollableAncestor=el=>{
+      let p=el.parentElement;
+      while(p && p!==document.body){
+        const cs=getComputedStyle(p);
+        if(['auto','scroll'].includes(cs.overflowX) && p.scrollWidth>p.clientWidth+1) return true;
+        p=p.parentElement;
+      }
+      return false;
+    };
+    const cls=el=>typeof el.className==='string'?el.className:'';
+    const textPreview=el=>{
+      const direct=[...el.childNodes].filter(n=>n.nodeType===Node.TEXT_NODE).map(n=>n.textContent.trim()).filter(Boolean).join(' ');
+      return direct.replace(/\s+/g,' ').slice(0,90);
+    };
+
+    const tinyText=[];
+    const clippedText=[];
+    const viewportEscapes=[];
+    const smallControls=[];
+
+    for(const el of [...document.querySelectorAll('body *')]){
+      if(el.matches('script,style,noscript,template,svg,svg *,canvas')) continue;
+      if(!visible(el)) continue;
+      const cs=getComputedStyle(el);
+      const r=el.getBoundingClientRect();
+      const text=textPreview(el);
+
+      if(text){
+        const fs=parseFloat(cs.fontSize);
+        if(Number.isFinite(fs) && fs<minFont){
+          tinyText.push({tag:el.tagName.toLowerCase(),class:cls(el),text,fontSize:Number(fs.toFixed(2))});
+        }
+
+        const clippedX=el.clientWidth>0 && el.scrollWidth>el.clientWidth+1 && ['hidden','clip'].includes(cs.overflowX);
+        const clippedY=el.clientHeight>0 && el.scrollHeight>el.clientHeight+1 && ['hidden','clip'].includes(cs.overflowY);
+        if(clippedX || clippedY){
+          clippedText.push({
+            tag:el.tagName.toLowerCase(),class:cls(el),text,
+            client:[el.clientWidth,el.clientHeight],scroll:[el.scrollWidth,el.scrollHeight],
+            overflow:[cs.overflowX,cs.overflowY]
+          });
+        }
+      }
+
+      if(
+        (el.matches('button,select') || (el.matches('input') && el.getAttribute('type')!=='range')) &&
+        r.height<28 && !el.closest('.frame-history')
+      ){
+        smallControls.push({tag:el.tagName.toLowerCase(),class:cls(el),text:text||el.getAttribute('aria-label')||'',height:Number(r.height.toFixed(1))});
+      }
+    }
+
+    const escapeSelectors='button,article,.stage,.controller-card,.decision-trace,.transformer-detail-wide,.vision-detail-wide,.fusion-detail-wide,.comparison-lab';
+    for(const el of [...document.querySelectorAll(escapeSelectors)]){
+      if(!visible(el) || scrollableAncestor(el)) continue;
+      const r=el.getBoundingClientRect();
+      if(r.left<-1 || r.right>innerWidth+1){
+        viewportEscapes.push({tag:el.tagName.toLowerCase(),class:cls(el),left:Number(r.left.toFixed(1)),right:Number(r.right.toFixed(1)),width:Number(r.width.toFixed(1))});
+      }
+    }
+
+    const clippedContainers=[];
+    const containerSelectors=['.pipeline-shell','.vision-pipeline','.fusion-pipeline','.comparison-lab','.decision-trace','.transformer-detail-wide','.vision-detail-wide','.fusion-detail-wide'];
+    for(const sel of containerSelectors){
+      for(const el of [...document.querySelectorAll(sel)]){
+        if(!visible(el)) continue;
+        const cs=getComputedStyle(el);
+        const clipX=['hidden','clip'].includes(cs.overflowX) && el.scrollWidth>el.clientWidth+2;
+        const clipY=['hidden','clip'].includes(cs.overflowY) && el.scrollHeight>el.clientHeight+2;
+        if(clipX||clipY){
+          clippedContainers.push({selector:sel,class:cls(el),client:[el.clientWidth,el.clientHeight],scroll:[el.scrollWidth,el.scrollHeight],overflow:[cs.overflowX,cs.overflowY]});
+        }
+      }
+    }
+
+    const overlaps=[];
+    const groups=[
+      '.topbar','.sim-controls','.state-readout','.overview','.vision-overview','.fusion-overview',
+      '.decision-trace .flow','.steps','.controller-grid','.replay-controls',
+      '.fusion-grid','.ablation-grid','.vision-flow','.token-pairs'
+    ];
+    for(const sel of groups){
+      const group=document.querySelector(sel);
+      if(!group || !visible(group)) continue;
+      const children=[...group.children].filter(el=>{
+        if(!visible(el)) return false;
+        const pos=getComputedStyle(el).position;
+        return pos!=='absolute' && pos!=='fixed' && !el.classList.contains('upstream-sankey');
+      });
+      for(let i=0;i<children.length;i++){
+        const a=children[i].getBoundingClientRect();
+        for(let j=i+1;j<children.length;j++){
+          const b=children[j].getBoundingClientRect();
+          const ix=Math.max(0,Math.min(a.right,b.right)-Math.max(a.left,b.left));
+          const iy=Math.max(0,Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top));
+          if(ix*iy>4){
+            overlaps.push({
+              group:sel,
+              a:cls(children[i])||children[i].tagName.toLowerCase(),
+              b:cls(children[j])||children[j].tagName.toLowerCase(),
+              area:Number((ix*iy).toFixed(1))
+            });
+          }
+        }
+      }
+    }
+
+    return {
+      viewport:{width:innerWidth,height:innerHeight},
+      document:{scrollWidth:document.documentElement.scrollWidth,scrollHeight:document.documentElement.scrollHeight},
+      tinyText,
+      clippedText,
+      smallControls,
+      viewportEscapes,
+      clippedContainers,
+      overlaps
+    };
+  },{minFont});
+
+  report.layouts ??= {};
+  report.layouts[name]=data;
+
+  if(data.document.scrollWidth>data.viewport.width+2) pushError(name+': page-level horizontal overflow '+data.document.scrollWidth+' > '+data.viewport.width);
+  if(data.tinyText.length) pushError(name+': text below 10px '+JSON.stringify(data.tinyText.slice(0,12)));
+  if(data.clippedText.length) pushError(name+': clipped visible text '+JSON.stringify(data.clippedText.slice(0,10)));
+  if(data.smallControls.length) pushError(name+': controls shorter than 28px '+JSON.stringify(data.smallControls.slice(0,10)));
+  if(data.viewportEscapes.length) pushError(name+': elements escape viewport '+JSON.stringify(data.viewportEscapes.slice(0,10)));
+  if(data.clippedContainers.length) pushError(name+': clipped major containers '+JSON.stringify(data.clippedContainers.slice(0,8)));
+  if(data.overlaps.length) pushError(name+': unintended sibling overlaps '+JSON.stringify(data.overlaps.slice(0,10)));
+  return data;
+}
+
+async function runResponsiveLayoutAudit(browser, width, label) {
+  const page=await browser.newPage({viewport:{width,height:900},deviceScaleFactor:1});
+  const errors=[];
+  page.on('console',msg=>{if(msg.type()==='error') errors.push(msg.text());});
+  page.on('pageerror',err=>errors.push(String(err)));
+  await page.goto(baseURL,{waitUntil:'networkidle',timeout:30000});
+  await waitLearned(page);
+  await waitAllModes(page);
+  await page.waitForTimeout(250);
+
+  const screenshot=async name=>{
+    if(width===1024 || width===768){
+      await page.screenshot({path:path.join(outDir,label+'-'+name+'.jpg'),type:'jpeg',quality:74,fullPage:true});
+    }
+  };
+
+  const pause=page.getByRole('button',{name:'Pause'});
+  if(await pause.count()) await pause.click();
+  await auditLayout(page,label+'-state-overview');
+
+  for(const [name,sel] of [
+    ['embedding','.embedding-overview'],
+    ['qkv','.qkv-overview'],
+    ['attention','.attention-overview'],
+    ['block','.block-overview'],
+    ['action','.action-overview']
+  ]){
+    await page.locator(sel).click();
+    await page.waitForTimeout(100);
+    await auditLayout(page,label+'-state-'+name+'-detail');
+    if(name==='qkv') await screenshot('state-qkv');
+    await page.locator(sel).click();
+    await page.waitForTimeout(50);
+  }
+
+  const step=page.getByRole('button',{name:'Step'});
+  if(await step.isEnabled().catch(()=>false)) await step.click();
+  await page.waitForTimeout(70);
+  await auditLayout(page,label+'-decision-trace');
+
+  await page.getByRole('button',{name:'Vision'}).click();
+  await page.waitForTimeout(120);
+  await auditLayout(page,label+'-vision-overview');
+  await page.locator('.vision-stage-attention').click();
+  await page.waitForTimeout(100);
+  await auditLayout(page,label+'-vision-detail');
+  await screenshot('vision-detail');
+  const closeVision=page.getByRole('button',{name:'close vision detail'});
+  if(await closeVision.count()) await closeVision.click();
+
+  await page.getByRole('button',{name:'Fusion'}).click();
+  await page.waitForTimeout(120);
+  await auditLayout(page,label+'-fusion-overview');
+  await page.locator('.fusion-stage-attention').click();
+  await page.waitForTimeout(100);
+  await auditLayout(page,label+'-fusion-detail');
+  await screenshot('fusion-detail');
+  const closeFusion=page.getByRole('button',{name:'close fusion detail'});
+  if(await closeFusion.count()) await closeFusion.click();
+
+  await page.getByRole('button',{name:'Compare'}).click();
+  await page.waitForTimeout(120);
+  await auditLayout(page,label+'-compare');
+  await screenshot('compare');
+
+  if(errors.length) pushError(label+': console/page errors during layout sweep '+errors.join(' | '));
+  await page.close();
+}
+
 async function runDesktop(browser) {
   const page = await browser.newPage({ viewport:{width:1440,height:1000}, deviceScaleFactor:1 });
   const consoleErrors=[];
@@ -806,6 +1025,10 @@ try {
   browser = await chromium.launch({ headless:true });
   await runDesktop(browser);
   await runMobile(browser);
+  await runResponsiveLayoutAudit(browser,1440,'audit-desktop');
+  await runResponsiveLayoutAudit(browser,1024,'audit-laptop');
+  await runResponsiveLayoutAudit(browser,768,'audit-tablet');
+  await runResponsiveLayoutAudit(browser,390,'audit-mobile');
 } catch (error) {
   pushError('unhandled visual QA exception: ' + (error?.stack || String(error)));
 } finally {
