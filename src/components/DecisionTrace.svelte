@@ -13,7 +13,24 @@
   }
 </script>
 
-<section class="decision-trace" data-has-trace={trace ? 'true' : 'false'}>
+<section
+  class="decision-trace"
+  data-has-trace={trace ? 'true' : 'false'}
+  data-tick-from={trace?.tickFrom ?? ''}
+  data-tick-to={trace?.tickTo ?? ''}
+  data-before-state={trace?.beforeState?.join(',') ?? ''}
+  data-applied-action-score={trace?.appliedActionScore ?? ''}
+  data-applied-policy-force={trace?.appliedPolicyForce ?? ''}
+  data-applied-control={trace?.appliedControl ?? ''}
+  data-disturbance={trace?.disturbance ?? ''}
+  data-total-force={trace?.totalForce ?? ''}
+  data-x-acc={trace?.xAcc ?? ''}
+  data-theta-acc={trace?.thetaAcc ?? ''}
+  data-dt={trace?.dt ?? ''}
+  data-next-state={trace?.nextState?.join(',') ?? ''}
+  data-next-action-score={trace?.nextActionScore ?? ''}
+  data-next-policy-force={trace?.nextPolicyForce ?? ''}
+>
   <header>
     <div>
       <span class="eyebrow">CLOSED LOOP · ONE REAL 20 ms TRANSITION</span>
