@@ -36,5 +36,5 @@
 </div>
 
 <style>
-.patch-grid{display:flex;flex-direction:column;align-items:center;gap:5px}.axis,.caption{font-size:9px;color:#7b8492}.caption{max-width:250px;text-align:center;line-height:1.4}
+.patch-grid{display:flex;flex-direction:column;align-items:center;gap:5px}.axis,.caption{font-size:10px;color:#7b8492}.caption{max-width:250px;text-align:center;line-height:1.4}
 </style>
