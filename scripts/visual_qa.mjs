@@ -251,7 +251,8 @@ async function runDesktop(browser) {
 
   if(visionEnabled){
     await visionButton.click();
-    await page.waitForTimeout(350);
+    await page.getByRole('button',{name:'Reset'}).click();
+    await page.waitForTimeout(450);
 
     const pipelineCount=await page.locator('.vision-pipeline').count();
     const hiddenStateCount=await page.locator('.vision-hidden-state').count();
@@ -284,6 +285,15 @@ async function runDesktop(browser) {
 
     await page.screenshot({path:path.join(outDir,'desktop-vision-overview.jpg'),type:'jpeg',quality:82,fullPage:true});
 
+    // Re-enter a fresh stable visual episode before capturing the explanatory detail.
+    await page.getByRole('button',{name:'Reset'}).click();
+    await page.waitForTimeout(500);
+    const pushForDetail=page.getByRole('button',{name:'Push →'});
+    await pushForDetail.dispatchEvent('pointerdown');
+    await page.waitForTimeout(140);
+    await pushForDetail.dispatchEvent('pointerup');
+    await page.waitForTimeout(100);
+
     await page.locator('.vision-stage-attention').click();
     await page.waitForTimeout(180);
     const visionDetailCount=await page.locator('.vision-detail-wide').count();
@@ -292,6 +302,8 @@ async function runDesktop(browser) {
     if(visionDetailCount!==1) pushError('vision mode: full-width detail missing');
     if(ablationCount!==1) pushError('vision mode: latest-frame ablation missing');
     if(truthCountBefore!==0) pushError('vision mode: ground truth should be hidden by default');
+
+    await page.screenshot({path:path.join(outDir,'desktop-vision-detail.jpg'),type:'jpeg',quality:84,fullPage:true});
 
     const reveal=page.getByRole('button',{name:/Reveal ground-truth reference/});
     await reveal.click();
@@ -304,7 +316,7 @@ async function runDesktop(browser) {
       outputChangedAfterPush:visionOutput0!==visionOutput1,
       detailCount:visionDetailCount,ablationCount,truthHiddenByDefault:truthCountBefore===0,truthRevealable:truthCountAfter===1
     };
-    await page.screenshot({path:path.join(outDir,'desktop-vision-detail.jpg'),type:'jpeg',quality:84,fullPage:true});
+    await page.screenshot({path:path.join(outDir,'desktop-vision-detail-truth.jpg'),type:'jpeg',quality:84,fullPage:true});
   }
 
   report.interactions.consoleErrors=consoleErrors;
@@ -345,6 +357,46 @@ async function runMobile(browser) {
   if(traceFlowDirection!=='column') pushError('mobile-attention: arithmetic trace is not vertically stacked');
   if(attentionExpansionDirection!=='column') pushError('mobile-attention: QK/mask/softmax expansion is not vertically stacked');
   await page.screenshot({path:path.join(outDir,'mobile-attention.jpg'),type:'jpeg',quality:80,fullPage:true});
+
+  // Close state detail, then exercise the pixels-only mobile flow.
+  const closeState=page.getByRole('button',{name:'close Transformer detail'});
+  if(await closeState.count()) await closeState.click();
+  const mobileVisionButton=page.getByRole('button',{name:'Vision'});
+  const mobileVisionEnabled=await mobileVisionButton.isEnabled().catch(()=>false);
+  if(mobileVisionEnabled){
+    await mobileVisionButton.click();
+    await page.getByRole('button',{name:'Reset'}).click();
+    await page.waitForTimeout(350);
+
+    const mobileVisionStateReadout=await page.locator('.state-readout').count();
+    const mobileVisionHidden=await page.locator('.vision-hidden-state').count();
+    const mobileVisionFrames=await page.locator('.vision-stage-frame .vision-frame').count();
+    const mobileVisionGrids=await page.locator('.vision-stage-patch .patch-grid').count();
+    if(mobileVisionStateReadout!==0) pushError('mobile vision: explicit state readout leaked');
+    if(mobileVisionHidden!==1) pushError('mobile vision: hidden-state label missing');
+    if(mobileVisionFrames!==8) pushError('mobile vision: expected 8 frames, found '+mobileVisionFrames);
+    if(mobileVisionGrids!==2) pushError('mobile vision: expected patch and delta grids, found '+mobileVisionGrids);
+
+    const mobileVisionDoc=await page.evaluate(()=>({w:document.documentElement.scrollWidth,v:innerWidth}));
+    if(mobileVisionDoc.w>mobileVisionDoc.v+2) pushError('mobile vision: overview causes page-level horizontal overflow');
+    await page.screenshot({path:path.join(outDir,'mobile-vision-overview.jpg'),type:'jpeg',quality:80,fullPage:true});
+
+    await page.locator('.vision-stage-attention').click();
+    await page.waitForTimeout(150);
+    const mobileVisionDetail=await page.locator('.vision-detail-wide').count();
+    if(mobileVisionDetail!==1) pushError('mobile vision: detail drawer missing');
+    const mobileVisionDetailDoc=await page.evaluate(()=>({w:document.documentElement.scrollWidth,v:innerWidth}));
+    if(mobileVisionDetailDoc.w>mobileVisionDetailDoc.v+2) pushError('mobile vision: detail causes page-level horizontal overflow');
+    report.interactions.mobileVision={
+      enabled:true,stateReadoutCount:mobileVisionStateReadout,hiddenStateCount:mobileVisionHidden,
+      frameCount:mobileVisionFrames,patchGridCount:mobileVisionGrids,detailCount:mobileVisionDetail
+    };
+    await page.screenshot({path:path.join(outDir,'mobile-vision-detail.jpg'),type:'jpeg',quality:80,fullPage:true});
+  } else {
+    report.interactions.mobileVision={enabled:false};
+    pushError('mobile vision: trained artifact exists but Vision button is disabled');
+  }
+
   await page.close();
 }
 
