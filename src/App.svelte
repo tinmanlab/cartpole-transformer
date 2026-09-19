@@ -64,14 +64,13 @@
 
 <svelte:head>
   <title>Cart-Pole Transformer Explainer</title>
-  <meta name="description" content="Live Cart-Pole simulation beside its Transformer attention computation."/>
+  <meta name="description" content="Live Cart-Pole simulation beside a step-by-step Transformer attention dataflow."/>
 </svelte:head>
 
 <main>
-  <header class="hero">
-    <div class="kicker">CART-POLE TRANSFORMER · LIVE EXPLAINER</div>
-    <h1>시뮬레이션과 Attention을 한 화면에서</h1>
-    <p>왼쪽에서 움직이는 Cart-Pole의 같은 상태가 오른쪽에서 바로 token → Q/K/V → attention → force로 계산됩니다.</p>
+  <header class="topbar">
+    <strong>Cart-Pole Transformer</strong>
+    <span>live 50 Hz · transparent 1-head attention</span>
   </header>
 
   <section class="lab-grid" aria-label="live Cart-Pole and Transformer visualization">
@@ -81,22 +80,21 @@
 
   <section class="explain">
     <div class="explain-head">
-      <div>
-        <div class="kicker">READ AFTER WATCHING THE LIVE VIEW</div>
-        <h2>오른쪽 그림은 무엇을 하는가?</h2>
-      </div>
-      <div class="qkv-key"><span class="q">Q</span> 찾을 기준 <span class="k">K</span> 비교용 꼬리표 <span class="v">V</span> 실제 가져올 정보</div>
+      <h2>아래 순서만 보면 됩니다</h2>
+      <div class="qkv-key"><span class="q">Q</span> 찾는 기준 <span class="k">K</span> 비교용 표지 <span class="v">V</span> 가져올 내용</div>
     </div>
     <div class="steps">
-      <article><b>1 · State token</b><p>각 시점의 <code>[x, ẋ, θ, θ̇]</code>가 token 하나입니다. 8개 token은 짧은 시간 기억입니다.</p></article>
-      <article><b>2 · Q / K / V</b><p>같은 token을 세 방식으로 바꿉니다. Q와 K는 “어디를 볼지”, V는 “무엇을 가져올지” 담당합니다.</p></article>
-      <article><b>3 · Attention</b><p><code>QKᵀ / √d → softmax</code>로 과거 token의 중요도를 만듭니다. 현재 결정은 matrix의 마지막 row입니다.</p></article>
-      <article><b>4 · Action</b><p>attention 비율만큼 V를 합친 context가 force를 만들고, 그 force가 다시 왼쪽 물리 시뮬레이션에 들어갑니다.</p></article>
+      <article><b>1. Raw state</b><p>시뮬레이터가 <code>[x, ẋ, θ, θ̇]</code> 네 숫자를 냅니다.</p></article>
+      <article><b>2. Normalize / encode</b><p>단위와 크기가 다른 네 숫자를 고정 scale로 나눠 비슷한 범위의 state token으로 만듭니다. <b>현재 버전에는 별도 learned embedding이 없습니다.</b></p></article>
+      <article><b>3. Q / K / V</b><p>각 token에 <code>WQ, WK, WV</code>를 곱해 검색 기준 Q, 비교용 K, 실제 내용 V를 만듭니다.</p></article>
+      <article><b>4. Compare</b><p><code>QKᵀ / √d</code>로 모든 시간 token을 비교하고 미래 칸은 causal mask로 가립니다.</p></article>
+      <article><b>5. Softmax + V</b><p>비교 점수를 확률처럼 합이 1인 비율로 바꾸고 그 비율만큼 V를 섞어 context를 만듭니다.</p></article>
+      <article><b>6. Force</b><p>context를 작은 action head가 읽어 실제 cart force를 만들고 다시 왼쪽 simulation에 넣습니다.</p></article>
     </div>
-    <div class="formula-line"><code>state history → Q, K, V → QKᵀ/√d → causal mask → softmax → Σ(attention·V) → force</code></div>
+    <div class="formula-line"><code>raw state → normalize → token → WQ/WK/WV → QKᵀ/√d + mask → softmax → Σ(a·V) → force → physics</code></div>
   </section>
 
-  <div class="claim">현재는 계산을 완전히 보이게 만든 <b>1-head transparent attention controller</b>입니다. 아직 학습된 Transformer policy는 아니며, 다음 단계에서 이 동일한 시각화 인터페이스에 실제 learned Q/K/V tensor를 연결합니다.</div>
+  <div class="claim">현재 controller는 학습된 Transformer가 아니라 계산을 투명하게 보기 위한 hand-authored attention controller입니다. 시각화 구조는 그대로 두고 다음 단계에서 learned tensor로 교체합니다.</div>
 
-  <footer>Polo Club Transformer Explainer의 MIT-licensed 시각화 방법을 참고해 vector strips, D3 matrix, DOM flow path, GSAP path animation을 Cart-Pole용으로 재구성했습니다.</footer>
+  <footer>Polo Club Transformer Explainer의 MIT-licensed vector/matrix visualization 방식을 Cart-Pole에 맞게 재구성했습니다.</footer>
 </main>
