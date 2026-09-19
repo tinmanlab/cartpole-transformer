@@ -273,10 +273,14 @@ async function runMobile(browser) {
     clientWidth:el.clientWidth,
     overflowX:getComputedStyle(el).overflowX
   })).catch(()=>null);
-  report.interactions.mobileAttention={detailCount:mobileDetailCount,traceScroller};
-  if(traceScroller && traceScroller.scrollWidth>traceScroller.clientWidth && !['auto','scroll'].includes(traceScroller.overflowX)) {
-    pushError('mobile-attention: wide trace is clipped instead of locally scrollable');
+  const traceFlowDirection=await page.locator('.attention-cell-trace .trace-flow').evaluate(el=>getComputedStyle(el).flexDirection).catch(()=>null);
+  const attentionExpansionDirection=await page.locator('.attention-expansion').evaluate(el=>getComputedStyle(el).flexDirection).catch(()=>null);
+  report.interactions.mobileAttention={detailCount:mobileDetailCount,traceScroller,traceFlowDirection,attentionExpansionDirection};
+  if(traceScroller && traceScroller.scrollWidth>traceScroller.clientWidth+2) {
+    pushError('mobile-attention: attention trace still requires horizontal scrolling');
   }
+  if(traceFlowDirection!=='column') pushError('mobile-attention: arithmetic trace is not vertically stacked');
+  if(attentionExpansionDirection!=='column') pushError('mobile-attention: QK/mask/softmax expansion is not vertically stacked');
   await page.screenshot({path:path.join(outDir,'mobile-attention.jpg'),type:'jpeg',quality:80,fullPage:true});
   await page.close();
 }
