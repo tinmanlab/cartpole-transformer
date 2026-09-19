@@ -197,7 +197,7 @@ async function runMobile(browser) {
   await page.close();
 }
 
-const browser = await chromium.launch({ headless:true });
+const launchOptions = { headless:true };\nif (process.env.QA_CHROME) launchOptions.executablePath = process.env.QA_CHROME;\nconst browser = await chromium.launch(launchOptions);
 try {
   await runDesktop(browser);
   await runMobile(browser);
