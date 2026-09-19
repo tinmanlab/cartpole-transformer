@@ -31,6 +31,7 @@ jobs:
       - run: npm run check:vision
       - run: npm run check:fusion
       - run: npm run check:comparison
+      - run: npm run check:dynamics
       - run: npm run build
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
