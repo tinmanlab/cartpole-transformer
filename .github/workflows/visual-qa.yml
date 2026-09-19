@@ -8,6 +8,7 @@ on:
       - "src/**"
       - "public/model/**"
       - "scripts/visual_qa.mjs"
+      - "scripts/check_*.mjs"
       - ".github/workflows/visual-qa.yml"
 
 permissions:
