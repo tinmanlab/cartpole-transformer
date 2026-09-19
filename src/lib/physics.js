@@ -11,26 +11,46 @@ export function resetState(angle = 0.045) {
   return { x: 0, xDot: 0, theta: angle, thetaDot: 0 };
 }
 
-export function stepCartPole(state, actionForce, dt = PHYSICS.tau, disturbance = 0) {
+export function computeCartPoleTransition(state, actionForce, dt = PHYSICS.tau, disturbance = 0) {
   const { gravity, massCart, massPole, halfPoleLength } = PHYSICS;
   const totalMass = massCart + massPole;
   const poleMassLength = massPole * halfPoleLength;
   const control = Math.max(-PHYSICS.forceMag, Math.min(PHYSICS.forceMag, actionForce));
-  const force = control + disturbance;
+  const totalForce = control + disturbance;
   const { x, xDot, theta, thetaDot } = state;
   const costheta = Math.cos(theta);
   const sintheta = Math.sin(theta);
-  const temp = (force + poleMassLength * thetaDot * thetaDot * sintheta) / totalMass;
+  const temp = (totalForce + poleMassLength * thetaDot * thetaDot * sintheta) / totalMass;
   const thetaAcc = (gravity * sintheta - costheta * temp) /
     (halfPoleLength * (4 / 3 - massPole * costheta * costheta / totalMass));
   const xAcc = temp - poleMassLength * thetaAcc * costheta / totalMass;
 
-  return {
+  const nextState = {
     x: x + dt * xDot,
     xDot: xDot + dt * xAcc,
     theta: theta + dt * thetaDot,
     thetaDot: thetaDot + dt * thetaAcc,
   };
+
+  return {
+    dt,
+    control,
+    disturbance,
+    totalForce,
+    totalMass,
+    poleMassLength,
+    costheta,
+    sintheta,
+    temp,
+    xAcc,
+    thetaAcc,
+    state: { x, xDot, theta, thetaDot },
+    nextState,
+  };
+}
+
+export function stepCartPole(state, actionForce, dt = PHYSICS.tau, disturbance = 0) {
+  return computeCartPoleTransition(state, actionForce, dt, disturbance).nextState;
 }
 
 export function terminal(state) {
