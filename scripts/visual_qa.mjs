@@ -154,7 +154,69 @@ async function runDesktop(browser) {
     if(count && txt.length<30) pushError(name+': detail panel appears empty/too sparse');
     if(count && liveChanged===false) pushWarning(name+': expanded visualization did not change over 320 ms');
     const shotName='desktop-'+name;
-    if(name==='attention') await inspectView(page,'desktop-attention');
+    if(name==='attention') {
+      await inspectView(page,'desktop-attention');
+
+      const trace=page.locator('.attention-cell-trace');
+      const traceCount=await trace.count();
+      if(traceCount!==1) {
+        pushError('attention trace missing or duplicated: '+traceCount);
+      } else {
+        const qButtons=trace.locator('.trace-query-button');
+        const kButtons=trace.locator('.trace-key-button');
+        const countButtons=await qButtons.count();
+        const allowedRow=Math.max(0,countButtons-1);
+        const allowedCol=Math.max(0,countButtons-3);
+
+        await qButtons.nth(allowedRow).click();
+        await kButtons.nth(allowedCol).click();
+        await page.waitForTimeout(120);
+
+        const allowed=await trace.evaluate(el=>{
+          const d=el.dataset;
+          return {
+            row:Number(d.row),
+            col:Number(d.col),
+            dotSum:Number(d.dotSum),
+            scale:Number(d.scale),
+            score:Number(d.score),
+            masked:d.masked==='true',
+            exp:Number(d.exp),
+            denominator:Number(d.denominator),
+            weight:Number(d.weight),
+            v0:Number(d.v0),
+            contribution0:Number(d.contribution0)
+          };
+        });
+        const close=(a,b,eps=1e-8)=>Number.isFinite(a)&&Number.isFinite(b)&&Math.abs(a-b)<=eps;
+        if(!close(allowed.dotSum/allowed.scale,allowed.score)) pushError('attention trace score arithmetic mismatch');
+        if(!close(allowed.exp/allowed.denominator,allowed.weight)) pushError('attention trace softmax arithmetic mismatch');
+        if(!close(allowed.weight*allowed.v0,allowed.contribution0)) pushError('attention trace weighted-V arithmetic mismatch');
+        if(allowed.masked) pushError('allowed attention trace unexpectedly masked');
+
+        let maskedCase=null;
+        if(countButtons>=6) {
+          await qButtons.nth(2).click();
+          await kButtons.nth(5).click();
+          await page.waitForTimeout(80);
+          maskedCase=await trace.evaluate(el=>({
+            row:Number(el.dataset.row),
+            col:Number(el.dataset.col),
+            masked:el.dataset.masked==='true',
+            weight:Number(el.dataset.weight)
+          }));
+          if(!maskedCase.masked) pushError('future attention trace did not report causal mask');
+          if(Math.abs(maskedCase.weight)>1e-12) pushError('future attention trace weight is not zero');
+        }
+
+        report.interactions.attentionTrace={allowed,masked:maskedCase};
+
+        await qButtons.nth(allowedRow).click();
+        await kButtons.nth(allowedCol).click();
+        await page.waitForTimeout(80);
+        await trace.screenshot({path:path.join(outDir,'desktop-attention-trace.jpg'),type:'jpeg',quality:86});
+      }
+    }
     await page.screenshot({path:path.join(outDir,shotName+'.jpg'),type:'jpeg',quality:82,fullPage:true});
     // close by clicking same stage
     await page.locator(sel).click();
