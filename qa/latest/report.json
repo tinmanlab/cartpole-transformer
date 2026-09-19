@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-19T04:46:03.143Z",
+  "generatedAt": "2026-09-19T04:50:05.465Z",
   "baseURL": "http://127.0.0.1:4173/cartpole-transformer/",
   "errors": [],
   "warnings": [
@@ -94,14 +94,14 @@
       "paths": [
         {
           "i": 0,
-          "length": 163.6004180908203,
+          "length": 36.18083572387695,
           "rect": {
-            "x": 633.09375,
-            "y": 339,
-            "width": 38,
-            "height": 152,
+            "x": 645.09375,
+            "y": 302.5,
+            "width": 26,
+            "height": 24,
             "right": 671.09375,
-            "bottom": 491
+            "bottom": 326.5
           }
         },
         {
@@ -275,7 +275,7 @@
       ],
       "detailMinFont": null,
       "learnedText": "learned · 1 block · 1 head · 8D",
-      "bodyText": "Cart-Pole Transformer\nlearned · 1 block · 1 head · 8D\nPHYSICS · 50 Hz\nCart-Pole + 8-frame history\n1.8 s\n−2.4 m\n0\n+2.4 m\nθ -0.1°\nx\n0.04 m\nẋ\n-0.01 m/s\nθ\n-0.1°\nθ̇\n0.2°/s\nselected\nt\nPause\nReset\n← Push\nPush →\nTransformer · 1 block · 1 head\n단계를 클릭하면 실제 live 계산을 펼칩니다\nLEARNED · → 0.0 N\n1\nEmbedding\nstate → token\nt−7\n8D\nt−6\n8D\nt−5\n8D\nt−4\n8D\nt−3\n8D\nt−2\n8D\nt−1\n8D\nt\n8D\n2\nQ · K · V\nthree learned views\nQ\nK\nV\n−7\n−6\n−5\n−4\n−3\n−2\n−1\nt\n3\nSelf Attention\nQK → mask → softmax\nQuery\nt\nlooks at\nt\n72.3%\n4\nBlock output\nresidual + MLP\nAttn out\n+\nResidual\n→\nMLP\n+\nHidden\n5\nAction head\nlast token only\n→\n0.0 N\ntanh(score) × 10\n읽는 순서\nQ 찾는 기준 K 비교 표지 V 가져올 내용\n1. Embedding\n\n[x,ẋ,θ,θ̇] → normalize → learned 4→8 projection + position.\n\n2. Q / K / V\n\nLayerNorm 뒤 같은 token을 세 learned projection으로 나눕니다.\n\n3. Attention\n\nQKᵀ/√d → causal mask → softmax. matrix를 가리키면 해당 time pair가 연결됩니다.\n\n4. Residual + MLP\n\nAttention output을 더하고 LN→Linear→GELU→Linear→residual을 통과합니다.\n\n5. Action\n\n마지막 hidden token만 읽어 tanh(score)×10 N force를 만듭니다.\n\n실시간 연결\n\n오른쪽 time token을 가리키면 왼쪽의 같은 과거 pose가 강조됩니다.\n\nCart-Pole에는 Transformer가 필요하지 않습니다. 이 모델은 sequence attention의 실제 learned tensor를 관찰하기 위한 교육용 모델이며 attention weight를 인과 설명으로 해석하지 않습니다.\nPolo Club Transformer Explainer의 MIT-licensed VectorCanvas, MatrixSvg, Sankey, attention expansion/animation 패턴을 vendoring·adaptation하여 사용합니다."
+      "bodyText": "Cart-Pole Transformer\nlearned · 1 block · 1 head · 8D\nPHYSICS · 50 Hz\nCart-Pole + 8-frame history\n1.8 s\n−2.4 m\n0\n+2.4 m\nθ -0.1°\npolicy 0.1 N\nx\n0.04 m\nẋ\n-0.01 m/s\nθ\n-0.1°\nθ̇\n0.1°/s\nselected\nt\nPause\nReset\n← Push\nPush →\nTransformer · 1 block · 1 head\n단계를 클릭하면 실제 live 계산을 펼칩니다\nLEARNED · → 0.1 N\n1\nEmbedding\nstate → token\nt−7\n8D\nt−6\n8D\nt−5\n8D\nt−4\n8D\nt−3\n8D\nt−2\n8D\nt−1\n8D\nt\n8D\n2\nQ · K · V\nthree learned views\nQ\nK\nV\n−7\n−6\n−5\n−4\n−3\n−2\n−1\nt\n3\nSelf Attention\nQK → mask → softmax\nQuery\nt\nlooks at\nt\n72.3%\n4\nBlock output\nresidual + MLP\nAttn out\n+\nResidual\n→\nMLP\n+\nHidden\n5\nAction head\nlast token only\n→\n0.1 N\ntanh(score) × 10\n읽는 순서\nQ 찾는 기준 K 비교 표지 V 가져올 내용\n1. Embedding\n\n[x,ẋ,θ,θ̇] → normalize → learned 4→8 projection + position.\n\n2. Q / K / V\n\nLayerNorm 뒤 같은 token을 세 learned projection으로 나눕니다.\n\n3. Attention\n\nQKᵀ/√d → causal mask → softmax. matrix를 가리키면 해당 time pair가 연결됩니다.\n\n4. Residual + MLP\n\nAttention output을 더하고 LN→Linear→GELU→Linear→residual을 통과합니다.\n\n5. Action\n\n마지막 hidden token만 읽어 tanh(score)×10 N force를 만듭니다.\n\n실시간 연결\n\n오른쪽 time token을 가리키면 왼쪽의 같은 과거 pose가 강조됩니다.\n\nCart-Pole에는 Transformer가 필요하지 않습니다. 이 모델은 sequence attention의 실제 learned tensor를 관찰하기 위한 교육용 모델이며 attention weight를 인과 설명으로 해석하지 않습니다.\nPolo Club Transformer Explainer의 MIT-licensed VectorCanvas, MatrixSvg, Sankey, attention expansion/animation 패턴을 vendoring·adaptation하여 사용합니다."
     },
     "desktop-attention": {
       "viewport": {
@@ -372,14 +372,14 @@
       "paths": [
         {
           "i": 0,
-          "length": 252.49818420410156,
+          "length": 34.64180374145508,
           "rect": {
-            "x": 633.09375,
-            "y": 339,
-            "width": 38,
-            "height": 243.5625,
+            "x": 645.09375,
+            "y": 326.5,
+            "width": 26,
+            "height": 21.78125,
             "right": 671.09375,
-            "bottom": 582.5625
+            "bottom": 348.28125
           }
         },
         {
@@ -553,7 +553,7 @@
       ],
       "detailMinFont": 8,
       "learnedText": "learned · 1 block · 1 head · 8D",
-      "bodyText": "Cart-Pole Transformer\nlearned · 1 block · 1 head · 8D\nPHYSICS · 50 Hz\nCart-Pole + 8-frame history\n3.2 s\n−2.4 m\n0\n+2.4 m\nt−4 · θ -0.0°\nθ -0.0°\nẋ\nx\n0.01 m\nẋ\n-0.03 m/s\nθ\n-0.0°\nθ̇\n0.1°/s\nselected\nt−4\nPause\nReset\n← Push\nPush →\nTransformer · 1 block · 1 head\n단계를 클릭하면 실제 live 계산을 펼칩니다\nLEARNED · ← 0.0 N\n1\nEmbedding\nstate → token\nt−7\n8D\nt−6\n8D\nt−5\n8D\nt−4\n8D\nt−3\n8D\nt−2\n8D\nt−1\n8D\nt\n8D\n2\nQ · K · V\nthree learned views\nQ\nK\nV\n−7\n−6\n−5\n−4\n−3\n−2\n−1\nt\n3\nSelf Attention\nQK → mask → softmax\nQuery\nt−4\nlooks at\nt−4\n52.1%\n4\nBlock output\nresidual + MLP\nAttn out\n+\nResidual\n→\nMLP\n+\nHidden\n5\nAction head\nlast token only\n←\n0.0 N\ntanh(score) × 10\nSelf Attention\nQ와 K를 비교하고 미래를 mask한 뒤 softmax로 V를 얼마나 가져올지 결정합니다.\n×\n1\nDot product\nQKᵀ / √d\n\nQuery와 Key가 얼마나 비슷한지 모든 시간쌍을 비교합니다.\n\n2\nCausal mask\nfuture → −∞\n\n현재 시점은 미래 token을 볼 수 없습니다. 위쪽 삼각형이 차단됩니다.\n\n3\nSoftmax\nΣ a = 1\n\n점수를 양수 비율로 바꿉니다. 마지막 row가 지금 force를 만드는 attention입니다.\n\n읽는 순서\nQ 찾는 기준 K 비교 표지 V 가져올 내용\n1. Embedding\n\n[x,ẋ,θ,θ̇] → normalize → learned 4→8 projection + position.\n\n2. Q / K / V\n\nLayerNorm 뒤 같은 token을 세 learned projection으로 나눕니다.\n\n3. Attention\n\nQKᵀ/√d → causal mask → softmax. matrix를 가리키면 해당 time pair가 연결됩니다.\n\n4. Residual + MLP\n\nAttention output을 더하고 LN→Linear→GELU→Linear→residual을 통과합니다.\n\n5. Action\n\n마지막 hidden token만 읽어 tanh(score)×10 N force를 만듭니다.\n\n실시간 연결\n\n오른쪽 time token을 가리키면 왼쪽의 같은 과거 pose가 강조됩니다.\n\nCart-Pole에는 Transformer가 필요하지 않습니다. 이 모델은 sequence attention의 실제 learned tensor를 관찰하기 위한 교육용 모델이며 attention weight를 인과 설명으로 해석하지 않습니다.\nPolo Club Transformer Explainer의 MIT-licensed VectorCanvas, MatrixSvg, Sankey, attention expansion/animation 패턴을 vendoring·adaptation하여 사용합니다."
+      "bodyText": "Cart-Pole Transformer\nlearned · 1 block · 1 head · 8D\nPHYSICS · 50 Hz\nCart-Pole + 8-frame history\n3.2 s\n−2.4 m\n0\n+2.4 m\nt−4 · θ -0.0°\nθ -0.0°\nẋ\nx\n0.02 m\nẋ\n-0.03 m/s\nθ\n-0.0°\nθ̇\n0.1°/s\nselected\nt−4\nPause\nReset\n← Push\nPush →\nTransformer · 1 block · 1 head\n단계를 클릭하면 실제 live 계산을 펼칩니다\nLEARNED · ← 0.0 N\n1\nEmbedding\nstate → token\nt−7\n8D\nt−6\n8D\nt−5\n8D\nt−4\n8D\nt−3\n8D\nt−2\n8D\nt−1\n8D\nt\n8D\n2\nQ · K · V\nthree learned views\nQ\nK\nV\n−7\n−6\n−5\n−4\n−3\n−2\n−1\nt\n3\nSelf Attention\nQK → mask → softmax\nQuery\nt−4\nlooks at\nt−4\n52.1%\n4\nBlock output\nresidual + MLP\nAttn out\n+\nResidual\n→\nMLP\n+\nHidden\n5\nAction head\nlast token only\n←\n0.0 N\ntanh(score) × 10\nSelf Attention\nQ와 K를 비교하고 미래를 mask한 뒤 softmax로 V를 얼마나 가져올지 결정합니다.\n×\n1\nDot product\nQKᵀ / √d\n\nQuery와 Key가 얼마나 비슷한지 모든 시간쌍을 비교합니다.\n\n2\nCausal mask\nfuture → −∞\n\n현재 시점은 미래 token을 볼 수 없습니다. 위쪽 삼각형이 차단됩니다.\n\n3\nSoftmax\nΣ a = 1\n\n점수를 양수 비율로 바꿉니다. 마지막 row가 지금 force를 만드는 attention입니다.\n\n읽는 순서\nQ 찾는 기준 K 비교 표지 V 가져올 내용\n1. Embedding\n\n[x,ẋ,θ,θ̇] → normalize → learned 4→8 projection + position.\n\n2. Q / K / V\n\nLayerNorm 뒤 같은 token을 세 learned projection으로 나눕니다.\n\n3. Attention\n\nQKᵀ/√d → causal mask → softmax. matrix를 가리키면 해당 time pair가 연결됩니다.\n\n4. Residual + MLP\n\nAttention output을 더하고 LN→Linear→GELU→Linear→residual을 통과합니다.\n\n5. Action\n\n마지막 hidden token만 읽어 tanh(score)×10 N force를 만듭니다.\n\n실시간 연결\n\n오른쪽 time token을 가리키면 왼쪽의 같은 과거 pose가 강조됩니다.\n\nCart-Pole에는 Transformer가 필요하지 않습니다. 이 모델은 sequence attention의 실제 learned tensor를 관찰하기 위한 교육용 모델이며 attention weight를 인과 설명으로 해석하지 않습니다.\nPolo Club Transformer Explainer의 MIT-licensed VectorCanvas, MatrixSvg, Sankey, attention expansion/animation 패턴을 vendoring·adaptation하여 사용합니다."
     },
     "mobile-overview": {
       "viewport": {
@@ -643,14 +643,14 @@
       "paths": [
         {
           "i": 0,
-          "length": 568.283447265625,
+          "length": 635.1953125,
           "rect": {
             "x": 26,
-            "y": 413,
-            "width": 342,
-            "height": 384,
-            "right": 368,
-            "bottom": 797
+            "y": 275,
+            "width": 354,
+            "height": 509.5,
+            "right": 380,
+            "bottom": 784.5
           }
         },
         {
@@ -824,7 +824,7 @@
       ],
       "detailMinFont": null,
       "learnedText": "learned · 1 block · 1 head · 8D",
-      "bodyText": "Cart-Pole Transformer\nPHYSICS · 50 Hz\nCart-Pole + 8-frame history\n1.1 s\n−2.4 m\n0\n+2.4 m\nθ -0.0°\npolicy 0.4 N\nx\n0.04 m\nẋ\n-0.02 m/s\nθ\n-0.0°\nθ̇\n1.7°/s\nselected\nt\nPause\nReset\n← Push\nPush →\nTransformer · 1 block · 1 head\n단계를 클릭하면 실제 live 계산을 펼칩니다\nLEARNED · → 0.4 N\n1\nEmbedding\nstate → token\nt−7\n8D\nt−6\n8D\nt−5\n8D\nt−4\n8D\nt−3\n8D\nt−2\n8D\nt−1\n8D\nt\n8D\n2\nQ · K · V\nthree learned views\nQ\nK\nV\n−7\n−6\n−5\n−4\n−3\n−2\n−1\nt\n3\nSelf Attention\nQK → mask → softmax\nQuery\nt\nlooks at\nt\n72.8%\n4\nBlock output\nresidual + MLP\nAttn out\n+\nResidual\n→\nMLP\n+\nHidden\n5\nAction head\nlast token only\n→\n0.4 N\ntanh(score) × 10\n읽는 순서\nQ 찾는 기준 K 비교 표지 V 가져올 내용\n1. Embedding\n\n[x,ẋ,θ,θ̇] → normalize → learned 4→8 projection + position.\n\n2. Q / K / V\n\nLayerNorm 뒤 같은 token을 세 learned projection으로 나눕니다.\n\n3. Attention\n\nQKᵀ/√d → causal mask → softmax. matrix를 가리키면 해당 time pair가 연결됩니다.\n\n4. Residual + MLP\n\nAttention output을 더하고 LN→Linear→GELU→Linear→residual을 통과합니다.\n\n5. Action\n\n마지막 hidden token만 읽어 tanh(score)×10 N force를 만듭니다.\n\n실시간 연결\n\n오른쪽 time token을 가리키면 왼쪽의 같은 과거 pose가 강조됩니다.\n\nCart-Pole에는 Transformer가 필요하지 않습니다. 이 모델은 sequence attention의 실제 learned tensor를 관찰하기 위한 교육용 모델이며 attention weight를 인과 설명으로 해석하지 않습니다.\nPolo Club Transformer Explainer의 MIT-licensed VectorCanvas, MatrixSvg, Sankey, attention expansion/animation 패턴을 vendoring·adaptation하여 사용합니다."
+      "bodyText": "Cart-Pole Transformer\nPHYSICS · 50 Hz\nCart-Pole + 8-frame history\n1.1 s\n−2.4 m\n0\n+2.4 m\nθ -0.1°\nẋ\npolicy 0.2 N\nx\n0.04 m\nẋ\n-0.03 m/s\nθ\n-0.1°\nθ̇\n2.4°/s\nselected\nt\nPause\nReset\n← Push\nPush →\nTransformer · 1 block · 1 head\n단계를 클릭하면 실제 live 계산을 펼칩니다\nLEARNED · → 0.2 N\n1\nEmbedding\nstate → token\nt−7\n8D\nt−6\n8D\nt−5\n8D\nt−4\n8D\nt−3\n8D\nt−2\n8D\nt−1\n8D\nt\n8D\n2\nQ · K · V\nthree learned views\nQ\nK\nV\n−7\n−6\n−5\n−4\n−3\n−2\n−1\nt\n3\nSelf Attention\nQK → mask → softmax\nQuery\nt\nlooks at\nt\n72.6%\n4\nBlock output\nresidual + MLP\nAttn out\n+\nResidual\n→\nMLP\n+\nHidden\n5\nAction head\nlast token only\n→\n0.2 N\ntanh(score) × 10\n읽는 순서\nQ 찾는 기준 K 비교 표지 V 가져올 내용\n1. Embedding\n\n[x,ẋ,θ,θ̇] → normalize → learned 4→8 projection + position.\n\n2. Q / K / V\n\nLayerNorm 뒤 같은 token을 세 learned projection으로 나눕니다.\n\n3. Attention\n\nQKᵀ/√d → causal mask → softmax. matrix를 가리키면 해당 time pair가 연결됩니다.\n\n4. Residual + MLP\n\nAttention output을 더하고 LN→Linear→GELU→Linear→residual을 통과합니다.\n\n5. Action\n\n마지막 hidden token만 읽어 tanh(score)×10 N force를 만듭니다.\n\n실시간 연결\n\n오른쪽 time token을 가리키면 왼쪽의 같은 과거 pose가 강조됩니다.\n\nCart-Pole에는 Transformer가 필요하지 않습니다. 이 모델은 sequence attention의 실제 learned tensor를 관찰하기 위한 교육용 모델이며 attention weight를 인과 설명으로 해석하지 않습니다.\nPolo Club Transformer Explainer의 MIT-licensed VectorCanvas, MatrixSvg, Sankey, attention expansion/animation 패턴을 vendoring·adaptation하여 사용합니다."
     }
   },
   "interactions": {
