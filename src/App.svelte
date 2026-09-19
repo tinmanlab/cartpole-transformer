@@ -8,7 +8,8 @@
   import FusionPipeline from './components/FusionPipeline.svelte';
   import FusionDetail from './components/FusionDetail.svelte';
   import ComparisonLab from './components/ComparisonLab.svelte';
-  import { resetState, stepCartPole, terminal, stateArray, PHYSICS } from './lib/physics.js';
+  import DecisionTrace from './components/DecisionTrace.svelte';
+  import { resetState, computeCartPoleTransition, terminal, stateArray, PHYSICS } from './lib/physics.js';
   import { runAttention, forceFromScore } from './lib/attention.js';
   import { loadLearnedModel, runLearnedAttention } from './lib/learned_attention.js';
   import {
@@ -76,6 +77,7 @@
   let elapsed = 0;
   let status = 'balancing';
   let raf = 0;
+  let lastDecisionTrace = null;
 
   $: syncTick = Math.round(elapsed / PHYSICS.tau);
   $: syncStateVector = stateArray(state);
@@ -129,10 +131,37 @@
     refreshFusion();
   }
 
+  function currentActionScore() {
+    if (mode === 'fusion' && fusionResult) return fusionResult.actionScore;
+    if (mode === 'vision' && visionResult) return visionResult.actionScore;
+    return result.actionScore;
+  }
+
   function activeForce() {
-    if (mode === 'fusion' && fusionResult) return forceFromScore(fusionResult.actionScore);
-    if (mode === 'vision' && visionResult) return forceFromScore(visionResult.actionScore);
-    return forceFromScore(result.actionScore);
+    return forceFromScore(currentActionScore());
+  }
+
+  function currentObservationTrace() {
+    if (mode === 'vision') {
+      return {
+        kind:'vision',
+        frameCount:visionFrames.length,
+        inputDim:visionResult?.tokenInputs?.[visionResult.tokenInputs.length - 1]?.length || 0,
+        frameSpanMs:(VISION_SEQUENCE_LENGTH - 1) * frameIntervalMs
+      };
+    }
+    if (mode === 'fusion') {
+      return {
+        kind:'fusion',
+        tokenCount:fusionResult?.tokens?.length || 0,
+        stateAvailable:fusionResult?.stateAvailable !== false,
+        visionAvailable:fusionResult?.visionAvailable !== false
+      };
+    }
+    return {
+      kind:'state',
+      values:[...(result?.rawTokens?.[result.rawTokens.length - 1] || stateArray(state))]
+    };
   }
 
   function refreshCurrentInference(updateForce = mode !== 'compare') {
@@ -144,9 +173,20 @@
   function advanceOneTick() {
     if (mode === 'compare' || status === 'fell') return false;
 
-    // controllerForce belongs to the currently displayed snapshot and is the
-    // action applied on this transition.
-    state = stepCartPole(state, controllerForce, PHYSICS.tau, disturbance);
+    const tickFrom = Math.round(elapsed / PHYSICS.tau);
+    const appliedPolicyForce = controllerForce;
+    const appliedActionScore = currentActionScore();
+    const controllerObservation = currentObservationTrace();
+
+    // The environment returns the exact intermediates used for this plant step.
+    const plant = computeCartPoleTransition(
+      state,
+      appliedPolicyForce,
+      PHYSICS.tau,
+      disturbance
+    );
+
+    state = plant.nextState;
     const nextStateArray = stateArray(state);
     history = [...history.slice(1), nextStateArray];
 
@@ -162,9 +202,29 @@
 
     elapsed += PHYSICS.tau;
 
-    // Recompute every explainer/model intermediate from the new current state
-    // before the browser can render the next snapshot.
+    // Recompute the next controller snapshot only after the plant state/history
+    // has advanced, so u_(t+1) is distinct from the applied u_t.
     refreshCurrentInference(true);
+
+    lastDecisionTrace = {
+      mode,
+      tickFrom,
+      tickTo:tickFrom + 1,
+      observation:controllerObservation,
+      beforeState:stateArray(plant.state),
+      appliedActionScore,
+      appliedPolicyForce,
+      appliedControl:plant.control,
+      disturbance:plant.disturbance,
+      totalForce:plant.totalForce,
+      temp:plant.temp,
+      xAcc:plant.xAcc,
+      thetaAcc:plant.thetaAcc,
+      dt:plant.dt,
+      nextState:[...nextStateArray],
+      nextActionScore:currentActionScore(),
+      nextPolicyForce:controllerForce
+    };
 
     if (terminal(state)) {
       status = 'fell';
@@ -185,6 +245,7 @@
     if (next === 'compare' && (modelState !== 'learned' || visionModelState !== 'learned' || fusionModelState !== 'learned')) return;
 
     mode = next;
+    lastDecisionTrace = null;
     expandedStage = null;
     visionDetailOpen = false;
     fusionDetailOpen = false;
@@ -200,6 +261,7 @@
 
   function setFusionScenario(next) {
     fusionScenario = next;
+    lastDecisionTrace = null;
     refreshFusion();
     if (mode === 'fusion') controllerForce = activeForce();
   }
@@ -240,6 +302,7 @@
 
     disturbance = 0;
     elapsed = 0;
+    lastDecisionTrace = null;
     status = 'balancing';
     running = true;
 
@@ -403,6 +466,7 @@
       />
     {/if}
   </section>
+    <DecisionTrace trace={lastDecisionTrace}/>
   {/if}
 
   {#if mode === 'state'}
