@@ -101,6 +101,41 @@ async function waitLearned(page) {
   }, null, { timeout: 15000 });
 }
 
+async function readAtomicSnapshot(page) {
+  return page.locator('main').evaluate(el => {
+    const parse = value => value ? value.split(',').map(Number) : [];
+    return {
+      mode:el.dataset.observationMode,
+      tick:Number(el.dataset.syncTick),
+      sim:parse(el.dataset.simState),
+      stateToken:parse(el.dataset.stateToken),
+      visionState:parse(el.dataset.visionSampleState),
+      actionScore:Number(el.dataset.activeActionScore),
+      force:Number(el.dataset.controllerForce)
+    };
+  });
+}
+
+function verifyAtomicSnapshot(snapshot, label) {
+  const close = (a,b,eps=1e-10) => Number.isFinite(a) && Number.isFinite(b) && Math.abs(a-b) <= eps;
+  const arraysClose = (a,b) => a.length===4 && b.length===4 && a.every((v,i)=>close(v,b[i]));
+
+  if(!arraysClose(snapshot.sim,snapshot.stateToken)) {
+    pushError(label+': displayed simulator state != latest State raw token');
+  }
+  if(!arraysClose(snapshot.sim,snapshot.visionState)) {
+    pushError(label+': displayed simulator state != newest Vision/Fusion sampled state');
+  }
+  if(!Number.isFinite(snapshot.actionScore) || !Number.isFinite(snapshot.force)) {
+    pushError(label+': active action score/force is non-finite');
+  } else {
+    const expectedForce=10*Math.tanh(snapshot.actionScore);
+    if(!close(expectedForce,snapshot.force,1e-8)) {
+      pushError(label+': displayed force does not match current snapshot action score');
+    }
+  }
+}
+
 async function runDesktop(browser) {
   const page = await browser.newPage({ viewport:{width:1440,height:1000}, deviceScaleFactor:1 });
   const consoleErrors=[];
@@ -244,6 +279,27 @@ async function runDesktop(browser) {
   report.interactions.push={before:xdot0,after:xdot1,changed:xdot0!==xdot1};
   if(xdot0===xdot1) pushWarning('push interaction did not change visible xdot');
 
+  // Atomic snapshot contract: pose, latest model observations and displayed action
+  // must describe the same simulation tick.
+  const pauseState=page.getByRole('button',{name:'Pause'});
+  if(await pauseState.count()) await pauseState.click();
+  await page.waitForTimeout(80);
+  const stateSync0=await readAtomicSnapshot(page);
+  verifyAtomicSnapshot(stateSync0,'state pause');
+
+  const stepState=page.getByRole('button',{name:'Step'});
+  const stateStepEnabled=await stepState.isEnabled().catch(()=>false);
+  if(!stateStepEnabled) pushError('state pause: Step button is not enabled');
+  if(stateStepEnabled) await stepState.click();
+  await page.waitForTimeout(80);
+  const stateSync1=await readAtomicSnapshot(page);
+  verifyAtomicSnapshot(stateSync1,'state step');
+  if(stateSync1.tick!==stateSync0.tick+1) pushError('state Step did not advance exactly one tick');
+
+  report.interactions.atomicSync={
+    state:{before:stateSync0,after:stateSync1,stepDelta:stateSync1.tick-stateSync0.tick}
+  };
+
   // Optional pixels-only mode becomes mandatory once the trained artifact is present.
   const visionButton=page.getByRole('button',{name:'Vision'});
   const visionEnabled=await visionButton.isEnabled().catch(()=>false);
@@ -253,6 +309,23 @@ async function runDesktop(browser) {
     await visionButton.click();
     await page.getByRole('button',{name:'Reset'}).click();
     await page.waitForTimeout(450);
+
+    const pauseVision=page.getByRole('button',{name:'Pause'});
+    if(await pauseVision.count()) await pauseVision.click();
+    await page.waitForTimeout(60);
+    const visionSync0=await readAtomicSnapshot(page);
+    verifyAtomicSnapshot(visionSync0,'vision pause');
+    const stepVision=page.getByRole('button',{name:'Step'});
+    if(!(await stepVision.isEnabled().catch(()=>false))) pushError('vision pause: Step button is not enabled');
+    else await stepVision.click();
+    await page.waitForTimeout(70);
+    const visionSync1=await readAtomicSnapshot(page);
+    verifyAtomicSnapshot(visionSync1,'vision step');
+    if(visionSync1.tick!==visionSync0.tick+1) pushError('vision Step did not advance exactly one tick');
+    report.interactions.atomicSync.vision={before:visionSync0,after:visionSync1,stepDelta:visionSync1.tick-visionSync0.tick};
+    const runVision=page.getByRole('button',{name:'Run'});
+    if(await runVision.count()) await runVision.click();
+    await page.waitForTimeout(80);
 
     const pipelineCount=await page.locator('.vision-pipeline').count();
     const hiddenStateCount=await page.locator('.vision-hidden-state').count();
@@ -329,6 +402,23 @@ async function runDesktop(browser) {
     const timeBeforeFusion=parseFloat((await page.locator('.sim-card .time').innerText()).replace(' s',''));
     await fusionButton.click();
     await page.waitForTimeout(260);
+
+    const pauseFusion=page.getByRole('button',{name:'Pause'});
+    if(await pauseFusion.count()) await pauseFusion.click();
+    await page.waitForTimeout(60);
+    const fusionSync0=await readAtomicSnapshot(page);
+    verifyAtomicSnapshot(fusionSync0,'fusion pause');
+    const stepFusion=page.getByRole('button',{name:'Step'});
+    if(!(await stepFusion.isEnabled().catch(()=>false))) pushError('fusion pause: Step button is not enabled');
+    else await stepFusion.click();
+    await page.waitForTimeout(70);
+    const fusionSync1=await readAtomicSnapshot(page);
+    verifyAtomicSnapshot(fusionSync1,'fusion step');
+    if(fusionSync1.tick!==fusionSync0.tick+1) pushError('fusion Step did not advance exactly one tick');
+    report.interactions.atomicSync.fusion={before:fusionSync0,after:fusionSync1,stepDelta:fusionSync1.tick-fusionSync0.tick};
+    const runFusion=page.getByRole('button',{name:'Run'});
+    if(await runFusion.count()) await runFusion.click();
+    await page.waitForTimeout(80);
 
     const fusionModeAttr=await page.locator('main').getAttribute('data-observation-mode');
     const fusionPipelineCount=await page.locator('.fusion-pipeline').count();
