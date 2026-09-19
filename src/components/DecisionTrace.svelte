@@ -65,7 +65,7 @@
         {/if}
       </article>
 
-      <div class="arrow">→</div>
+      <div class="arrow" aria-hidden="true"></div>
 
       <article class="stage controller">
         <div class="step">2</div>
@@ -75,7 +75,7 @@
         <p>This is the force that was visible before Step.</p>
       </article>
 
-      <div class="arrow">→</div>
+      <div class="arrow" aria-hidden="true"></div>
 
       <article class="stage plant-input">
         <div class="step">3</div>
@@ -90,7 +90,7 @@
         <p>Policy and external push stay separate until the plant equation.</p>
       </article>
 
-      <div class="arrow">→</div>
+      <div class="arrow" aria-hidden="true"></div>
 
       <article class="stage dynamics">
         <div class="step">4</div>
@@ -103,7 +103,7 @@
         <p>These are the actual intermediates returned by the environment.</p>
       </article>
 
-      <div class="arrow">→</div>
+      <div class="arrow" aria-hidden="true"></div>
 
       <article class="stage next-state">
         <div class="step">5</div>
@@ -133,6 +133,6 @@
 <style>
 .decision-trace{margin-top:10px;background:#fff;border:1px solid #e1e5ea;border-radius:16px;padding:15px 18px 17px;overflow:hidden}
 header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding-bottom:10px;border-bottom:1px solid #edf0f3}.eyebrow{display:block;font-size:10px;letter-spacing:.08em;color:#7f70aa}h2{font-size:17px;margin:2px 0 0}.tick{font:10px ui-monospace,SFMono-Regular,Menlo,monospace;color:#6f7886;white-space:nowrap}.empty{padding:20px 8px 6px;text-align:center;color:#737c89;font-size:11px}
-.flow{display:grid;grid-template-columns:1fr auto 1fr auto 1.05fr auto 1fr auto 1.1fr;gap:8px;align-items:stretch;padding-top:13px}.stage{position:relative;min-width:0;border:1px solid #e4e7ec;border-radius:10px;background:#fbfcfd;padding:11px}.stage h3{font-size:10px;margin:0 0 9px;color:#4f5968}.stage>strong{font-size:10px;color:#445064}.stage p{font-size:10px;line-height:1.4;color:#7d8693;margin:8px 0 0}.step{position:absolute;right:7px;top:7px;width:18px;height:18px;line-height:18px;text-align:center;border-radius:50%;background:#293548;color:#fff;font-size:10px}.arrow{display:flex;align-items:center;color:#816db5;font-size:17px}.state-row{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:8px}.state-row span,.accel>div,.sum>div{padding:5px;border:1px solid #e7e9ed;border-radius:6px;background:#fff;font:10px ui-monospace,SFMono-Regular,Menlo,monospace;color:#4b5563}.state-row small,.accel span,.sum span,.kv span,.force span,.next-action span{display:block;font:10px Inter,ui-sans-serif,system-ui;color:#89919d;margin-bottom:2px}.kv,.force,.next-action{padding:6px;border:1px solid #e6e9ed;border-radius:6px;background:#fff}.kv b,.force b,.next-action b{font:10px ui-monospace,SFMono-Regular,Menlo,monospace;color:#4f5968}.force.big{margin-top:5px;background:#f2eef9}.force.big b,.next-action b{color:#674e9f}.sum{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:4px;align-items:center}.sum i{font-style:normal;color:#7c6aab}.sum .total{background:#fff4e7}.accel{display:grid;grid-template-columns:1fr 1fr;gap:4px}.dynamics code{display:block;margin-top:6px;font:10px ui-monospace,SFMono-Regular,Menlo,monospace;color:#687386}.next-action{margin-top:7px}.equations{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}.equations span,.equations b{padding:6px 8px;border-radius:6px;background:#f5f6f8;font:10px ui-monospace,SFMono-Regular,Menlo,monospace;color:#667085}.equations b{background:#ede9f7;color:#654e9a}
-@media(max-width:980px){.decision-trace{overflow:visible}.flow{display:flex;flex-direction:column;gap:8px}.arrow{justify-content:center;transform:none;height:24px;font-size:0;line-height:24px}.arrow::after{content:'↓';font-size:18px}.stage{width:100%}.equations{display:grid;grid-template-columns:1fr 1fr}}
+.flow{display:grid;grid-template-columns:1fr auto 1fr auto 1.05fr auto 1fr auto 1.1fr;gap:8px;align-items:stretch;padding-top:13px}.stage{position:relative;min-width:0;border:1px solid #e4e7ec;border-radius:10px;background:#fbfcfd;padding:11px}.stage h3{font-size:10px;margin:0 0 9px;color:#4f5968}.stage>strong{font-size:10px;color:#445064}.stage p{font-size:10px;line-height:1.4;color:#7d8693;margin:8px 0 0}.step{position:absolute;right:7px;top:7px;width:18px;height:18px;line-height:18px;text-align:center;border-radius:50%;background:#293548;color:#fff;font-size:10px}.arrow{display:flex;align-items:center;color:#816db5;font-size:17px}.arrow::after{content:'→'}.state-row{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:8px}.state-row span,.accel>div,.sum>div{padding:5px;border:1px solid #e7e9ed;border-radius:6px;background:#fff;font:10px ui-monospace,SFMono-Regular,Menlo,monospace;color:#4b5563}.state-row small,.accel span,.sum span,.kv span,.force span,.next-action span{display:block;font:10px Inter,ui-sans-serif,system-ui;color:#89919d;margin-bottom:2px}.kv,.force,.next-action{padding:6px;border:1px solid #e6e9ed;border-radius:6px;background:#fff}.kv b,.force b,.next-action b{font:10px ui-monospace,SFMono-Regular,Menlo,monospace;color:#4f5968}.force.big{margin-top:5px;background:#f2eef9}.force.big b,.next-action b{color:#674e9f}.sum{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:4px;align-items:center}.sum i{font-style:normal;color:#7c6aab}.sum .total{background:#fff4e7}.accel{display:grid;grid-template-columns:1fr 1fr;gap:4px}.dynamics code{display:block;margin-top:6px;font:10px ui-monospace,SFMono-Regular,Menlo,monospace;color:#687386}.next-action{margin-top:7px}.equations{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}.equations span,.equations b{padding:6px 8px;border-radius:6px;background:#f5f6f8;font:10px ui-monospace,SFMono-Regular,Menlo,monospace;color:#667085}.equations b{background:#ede9f7;color:#654e9a}
+@media(max-width:980px){.decision-trace{overflow:visible}.flow{display:flex;flex-direction:column;gap:8px}.arrow{justify-content:center;transform:none;height:24px;font-size:18px;line-height:24px}.arrow::after{content:'↓'}.stage{width:100%}.equations{display:grid;grid-template-columns:1fr 1fr}}
 </style>
