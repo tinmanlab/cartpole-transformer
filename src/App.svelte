@@ -7,6 +7,7 @@
   import VisionDetail from './components/VisionDetail.svelte';
   import FusionPipeline from './components/FusionPipeline.svelte';
   import FusionDetail from './components/FusionDetail.svelte';
+  import ComparisonLab from './components/ComparisonLab.svelte';
   import { resetState, stepCartPole, terminal, stateArray, PHYSICS } from './lib/physics.js';
   import { runAttention, forceFromScore } from './lib/attention.js';
   import { loadLearnedModel, runLearnedAttention } from './lib/learned_attention.js';
@@ -61,6 +62,7 @@
   let visionResult = null;
   let visionRepeatedResult = null;
   let fusionResult = null;
+  $: comparisonModels = { state:learnedModel, vision:visionModel, fusion:fusionModel };
 
   $: frameIntervalMs = (
     fusionModel?.frame_stride_seconds ||
@@ -126,6 +128,7 @@
   function setMode(next) {
     if (next === 'vision' && visionModelState !== 'learned') return;
     if (next === 'fusion' && fusionModelState !== 'learned') return;
+    if (next === 'compare' && (modelState !== 'learned' || visionModelState !== 'learned' || fusionModelState !== 'learned')) return;
 
     mode = next;
     expandedStage = null;
@@ -140,7 +143,7 @@
 
     result = inferState(history);
     refreshVision();
-    controllerForce = activeForce();
+    if (next !== 'compare') controllerForce = activeForce();
   }
 
   function setFusionScenario(next) {
@@ -241,7 +244,7 @@
       const delta = Math.min(.08, (now-previous)/1000);
       previous = now;
 
-      if (running) {
+      if (running && mode !== 'compare') {
         accumulator += delta;
         while (accumulator >= PHYSICS.tau) {
           result = inferState(history);
@@ -297,16 +300,22 @@
       <button type="button" class:active={mode==='state'} on:click={()=>setMode('state')}>State</button>
       <button type="button" class:active={mode==='vision'} disabled={visionModelState!=='learned'} on:click={()=>setMode('vision')}>Vision</button>
       <button type="button" class:active={mode==='fusion'} disabled={fusionModelState!=='learned'} on:click={()=>setMode('fusion')}>Fusion</button>
+      <button type="button" class:active={mode==='compare'} disabled={modelState!=='learned' || visionModelState!=='learned' || fusionModelState!=='learned'} on:click={()=>setMode('compare')}>Compare</button>
     </div>
     <span>
       {mode==='state'
         ? (modelState === 'learned' ? 'learned state · 1 head · 8D' : modelState === 'loading' ? 'loading state model…' : 'transparent fallback')
         : mode==='vision'
           ? 'pixels only · 8 frames · 1 head · 24D'
-          : 'typed fusion · 16 tokens · 1 head · 24D'}
+          : mode==='fusion'
+            ? 'typed fusion · 16 tokens · 1 head · 24D'
+            : 'deterministic replay · same initial state + disturbance'}
     </span>
   </header>
 
+  {#if mode === 'compare'}
+    <ComparisonLab models={comparisonModels}/>
+  {:else}
   <section class="lab-grid" aria-label="live Cart-Pole and Transformer visualization">
     <CartPoleView
       {state}
@@ -359,6 +368,7 @@
       />
     {/if}
   </section>
+  {/if}
 
   {#if mode === 'state'}
     <TransformerDetail
@@ -399,14 +409,16 @@
 
   <section class="explain">
     <div class="explain-head">
-      <h2>{mode==='state'?'State 읽는 순서':mode==='vision'?'Vision-only 읽는 순서':'State + Vision 읽는 순서'}</h2>
+      <h2>{mode==='state'?'State 읽는 순서':mode==='vision'?'Vision-only 읽는 순서':mode==='fusion'?'State + Vision 읽는 순서':'Deterministic 비교 replay'}</h2>
 
       {#if mode==='state'}
         <div class="qkv-key"><span class="q">Q</span> 찾는 기준 <span class="k">K</span> 비교 표지 <span class="v">V</span> 가져올 내용</div>
       {:else if mode==='vision'}
         <div class="vision-note">explicit simulator state is hidden from the controller</div>
-      {:else}
+      {:else if mode==='fusion'}
         <div class="vision-note">same episode · aligned timestamps · typed-token self-attention</div>
+      {:else}
+        <div class="vision-note">three independent environments · identical start · identical disturbance ticks</div>
       {/if}
     </div>
 
@@ -428,7 +440,7 @@
         <article><b>5. Motion inference</b><p>마지막 hidden token이 pixels에서 state를 추정합니다. 특히 ẋ와 θ̇는 frame history가 핵심입니다.</p></article>
         <article><b>Ablation</b><p>상세 화면에서 8-frame 추정과 같은 최신 frame을 8번 반복한 결과를 직접 비교합니다.</p></article>
       </div>
-    {:else}
+    {:else if mode==='fusion'}
       <div class="steps">
         <article><b>1. Same timestamps</b><p>Vision과 같은 60 ms 샘플 시점에서 explicit state도 함께 snapshot합니다.</p></article>
         <article><b>2. Typed tokens</b><p>각 시점마다 State token 1개 + Vision token 1개. 총 <code>8×2=16</code> token입니다.</p></article>
@@ -437,10 +449,19 @@
         <article><b>5. Degradation</b><p>Noisy/missing state, partial/missing vision을 같은 episode에서 즉시 바꿔 결과를 비교합니다.</p></article>
         <article><b>6. Negative result도 보존</b><p>단순 fusion이 항상 낫지는 않습니다. noisy-state에서는 vision 추가가 control을 악화시킨 결과도 그대로 보여줍니다.</p></article>
       </div>
+    {:else}
+      <div class="steps">
+        <article><b>1. Identical start</b><p>세 controller는 <code>x=0, ẋ=0, θ=0.08 rad, θ̇=0</code>에서 동시에 시작합니다.</p></article>
+        <article><b>2. Shared disturbance</b><p>모든 환경이 정확히 같은 simulation tick에 같은 ±4 N pulse를 받습니다.</p></article>
+        <article><b>3. Independent physics</b><p>각 policy의 force가 다르므로 그 이후 trajectory는 독립적으로 갈라집니다.</p></article>
+        <article><b>4. Freeze on failure</b><p>하나가 쓰러져도 그 pose에서 freeze하고 공통 replay clock은 계속 진행됩니다.</p></article>
+        <article><b>5. Scrub</b><p>Pause 후 slider를 움직이면 세 controller가 같은 tick으로 함께 이동합니다.</p></article>
+        <article><b>6. Raw metrics</b><p>survival, max |θ|, mean |θ|, control effort를 그대로 보여주며 별도 winner를 만들지 않습니다.</p></article>
+      </div>
     {/if}
   </section>
 
-  <div class="claim">Cart-Pole에는 Transformer나 multimodal fusion이 필요하지 않습니다. 이 lab은 observation과 temporal/multimodal attention의 실제 계산과 한계를 비교하기 위한 교육용 모델입니다.</div>
+  <div class="claim">Cart-Pole에는 Transformer나 multimodal fusion이 필요하지 않습니다. 이 lab은 observation, temporal/multimodal attention, 그리고 동일 조건 replay에서 나타나는 실제 제어 차이를 관찰하기 위한 교육용 모델입니다.</div>
 
   <footer>Polo Club Transformer Explainer의 MIT-licensed VectorCanvas, MatrixSvg, Sankey, attention expansion/animation 패턴을 vendoring·adaptation하여 사용합니다.</footer>
 </main>
