@@ -45,8 +45,12 @@ export function runLearnedAttention(history, model) {
   const w = model.weights;
   const rawTokens = history.map(state => [...state]);
   const normalizedTokens = normalize(rawTokens, model.normalization_scale);
-  const embedded = normalizedTokens.map((token, i) =>
-    add(matVec(w.embed.weight, token, w.embed.bias), w.pos_embedding[i])
+  const stateEmbeddings = normalizedTokens.map(token =>
+    matVec(w.embed.weight, token, w.embed.bias)
+  );
+  const positionEmbeddings = w.pos_embedding.map(row => [...row]);
+  const embedded = stateEmbeddings.map((token, i) =>
+    add(token, positionEmbeddings[i])
   );
 
   const norm1 = embedded.map(x => layerNorm(x, w.ln1.weight, w.ln1.bias));
@@ -71,10 +75,12 @@ export function runLearnedAttention(history, model) {
   const attended = perTokenContext.map(x => matVec(w.o.weight, x, w.o.bias));
   const residual1 = embedded.map((x, i) => add(x, attended[i]));
   const norm2 = residual1.map(x => layerNorm(x, w.ln2.weight, w.ln2.bias));
-  const mlp = norm2.map(x => {
-    const up = matVec(w.ff1.weight, x, w.ff1.bias).map(geluTanh);
-    return matVec(w.ff2.weight, up, w.ff2.bias);
-  });
+  const mlpUp = norm2.map(x =>
+    matVec(w.ff1.weight, x, w.ff1.bias).map(geluTanh)
+  );
+  const mlp = mlpUp.map(x =>
+    matVec(w.ff2.weight, x, w.ff2.bias)
+  );
   const hidden = residual1.map((x, i) => add(x, mlp[i]));
   const last = hidden.length - 1;
   const actionScore = matVec(w.action.weight, hidden[last], w.action.bias)[0];
@@ -84,15 +90,25 @@ export function runLearnedAttention(history, model) {
     encoderType: 'learned-linear+position',
     rawTokens,
     normalizedTokens,
+    stateEmbeddings,
+    positionEmbeddings,
     tokens: embedded,
+    norm1,
     q,
     k,
     v,
     scores,
     raw,
     weights,
+    perTokenContext,
     context: perTokenContext[last],
+    attended,
+    residual1,
+    norm2,
+    mlpUp,
+    mlp,
     hidden,
+    modelWeights: w,
     actionScore
   };
 }
