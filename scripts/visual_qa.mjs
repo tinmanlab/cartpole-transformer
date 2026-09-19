@@ -259,6 +259,25 @@ async function runMobile(browser) {
   report.interactions.mobileSankeyDisplay=mobileSankeyDisplay;
   if(mobileSankeyDisplay && mobileSankeyDisplay!=='none') pushError('mobile-overview: internal Sankey must be hidden, display='+mobileSankeyDisplay);
   await page.screenshot({path:path.join(outDir,'mobile-overview.jpg'),type:'jpeg',quality:78,fullPage:true});
+
+  await page.locator('.attention-overview').click();
+  await page.waitForTimeout(180);
+  const mobileDetailCount=await page.locator('.transformer-detail-wide').count();
+  if(mobileDetailCount!==1) pushError('mobile-attention: detail drawer missing');
+  const mobileAttention=await inspectView(page,'mobile-attention');
+  if(mobileAttention.document.scrollWidth > mobileAttention.viewport.width + 2) {
+    pushError('mobile-attention: page-level horizontal overflow '+mobileAttention.document.scrollWidth+' > '+mobileAttention.viewport.width);
+  }
+  const traceScroller=await page.locator('.attention-cell-trace').evaluate(el=>({
+    scrollWidth:el.scrollWidth,
+    clientWidth:el.clientWidth,
+    overflowX:getComputedStyle(el).overflowX
+  })).catch(()=>null);
+  report.interactions.mobileAttention={detailCount:mobileDetailCount,traceScroller};
+  if(traceScroller && traceScroller.scrollWidth>traceScroller.clientWidth && !['auto','scroll'].includes(traceScroller.overflowX)) {
+    pushError('mobile-attention: wide trace is clipped instead of locally scrollable');
+  }
+  await page.screenshot({path:path.join(outDir,'mobile-attention.jpg'),type:'jpeg',quality:80,fullPage:true});
   await page.close();
 }
 
