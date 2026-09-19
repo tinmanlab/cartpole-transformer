@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import CartPoleView from './components/CartPoleView.svelte';
   import Pipeline from './components/Pipeline.svelte';
+  import UpstreamSankeyFlow from './upstream/SankeyFlow.svelte';
   import { resetState, stepCartPole, terminal, stateArray, PHYSICS } from './lib/physics.js';
   import { runAttention, forceFromScore } from './lib/attention.js';
   import { loadLearnedModel, runLearnedAttention } from './lib/learned_attention.js';
@@ -19,6 +20,17 @@
   let elapsed = 0;
   let status = 'balancing';
   let raf = 0;
+  const bridgePathMap = {
+    state: [{
+      from: '.sim-card .state-readout',
+      to: '.stage-raw .anchor',
+      type: 'stroke',
+      gradientId: 'gray-blue',
+      opacity: .95,
+      curve: 80
+    }]
+  };
+  $: bridgeRedrawKey = stateArray(state).map(v=>v.toFixed(4)).join('|') + result.modelType;
 
   function infer(sequence) {
     return learnedModel ? runLearnedAttention(sequence, learnedModel) : runAttention(sequence);
@@ -97,6 +109,7 @@
   </header>
 
   <section class="lab-grid" aria-label="live Cart-Pole and Transformer visualization">
+    <UpstreamSankeyFlow pathMap={bridgePathMap} redrawKey={bridgeRedrawKey}/>
     <CartPoleView {state} force={appliedForce} {running} {elapsed} {status} onToggle={toggle} onReset={reset} onPush={push} onPushEnd={pushEnd}/>
     <Pipeline {history} {result} {controllerForce}/>
   </section>
