@@ -396,6 +396,94 @@ async function runDesktop(browser) {
     await page.screenshot({path:path.join(outDir,'desktop-fusion-detail.jpg'),type:'jpeg',quality:84,fullPage:true});
   }
 
+  // Deterministic side-by-side comparison replay.
+  const closeFusionDetail=page.getByRole('button',{name:'close fusion detail'});
+  if(await closeFusionDetail.count()) await closeFusionDetail.click();
+
+  const compareButton=page.getByRole('button',{name:'Compare'});
+  const compareEnabled=await compareButton.isEnabled().catch(()=>false);
+  report.interactions.compareMode={available:compareEnabled};
+  if(!compareEnabled) pushError('compare mode: Compare button is disabled despite all learned artifacts');
+
+  if(compareEnabled){
+    await compareButton.click();
+    await page.waitForTimeout(260);
+
+    const compareModeAttr=await page.locator('main').getAttribute('data-observation-mode');
+    const lab=page.locator('.comparison-lab');
+    const labCount=await lab.count();
+    const cardCount=await page.locator('.comparison-lab .controller-card').count();
+    const firstTick=Number(await lab.getAttribute('data-current-tick'));
+    const firstDisturbances=await page.locator('.comparison-lab .controller-card').evaluateAll(els=>els.map(el=>Number(el.dataset.disturbance)));
+
+    if(compareModeAttr!=='compare') pushError('compare mode: main observation mode did not switch to compare');
+    if(labCount!==1) pushError('compare mode: comparison lab missing');
+    if(cardCount!==3) pushError('compare mode: expected 3 controller cards, found '+cardCount);
+    if(new Set(firstDisturbances).size!==1) pushError('compare mode: controller disturbances differ on shared tick');
+
+    const pauseButton=page.getByRole('button',{name:'Pause'});
+    if(await pauseButton.count()) await pauseButton.click();
+
+    const slider=page.getByRole('slider',{name:'comparison replay tick'});
+    const recordedMax=Number(await slider.getAttribute('max'));
+    const scrubTarget=Math.min(5,recordedMax);
+    await slider.evaluate((el,target)=>{
+      el.value=String(target);
+      el.dispatchEvent(new Event('input',{bubbles:true}));
+    },scrubTarget);
+    await page.waitForTimeout(60);
+    const scrubTick=Number(await lab.getAttribute('data-current-tick'));
+    if(scrubTick!==scrubTarget) pushError('compare mode: scrub tick mismatch '+scrubTick+' != '+scrubTarget);
+
+    await page.getByRole('button',{name:'Fast-forward to end'}).click();
+    await page.waitForTimeout(80);
+    const done1=await lab.getAttribute('data-done');
+    const finalTick1=Number(await lab.getAttribute('data-current-tick'));
+    const traceLength1=Number(await lab.getAttribute('data-trace-length'));
+    const metrics1=await page.locator('.comparison-lab .controller-card .metrics').allInnerTexts();
+
+    if(done1!=='true') pushError('compare mode: fast-forward did not complete deterministic run');
+    if(finalTick1!==500) pushError('compare mode: final tick is '+finalTick1+' instead of 500');
+    if(traceLength1!==501) pushError('compare mode: trace length is '+traceLength1+' instead of 501');
+
+    const replayButton=page.getByRole('button',{name:'Replay'});
+    if(await replayButton.count()!==1) pushError('compare mode: completed trace does not expose Replay');
+    else {
+      await replayButton.click();
+      await page.waitForTimeout(140);
+      const replayTick=Number(await lab.getAttribute('data-current-tick'));
+      if(!(replayTick>0 && replayTick<100)) pushError('compare mode: recorded Replay did not advance from tick 0, got '+replayTick);
+      const replayPause=page.getByRole('button',{name:'Pause'});
+      if(await replayPause.count()) await replayPause.click();
+    }
+
+    await slider.evaluate((el,target)=>{
+      el.value=String(target);
+      el.dispatchEvent(new Event('input',{bubbles:true}));
+    },81);
+    await page.waitForTimeout(60);
+    const pulseTick=Number(await lab.getAttribute('data-current-tick'));
+    const pulseDisturbances=await page.locator('.comparison-lab .controller-card').evaluateAll(els=>els.map(el=>Number(el.dataset.disturbance)));
+    if(pulseTick!==81) pushError('compare mode: pulse scrub did not land on tick 81');
+    if(pulseDisturbances.some(v=>v!==4)) pushError('compare mode: tick 81 did not apply shared +4 N disturbance to all controllers: '+pulseDisturbances.join(','));
+
+    await page.screenshot({path:path.join(outDir,'desktop-comparison-pulse.jpg'),type:'jpeg',quality:84,fullPage:true});
+
+    await page.getByRole('button',{name:'Reset deterministic run'}).click();
+    await page.getByRole('button',{name:'Fast-forward to end'}).click();
+    await page.waitForTimeout(80);
+    const metrics2=await page.locator('.comparison-lab .controller-card .metrics').allInnerTexts();
+    const deterministicReset=JSON.stringify(metrics1)===JSON.stringify(metrics2);
+    if(!deterministicReset) pushError('compare mode: reset + fast-forward produced different final metrics');
+
+    report.interactions.compareMode={
+      available:true,modeAttr:compareModeAttr,labCount,cardCount,firstTick,
+      sharedDisturbance:firstDisturbances[0],scrubTick,finalTick:finalTick1,
+      traceLength:traceLength1,pulseTick,pulseDisturbances,deterministicReset
+    };
+    await page.screenshot({path:path.join(outDir,'desktop-comparison-final.jpg'),type:'jpeg',quality:84,fullPage:true});
+  }
+
   report.interactions.consoleErrors=consoleErrors;
   if(consoleErrors.length) pushError('browser console/page errors: '+consoleErrors.join(' | '));
   await page.close();
@@ -512,6 +600,46 @@ async function runMobile(browser) {
   } else {
     report.interactions.mobileFusion={enabled:false};
     pushError('mobile fusion: trained artifact exists but Fusion button is disabled');
+  }
+
+  const closeMobileFusion=page.getByRole('button',{name:'close fusion detail'});
+  if(await closeMobileFusion.count()) await closeMobileFusion.click();
+
+  const mobileCompareButton=page.getByRole('button',{name:'Compare'});
+  const mobileCompareEnabled=await mobileCompareButton.isEnabled().catch(()=>false);
+  if(!mobileCompareEnabled){
+    report.interactions.mobileCompare={enabled:false};
+    pushError('mobile compare: Compare button is disabled');
+  } else {
+    await mobileCompareButton.click();
+    await page.waitForTimeout(180);
+
+    const mobileCompareLab=await page.locator('.comparison-lab').count();
+    const mobileCompareCards=page.locator('.comparison-lab .controller-card');
+    const mobileCompareCardCount=await mobileCompareCards.count();
+    const rects=await mobileCompareCards.evaluateAll(els=>els.map(el=>{const r=el.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height};}));
+    const mobileCompareDoc=await page.evaluate(()=>({w:document.documentElement.scrollWidth,v:innerWidth}));
+    const singleColumn=rects.length===3 && Math.max(...rects.map(r=>r.x))-Math.min(...rects.map(r=>r.x))<3 && rects[1].y>rects[0].y && rects[2].y>rects[1].y;
+
+    if(mobileCompareLab!==1) pushError('mobile compare: comparison lab missing');
+    if(mobileCompareCardCount!==3) pushError('mobile compare: expected 3 controller cards, found '+mobileCompareCardCount);
+    if(!singleColumn) pushError('mobile compare: controller cards are not stacked in one column');
+    if(mobileCompareDoc.w>mobileCompareDoc.v+2) pushError('mobile compare: page-level horizontal overflow');
+
+    const mobilePause=page.getByRole('button',{name:'Pause'});
+    if(await mobilePause.count()) await mobilePause.click();
+    await page.getByRole('button',{name:'Fast-forward to end'}).click();
+    await page.waitForTimeout(80);
+
+    const mobileDone=await page.locator('.comparison-lab').getAttribute('data-done');
+    const mobileTick=Number(await page.locator('.comparison-lab').getAttribute('data-current-tick'));
+    if(mobileDone!=='true' || mobileTick!==500) pushError('mobile compare: deterministic fast-forward did not reach tick 500');
+
+    report.interactions.mobileCompare={
+      enabled:true,labCount:mobileCompareLab,cardCount:mobileCompareCardCount,
+      singleColumn,finalTick:mobileTick
+    };
+    await page.screenshot({path:path.join(outDir,'mobile-comparison-final.jpg'),type:'jpeg',quality:80,fullPage:true});
   }
 
   await page.close();
