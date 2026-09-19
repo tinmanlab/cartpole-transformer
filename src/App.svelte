@@ -9,6 +9,7 @@
   import FusionDetail from './components/FusionDetail.svelte';
   import ComparisonLab from './components/ComparisonLab.svelte';
   import DecisionTrace from './components/DecisionTrace.svelte';
+  import FollowDecisionGuide from './components/FollowDecisionGuide.svelte';
   import { resetState, computeCartPoleTransition, terminal, stateArray, PHYSICS } from './lib/physics.js';
   import { runAttention, forceFromScore } from './lib/attention.js';
   import { loadLearnedModel, runLearnedAttention } from './lib/learned_attention.js';
@@ -78,6 +79,14 @@
   let status = 'balancing';
   let raf = 0;
   let lastDecisionTrace = null;
+
+  let followDecisionOpen = false;
+  let followDecisionSeq = 0;
+  // Frozen once at open time: `result` is reassigned wholesale (never
+  // mutated in place) on every refreshCurrentInference, so holding this
+  // reference is enough to keep the captured event's tensors immutable even
+  // after Apply-step advances the live `result`/`controllerForce` below.
+  let followDecisionSnapshot = null;
 
   $: syncTick = Math.round(elapsed / PHYSICS.tau);
   $: syncStateVector = stateArray(state);
@@ -249,6 +258,8 @@
     expandedStage = null;
     visionDetailOpen = false;
     fusionDetailOpen = false;
+    followDecisionOpen = false;
+    followDecisionSnapshot = null;
 
     selectedToken = N - 1;
     selectedRow = N - 1;
@@ -299,6 +310,8 @@
     expandedStage = null;
     visionDetailOpen = false;
     fusionDetailOpen = false;
+    followDecisionOpen = false;
+    followDecisionSnapshot = null;
 
     disturbance = 0;
     elapsed = 0;
@@ -315,6 +328,25 @@
   }
   function push(v){ disturbance = v; }
   function pushEnd(){ disturbance = 0; }
+
+  function openFollowDecision() {
+    if (mode !== 'state' || modelState !== 'learned' || status === 'fell') return;
+    running = false;
+    pushEnd();
+    followDecisionSnapshot = { tick: syncTick, result, controllerForce };
+    followDecisionSeq += 1;
+    followDecisionOpen = true;
+    expandedStage = null;
+  }
+
+  function closeFollowDecision() {
+    followDecisionOpen = false;
+    followDecisionSnapshot = null;
+    expandedStage = null;
+    selectedToken = N - 1;
+    selectedRow = N - 1;
+    selectedCol = N - 1;
+  }
 
   onMount(() => {
     let cancelled = false;
@@ -424,6 +456,7 @@
       {elapsed}
       {status}
       showStateOverlay={mode!=='vision'}
+      guideActive={followDecisionOpen}
       onToggle={toggle}
       onStep={stepOnce}
       onReset={reset}
@@ -470,9 +503,13 @@
   {/if}
 
   {#if mode === 'state'}
+    <!-- While the guide is open, this shared detail drawer must show the
+         frozen event's tensors (Calculation/Action stages), not the live
+         result — live advances past the captured tick the instant Apply
+         runs one real step. -->
     <TransformerDetail
-      {result}
-      {controllerForce}
+      result={followDecisionOpen && followDecisionSnapshot ? followDecisionSnapshot.result : result}
+      controllerForce={followDecisionOpen && followDecisionSnapshot ? followDecisionSnapshot.controllerForce : controllerForce}
       {selectedToken}
       {selectedRow}
       {selectedCol}
@@ -504,6 +541,36 @@
       onClose={()=>fusionDetailOpen=false}
       frameIntervalMs={frameIntervalMs}
     />
+  {/if}
+
+  {#if mode === 'state'}
+    <section class="follow-decision" aria-label="follow one decision guide">
+      {#if !followDecisionOpen}
+        <button
+          type="button"
+          class="follow-decision-entry"
+          disabled={modelState!=='learned' || status==='fell'}
+          on:click={openFollowDecision}
+        >한 판단 따라가기 · Follow one decision</button>
+      {:else}
+        {#key followDecisionSeq}
+          <FollowDecisionGuide
+            capturedTick={followDecisionSnapshot.tick}
+            eventId={followDecisionSeq}
+            result={followDecisionSnapshot.result}
+            controllerForce={followDecisionSnapshot.controllerForce}
+            currentTick={syncTick}
+            {lastDecisionTrace}
+            {status}
+            onSelectToken={selectToken}
+            onExpandedStageChange={(stage)=>expandedStage=stage}
+            onApplyStep={stepOnce}
+            onClose={closeFollowDecision}
+            onNewDecision={openFollowDecision}
+          />
+        {/key}
+      {/if}
+    </section>
   {/if}
 
   <section class="explain">

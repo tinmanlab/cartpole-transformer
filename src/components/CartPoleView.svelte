@@ -10,6 +10,7 @@
   export let elapsed = 0;
   export let status = 'balancing';
   export let showStateOverlay = true;
+  export let guideActive = false;
   export let onToggle = () => {};
   export let onStep = () => {};
   export let onReset = () => {};
@@ -190,12 +191,12 @@
   {/if}
 
   <div class="sim-controls">
-    <button class="primary" disabled={status==='fell'} on:click={onToggle}>{running ? 'Pause' : 'Run'}</button>
-    <button disabled={running || status==='fell'} on:click={onStep}>Step</button>
+    <button class="primary" disabled={status==='fell' || guideActive} on:click={onToggle}>{running ? 'Pause' : 'Run'}</button>
+    <button disabled={running || status==='fell' || guideActive} on:click={onStep}>Step</button>
     <button on:click={onReset}>Reset</button>
     <span class="spacer"></span>
-    <button class="push" on:pointerdown={() => onPush(-6)} on:pointerup={onPushEnd} on:pointerleave={onPushEnd}>← Push</button>
-    <button class="push" on:pointerdown={() => onPush(6)} on:pointerup={onPushEnd} on:pointerleave={onPushEnd}>Push →</button>
+    <button class="push" disabled={guideActive} on:pointerdown={() => onPush(-6)} on:pointerup={onPushEnd} on:pointerleave={onPushEnd}>← Push</button>
+    <button class="push" disabled={guideActive} on:pointerdown={() => onPush(6)} on:pointerup={onPushEnd} on:pointerleave={onPushEnd}>Push →</button>
   </div>
 </div>
 

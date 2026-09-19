@@ -637,6 +637,120 @@ async function runDesktop(browser) {
   report.interactions.decisionTrace={state:stateDecisionTrace};
   await page.screenshot({path:path.join(outDir,'desktop-decision-trace.jpg'),type:'jpeg',quality:84,fullPage:true});
 
+  // "Follow one decision" guide (State/learned mode only): frozen event
+  // snapshot must survive Apply-step without leaking live post-step data
+  // back into the earlier stages, and must never apply a second step.
+  await page.getByRole('button',{name:'Reset'}).click();
+  await page.waitForTimeout(300);
+
+  const readFdValues=async () => (await page.locator('.fd-values span').allInnerTexts()).map(t=>t.trim());
+
+  const followEntry=page.getByRole('button',{name:'한 판단 따라가기 · Follow one decision'});
+  await followEntry.click();
+  await page.waitForTimeout(120);
+
+  const guideCount0=await page.locator('.follow-decision-guide').count();
+  if(guideCount0!==1) pushError('follow-decision guide: entry click did not open exactly one guide');
+
+  const runDisabledOnOpen=await page.getByRole('button',{name:/^(Pause|Run)$/}).isDisabled().catch(()=>false);
+  const pushDisabledOnOpen=await page.getByRole('button',{name:'Push →'}).isDisabled().catch(()=>false);
+  if(!runDisabledOnOpen || !pushDisabledOnOpen) pushError('follow-decision guide: Run/Push are not disabled while the guide owns the frozen event');
+
+  const badgeText0=await page.locator('.fd-badge').innerText();
+  const capturedTickMatch=badgeText0.match(/captured tick (\d+)/);
+  const capturedTick=capturedTickMatch?Number(capturedTickMatch[1]):NaN;
+  const tickAtOpen=Number(await page.locator('main').getAttribute('data-sync-tick'));
+  if(!Number.isFinite(capturedTick) || capturedTick!==tickAtOpen) pushError('follow-decision guide: badge captured tick does not match plant tick at open');
+
+  const entryInputValues=await readFdValues();
+
+  await page.getByRole('tab',{name:/Calculation/}).click();
+  await page.waitForTimeout(150);
+  const calcDetailHeading=await page.locator('.transformer-detail-wide h2').innerText().catch(()=>'');
+  if(calcDetailHeading!=='Self Attention') pushError('follow-decision guide: Calculation stage did not open the Self Attention detail, got '+JSON.stringify(calcDetailHeading));
+  const traceBefore=await page.locator('.attention-cell-trace').evaluate(el=>el.dataset.weight).catch(()=>null);
+
+  await page.getByRole('tab',{name:/Action/}).click();
+  await page.waitForTimeout(150);
+  const actionDetailHeading=await page.locator('.transformer-detail-wide h2').innerText().catch(()=>'');
+  if(actionDetailHeading!=='Action head') pushError('follow-decision guide: Action stage did not open the Action head detail, got '+JSON.stringify(actionDetailHeading));
+  const entryActionValues=await readFdValues();
+
+  await page.getByRole('tab',{name:/Result/}).click();
+  await page.waitForTimeout(100);
+  const applyButton=page.getByRole('button',{name:/Apply one 20ms step/});
+  if(await applyButton.count()!==1) pushError('follow-decision guide: Result stage missing the explicit Apply-step button');
+  await applyButton.click();
+  await page.waitForTimeout(150);
+
+  const tickAfterApply=Number(await page.locator('main').getAttribute('data-sync-tick'));
+  if(tickAfterApply!==capturedTick+1) pushError('follow-decision guide: Apply-step did not advance the plant exactly one tick from the captured event');
+
+  const guideTrace=page.locator('.follow-decision-guide .decision-trace');
+  const guideTickFrom=Number(await guideTrace.getAttribute('data-tick-from').catch(()=>NaN));
+  const guideTickTo=Number(await guideTrace.getAttribute('data-tick-to').catch(()=>NaN));
+  if(guideTickFrom!==capturedTick || guideTickTo!==capturedTick+1) pushError('follow-decision guide: displayed Result trace tick range is not t->t+1 for the captured event');
+
+  // Revisit Input/Calculation/Action AFTER Apply: must still show the frozen
+  // captured-event data, not the now-advanced live plant.
+  await page.getByRole('tab',{name:/^Input/}).click();
+  await page.waitForTimeout(100);
+  const postApplyInputValues=await readFdValues();
+  if(JSON.stringify(postApplyInputValues)!==JSON.stringify(entryInputValues)) {
+    pushError('follow-decision guide: Input values changed after Apply-step (captured snapshot leaked to live) '+JSON.stringify({before:entryInputValues,after:postApplyInputValues}));
+  }
+
+  await page.getByRole('tab',{name:/Calculation/}).click();
+  await page.waitForTimeout(150);
+  const traceAfter=await page.locator('.attention-cell-trace').evaluate(el=>el.dataset.weight).catch(()=>null);
+  if(traceAfter!==traceBefore) pushError('follow-decision guide: Calculation attention trace changed after Apply-step (not frozen to the captured event) '+JSON.stringify({before:traceBefore,after:traceAfter}));
+
+  await page.getByRole('tab',{name:/Action/}).click();
+  await page.waitForTimeout(150);
+  const postApplyActionValues=await readFdValues();
+  if(JSON.stringify(postApplyActionValues)!==JSON.stringify(entryActionValues)) {
+    pushError('follow-decision guide: Action values changed after Apply-step (captured snapshot leaked to live) '+JSON.stringify({before:entryActionValues,after:postApplyActionValues}));
+  }
+
+  // Result revisit must not apply a second step.
+  await page.getByRole('tab',{name:/Result/}).click();
+  await page.waitForTimeout(100);
+  const tickAfterRevisit=Number(await page.locator('main').getAttribute('data-sync-tick'));
+  if(tickAfterRevisit!==tickAfterApply) pushError('follow-decision guide: revisiting Result advanced the tick again');
+  if(await applyButton.count()!==0) pushError('follow-decision guide: Apply-step button reappeared after a step was already applied');
+
+  // New decision: fresh event id and a newly captured tick.
+  const newDecisionButton=page.getByRole('button',{name:/Follow next decision/});
+  await newDecisionButton.click();
+  await page.waitForTimeout(150);
+  const badgeText1=await page.locator('.fd-badge').innerText();
+  if(badgeText1===badgeText0) pushError('follow-decision guide: new-decision capture did not change the event badge');
+  const eventId0=badgeText0.match(/event #(\d+)/)?.[1];
+  const eventId1=badgeText1.match(/event #(\d+)/)?.[1];
+  if(!eventId1 || eventId0===eventId1) pushError('follow-decision guide: new-decision capture did not advance the event id');
+
+  // Exit restores public controls without any extra physics.
+  const tickBeforeClose=Number(await page.locator('main').getAttribute('data-sync-tick'));
+  await page.getByRole('button',{name:'close follow-one-decision guide'}).click();
+  await page.waitForTimeout(100);
+  if(await page.locator('.follow-decision-guide').count()!==0) pushError('follow-decision guide: close did not unmount the guide');
+  const tickAfterClose=Number(await page.locator('main').getAttribute('data-sync-tick'));
+  if(tickAfterClose!==tickBeforeClose) pushError('follow-decision guide: closing the guide changed the plant tick');
+  const pushReenabled=await page.getByRole('button',{name:'Push →'}).isDisabled().catch(()=>true);
+  if(pushReenabled) pushError('follow-decision guide: Push stayed disabled after the guide was closed');
+
+  // Mode change must invalidate/close a still-open guide cleanly.
+  await followEntry.click();
+  await page.waitForTimeout(100);
+  await page.getByRole('button',{name:'Vision'}).click();
+  await page.waitForTimeout(150);
+  if(await page.locator('.follow-decision-guide').count()!==0) pushError('follow-decision guide: mode change to Vision left the guide mounted');
+  await page.getByRole('button',{name:'State'}).click();
+  await page.waitForTimeout(150);
+  if(await page.locator('.follow-decision-guide').count()!==0) pushError('follow-decision guide: guide leaked across a mode-change round trip');
+
+  await page.screenshot({path:path.join(outDir,'desktop-follow-decision.jpg'),type:'jpeg',quality:84,fullPage:true});
+
   // Optional pixels-only mode becomes mandatory once the trained artifact is present.
   const visionButton=page.getByRole('button',{name:'Vision'});
   const visionEnabled=await visionButton.isEnabled().catch(()=>false);
