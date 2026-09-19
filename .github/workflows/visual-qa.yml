@@ -1,0 +1,77 @@
+name: Visual QA
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "public/model/**"
+      - "scripts/visual_qa.mjs"
+      - ".github/workflows/visual-qa.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: visual-qa
+  cancel-in-progress: true
+
+jobs:
+  qa:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Install browser QA dependency
+        run: |
+          npm install --no-save --package-lock=false playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - run: npm run check:model
+      - run: npm run build
+      - name: Start production preview
+        run: |
+          npm run preview -- --host 127.0.0.1 --port 4173 > /tmp/cartpole-preview.log 2>&1 &
+          echo $! > /tmp/cartpole-preview.pid
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4173/cartpole-transformer/ >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/cartpole-preview.log
+          exit 1
+      - name: Run visual and interaction QA
+        run: node scripts/visual_qa.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: visual-qa
+          path: qa-output/
+          retention-days: 14
+      - name: Publish latest visual QA snapshot
+        if: always()
+        run: |
+          mkdir -p /tmp/qa-export
+          cp qa-output/report.json /tmp/qa-export/report.json
+          for f in qa-output/*.jpg; do
+            base64 -w0 "$f" > "/tmp/qa-export/$(basename "$f").b64"
+          done
+
+          git fetch origin qa-visual
+          git worktree add /tmp/cartpole-qa origin/qa-visual
+          mkdir -p /tmp/cartpole-qa/qa/latest
+          rm -f /tmp/cartpole-qa/qa/latest/*
+          cp /tmp/qa-export/* /tmp/cartpole-qa/qa/latest/
+          cd /tmp/cartpole-qa
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add qa/latest
+          if ! git diff --cached --quiet; then
+            git commit -m "qa: update visual browser snapshot"
+            git push origin HEAD:qa-visual
+          fi
