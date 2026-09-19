@@ -197,7 +197,7 @@
   <meta name="description" content="State and pixels-only Transformer learning modes for live Cart-Pole."/>
 </svelte:head>
 
-<main>
+<main data-observation-mode={mode}>
   <header class="topbar">
     <strong>Cart-Pole Transformer</strong>
     <div class="mode-switch" role="group" aria-label="observation mode">
