@@ -97,7 +97,7 @@ MIT License, Copyright (c) 2022 Polo Club of Data Science
     });
   }
 
-  $: if (data && svgEl) drawMatrixSvg();
+  $: if (data && svgEl) { highlightRow; highlightCol; drawMatrixSvg(); }
 </script>
 
 <div class="matrix-wrap">
