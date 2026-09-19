@@ -153,10 +153,9 @@ async function runDesktop(browser) {
     if(!count) pushError(name+': click did not create detail panel');
     if(count && txt.length<30) pushError(name+': detail panel appears empty/too sparse');
     if(count && liveChanged===false) pushWarning(name+': expanded visualization did not change over 320 ms');
-    if(name==='attention') {
-      await inspectView(page,'desktop-attention');
-      await page.screenshot({path:path.join(outDir,'desktop-attention.jpg'),type:'jpeg',quality:82,fullPage:true});
-    }
+    const shotName='desktop-'+name;
+    if(name==='attention') await inspectView(page,'desktop-attention');
+    await page.screenshot({path:path.join(outDir,shotName+'.jpg'),type:'jpeg',quality:82,fullPage:true});
     // close by clicking same stage
     await page.locator(sel).click();
     await page.waitForTimeout(100);
@@ -193,7 +192,10 @@ async function runMobile(browser) {
   await page.goto(baseURL,{waitUntil:'networkidle',timeout:30000});
   await waitLearned(page);
   await page.waitForTimeout(500);
-  await inspectView(page,'mobile-overview');
+  const mobile=await inspectView(page,'mobile-overview');
+  const mobileSankeyDisplay=await page.locator('.pipeline-shell .upstream-sankey').first().evaluate(el=>getComputedStyle(el).display).catch(()=>null);
+  report.interactions.mobileSankeyDisplay=mobileSankeyDisplay;
+  if(mobileSankeyDisplay && mobileSankeyDisplay!=='none') pushError('mobile-overview: internal Sankey must be hidden, display='+mobileSankeyDisplay);
   await page.screenshot({path:path.join(outDir,'mobile-overview.jpg'),type:'jpeg',quality:78,fullPage:true});
   await page.close();
 }
