@@ -23,6 +23,8 @@ from torch.nn import functional as F
 
 SEED = 20260919
 SEQ_LEN = 8
+FRAME_STRIDE = 3
+BUFFER_LEN = (SEQ_LEN - 1) * FRAME_STRIDE + 1
 FRAME_SIZE = 32
 PATCH_SIZE = 2
 GRID_SIZE = FRAME_SIZE // PATCH_SIZE
@@ -139,11 +141,12 @@ def make_dataset(episodes: int = 200, horizon: int = 220):
     for episode in range(episodes):
         state = initial_state(rng, hard=(episode % 4 == 0), zero_velocity=(episode % 3 == 0))
         first = visual_observation(state)
-        history = [first.copy() for _ in range(SEQ_LEN)]
+        buffer = [first.copy() for _ in range(BUFFER_LEN)]
         pulse_left, disturbance = 0, 0.0
 
         for step in range(horizon):
-            xs.append(np.stack(history))
+            model_history = buffer[::FRAME_STRIDE]
+            xs.append(np.stack(model_history))
             action_targets.append(expert_force(state) / 10.0)
             state_targets.append(np.clip(state / STATE_SCALE, -1.0, 1.0))
 
@@ -159,10 +162,10 @@ def make_dataset(episodes: int = 200, horizon: int = 220):
             if terminal(state):
                 state = initial_state(rng, hard=False, zero_velocity=True)
                 first = visual_observation(state)
-                history = [first.copy() for _ in range(SEQ_LEN)]
+                buffer = [first.copy() for _ in range(BUFFER_LEN)]
                 pulse_left, disturbance = 0, 0.0
                 continue
-            history = history[1:] + [visual_observation(state)]
+            buffer = buffer[1:] + [visual_observation(state)]
 
     # float16 stores the deterministic visual features compactly; batches are
     # promoted to float32 before model execution.
@@ -304,12 +307,13 @@ def evaluate_closed_loop(model: TinyVisionTransformer, repeat_latest: bool, epis
     for _ in range(episodes):
         state = initial_state(rng, hard=True, zero_velocity=True)
         first = visual_observation(state)
-        history = [first.copy() for _ in range(SEQ_LEN)]
+        buffer = [first.copy() for _ in range(BUFFER_LEN)]
         pulse_left, disturbance = 0, 0.0
         steps = 0
 
         for step in range(horizon):
-            model_history = [history[-1].copy() for _ in range(SEQ_LEN)] if repeat_latest else history
+            spaced_history = buffer[::FRAME_STRIDE]
+            model_history = [spaced_history[-1].copy() for _ in range(SEQ_LEN)] if repeat_latest else spaced_history
             force, _ = model_outputs(model, model_history)
 
             if pulse_left <= 0 and step > 18 and rng.random() < 0.012:
@@ -321,7 +325,7 @@ def evaluate_closed_loop(model: TinyVisionTransformer, repeat_latest: bool, epis
                 disturbance = 0.0
 
             state = physics_step(state, force, disturbance)
-            history = history[1:] + [visual_observation(state)]
+            buffer = buffer[1:] + [visual_observation(state)]
             steps = step + 1
             if terminal(state):
                 break
@@ -347,6 +351,9 @@ def save_artifact(model, losses, ablation, closed_full, closed_repeat):
         "format": "cartpole-vision-transformer-v1",
         "seed": SEED,
         "sequence_length": SEQ_LEN,
+        "frame_stride_steps": FRAME_STRIDE,
+        "frame_stride_seconds": FRAME_STRIDE * TAU,
+        "history_span_seconds": (SEQ_LEN - 1) * FRAME_STRIDE * TAU,
         "frame_size": FRAME_SIZE,
         "patch_size": PATCH_SIZE,
         "grid_size": GRID_SIZE,
@@ -392,11 +399,13 @@ Generated deterministically by `scripts/train_vision_transformer.py`.
 
 `32×32 grayscale frame → 2×2 patches → 16×16 = 256 patch-average features → learned 256→24 frame token`.
 
-The Transformer receives eight visual observations and **never receives simulator state directly**. Its final hidden token estimates normalized `[x, x_dot, theta, theta_dot]`; the same transparent fixed state-feedback equation used elsewhere maps that estimate to force.
+The Transformer receives eight visual observations sampled every {FRAME_STRIDE*TAU:.2f} s (a {(SEQ_LEN-1)*FRAME_STRIDE*TAU:.2f} s history span) and **never receives simulator state directly**. Its final hidden token estimates normalized `[x, x_dot, theta, theta_dot]`; the same transparent fixed state-feedback equation used elsewhere maps that estimate to force.
 
 ## Architecture
 
 - sequence length: {SEQ_LEN}
+- frame interval: {FRAME_STRIDE*TAU:.2f} s
+- visual history span: {(SEQ_LEN-1)*FRAME_STRIDE*TAU:.2f} s
 - frame size: {FRAME_SIZE}×{FRAME_SIZE}
 - patch grid: {GRID_SIZE}×{GRID_SIZE}
 - frame feature width: {FEATURE_DIM}
