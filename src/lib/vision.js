@@ -3,6 +3,8 @@ export const VISION_PATCH_SIZE = 2;
 export const VISION_GRID_SIZE = VISION_FRAME_SIZE / VISION_PATCH_SIZE;
 export const VISION_FEATURE_DIM = VISION_GRID_SIZE * VISION_GRID_SIZE;
 export const VISION_SEQUENCE_LENGTH = 8;
+export const VISION_FRAME_STRIDE = 3;
+export const VISION_BUFFER_LENGTH = (VISION_SEQUENCE_LENGTH - 1) * VISION_FRAME_STRIDE + 1;
 
 function clamp(v, lo, hi) {
   return Math.max(lo, Math.min(hi, v));
@@ -71,4 +73,13 @@ export function visionObservationFromState(state) {
   const frame = renderVisionFrame(state);
   const patches = extractVisionPatchFeatures(frame);
   return { frame, patches };
+}
+
+
+export function sampleVisionHistory(buffer) {
+  if (!buffer.length) return [];
+  const padded = [...buffer];
+  while (padded.length < VISION_BUFFER_LENGTH) padded.unshift(padded[0]);
+  const tail = padded.slice(-VISION_BUFFER_LENGTH);
+  return Array.from({length:VISION_SEQUENCE_LENGTH}, (_, i) => tail[i * VISION_FRAME_STRIDE]);
 }
