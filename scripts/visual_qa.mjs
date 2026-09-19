@@ -124,10 +124,9 @@ async function runDesktop(browser) {
   if (matrix0===matrix1) pushWarning('attention matrix DOM did not change over 500 ms');
 
   const overviewData=await inspectView(page,'desktop-overview');
-  const bridge=await page.locator('.lab-grid > .upstream-sankey path.sankey-path').first().evaluate(p=>{const r=p.getBoundingClientRect();return {length:p.getTotalLength(),width:r.width,height:r.height};});
-  report.interactions.bridge=bridge;
-  if (bridge.height > 70) pushError('simulation→Transformer bridge detours vertically by '+Math.round(bridge.height)+'px');
-  if (bridge.length < 10 || bridge.length > 140) pushWarning('simulation→Transformer bridge length looks abnormal: '+bridge.length.toFixed(1));
+  const bridgeCount=await page.locator('.lab-grid > .upstream-sankey path.sankey-path').count();
+  report.interactions.bridge={count:bridgeCount};
+  if (bridgeCount !== 0) pushError('cross-panel simulation→Transformer Sankey bridge should be absent, found '+bridgeCount);
   await page.screenshot({path:path.join(outDir,'desktop-overview.jpg'),type:'jpeg',quality:80,fullPage:true});
 
   const stageCases = [
