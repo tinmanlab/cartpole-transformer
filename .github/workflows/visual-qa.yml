@@ -42,6 +42,7 @@ jobs:
       - run: npm run check:model
       - run: npm run check:vision
       - run: npm run check:fusion
+      - run: npm run check:comparison
       - run: npm run build
       - name: Start production preview
         run: |
