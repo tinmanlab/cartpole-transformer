@@ -88,13 +88,24 @@ MIT License, Copyright (c) 2022 Polo Club of Data Science
         .attr('rx',2);
     }
 
-    cells.attr('opacity',d=>{
-      if (highlightRow === undefined && highlightCol === undefined) return 1;
-      if (highlightRow !== undefined && highlightCol !== undefined)
-        return d.rowIndex===highlightRow && d.colIndex===highlightCol ? 1 : .16;
-      if (highlightRow !== undefined) return d.rowIndex===highlightRow ? 1 : .16;
-      return d.colIndex===highlightCol ? 1 : .16;
-    });
+    cells
+      .attr('opacity',d=>{
+        if (highlightRow === undefined && highlightCol === undefined) return 1;
+        if (highlightRow !== undefined && highlightCol !== undefined) {
+          if (d.rowIndex===highlightRow || d.colIndex===highlightCol) return 1;
+          return .38;
+        }
+        if (highlightRow !== undefined) return d.rowIndex===highlightRow ? 1 : .38;
+        return d.colIndex===highlightCol ? 1 : .38;
+      })
+      .attr('stroke',d=>{
+        if (highlightRow !== undefined && highlightCol !== undefined && d.rowIndex===highlightRow && d.colIndex===highlightCol) return '#4b5563';
+        if (d.rowIndex===highlightRow || d.colIndex===highlightCol) return '#c7cdd6';
+        return shape === 'circle' ? '#e5e7eb' : 'none';
+      })
+      .attr('stroke-width',d=>
+        highlightRow !== undefined && highlightCol !== undefined && d.rowIndex===highlightRow && d.colIndex===highlightCol ? 1.8 : .8
+      );
   }
 
   $: if (data && svgEl) { highlightRow; highlightCol; drawMatrixSvg(); }
