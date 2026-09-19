@@ -372,10 +372,12 @@ async function runMobile(browser) {
     const mobileVisionHidden=await page.locator('.vision-hidden-state').count();
     const mobileVisionFrames=await page.locator('.vision-stage-frame .vision-frame').count();
     const mobileVisionGrids=await page.locator('.vision-stage-patch .patch-grid').count();
+    const mobileVisionSankeyDisplay=await page.locator('.vision-pipeline .upstream-sankey').first().evaluate(el=>getComputedStyle(el).display).catch(()=>null);
     if(mobileVisionStateReadout!==0) pushError('mobile vision: explicit state readout leaked');
     if(mobileVisionHidden!==1) pushError('mobile vision: hidden-state label missing');
     if(mobileVisionFrames!==8) pushError('mobile vision: expected 8 frames, found '+mobileVisionFrames);
     if(mobileVisionGrids!==2) pushError('mobile vision: expected patch and delta grids, found '+mobileVisionGrids);
+    if(mobileVisionSankeyDisplay && mobileVisionSankeyDisplay!=='none') pushError('mobile vision: Sankey must be hidden, display='+mobileVisionSankeyDisplay);
 
     const mobileVisionDoc=await page.evaluate(()=>({w:document.documentElement.scrollWidth,v:innerWidth}));
     if(mobileVisionDoc.w>mobileVisionDoc.v+2) pushError('mobile vision: overview causes page-level horizontal overflow');
@@ -389,7 +391,8 @@ async function runMobile(browser) {
     if(mobileVisionDetailDoc.w>mobileVisionDetailDoc.v+2) pushError('mobile vision: detail causes page-level horizontal overflow');
     report.interactions.mobileVision={
       enabled:true,stateReadoutCount:mobileVisionStateReadout,hiddenStateCount:mobileVisionHidden,
-      frameCount:mobileVisionFrames,patchGridCount:mobileVisionGrids,detailCount:mobileVisionDetail
+      frameCount:mobileVisionFrames,patchGridCount:mobileVisionGrids,detailCount:mobileVisionDetail,
+      sankeyDisplay:mobileVisionSankeyDisplay
     };
     await page.screenshot({path:path.join(outDir,'mobile-vision-detail.jpg'),type:'jpeg',quality:80,fullPage:true});
   } else {
