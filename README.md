@@ -69,6 +69,15 @@ For the fixed 10 s replay currently used by the lab:
 
 These numbers describe one deterministic replay configuration, not a general controller ranking. The UI therefore exposes raw survival, maximum/mean pole angle and control effort without declaring a winner.
 
+### 0.6 — Atomic live tick synchronization — complete
+Single-controller State, Vision, and Fusion views now use one atomic snapshot contract. The displayed Cart-Pole state, newest State raw token, newest sampled Vision/Fusion state, model intermediates, and displayed policy force all refer to the same current simulation tick.
+
+The transition order is now explicit:
+
+`current snapshot + current action → physics step → append new observations → recompute all model intermediates/action → render next snapshot`
+
+When paused, **Step** advances exactly one 20 ms physics tick. Browser QA numerically verifies state/token equality and `force = 10*tanh(active action score)` before and after Step in all three single-controller modes.
+
 ### Later
 Additional replay scenarios, video history, partial observability, attention-head comparison, and extensions to more complex control tasks.
 
@@ -107,7 +116,7 @@ This separation lets later state, image, video, and multimodal models reuse the 
 
 ## Status
 
-**v0.5 deterministic comparison replay is implemented.** State / Vision / Fusion remain independent explainers, while Compare executes all three learned controllers from an identical initial state under one shared tick-indexed disturbance schedule. The trace is deterministic, pause/scrub/replay capable, and freezes failed controllers while the shared clock continues. State/vision/fusion/comparison runtime checks, desktop/mobile browser QA, screenshot artifacts, and Pages deployment are automated.
+**v0.6 atomic live snapshots are implemented.** State / Vision / Fusion now keep the rendered pose, newest observation/token, model intermediates and displayed action on one simulation tick, with a paused one-tick Step control. Compare remains a separate deterministic replay environment. State/vision/fusion/comparison runtime checks, atomic snapshot browser assertions, desktop/mobile QA, screenshot artifacts, and Pages deployment are automated.
 
 ## License
 
