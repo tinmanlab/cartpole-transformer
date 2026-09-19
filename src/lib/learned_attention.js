@@ -55,10 +55,11 @@ export function runLearnedAttention(history, model) {
   const v = norm1.map(x => matVec(w.v.weight, x, w.v.bias));
   const d = q[0].length;
 
-  const raw = q.map((qi, row) =>
-    k.map((kj, col) => col > row
-      ? -Infinity
-      : qi.reduce((sum, x, j) => sum + x * kj[j], 0) / Math.sqrt(d))
+  const scores = q.map(qi =>
+    k.map(kj => qi.reduce((sum, x, j) => sum + x * kj[j], 0) / Math.sqrt(d))
+  );
+  const raw = scores.map((row, r) =>
+    row.map((value, c) => c > r ? -Infinity : value)
   );
   const weights = raw.map(softmax);
   const perTokenContext = weights.map(row =>
@@ -87,6 +88,7 @@ export function runLearnedAttention(history, model) {
     q,
     k,
     v,
+    scores,
     raw,
     weights,
     context: perTokenContext[last],
