@@ -29,10 +29,17 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - name: Install browser QA dependency
+      - name: Prepare browser QA
         run: |
           npm install --no-save --package-lock=false playwright@1.55.0
-          npx playwright install --with-deps chromium
+          CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
+          if [ -n "$CHROME" ]; then
+            echo "QA_CHROME=$CHROME" >> "$GITHUB_ENV"
+            echo "Using runner browser: $CHROME"
+          else
+            echo "No runner browser found; installing Playwright Chromium"
+            npx playwright install --with-deps chromium
+          fi
       - run: npm run check:model
       - run: npm run build
       - name: Start production preview
