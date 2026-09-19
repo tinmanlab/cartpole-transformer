@@ -29,6 +29,7 @@ FRAME_SIZE = 32
 PATCH_SIZE = 2
 GRID_SIZE = FRAME_SIZE // PATCH_SIZE
 FEATURE_DIM = GRID_SIZE * GRID_SIZE
+TOKEN_INPUT_DIM = FEATURE_DIM * 2
 D_MODEL = 24
 D_FF = 48
 TAU = 0.02
@@ -184,7 +185,7 @@ def make_dataset(episodes: int = 200, horizon: int = 220):
 class TinyVisionTransformer(nn.Module):
     def __init__(self) -> None:
         super().__init__()
-        self.embed = nn.Linear(FEATURE_DIM, D_MODEL)
+        self.embed = nn.Linear(TOKEN_INPUT_DIM, D_MODEL)
         self.pos_embedding = nn.Parameter(torch.zeros(SEQ_LEN, D_MODEL))
         self.ln1 = nn.LayerNorm(D_MODEL)
         self.q = nn.Linear(D_MODEL, D_MODEL)
@@ -199,7 +200,10 @@ class TinyVisionTransformer(nn.Module):
         self.register_buffer("controller_gain", torch.tensor(EXPERT_GAIN, dtype=torch.float32))
 
     def forward(self, features: torch.Tensor):
-        tokens = self.embed(features) + self.pos_embedding
+        delta = torch.zeros_like(features)
+        delta[:, 1:, :] = features[:, 1:, :] - features[:, :-1, :]
+        token_input = torch.cat([features, delta], dim=-1)
+        tokens = self.embed(token_input) + self.pos_embedding
         norm1 = self.ln1(tokens)
         q, k, v = self.q(norm1), self.k(norm1), self.v(norm1)
         scores = q @ k.transpose(-2, -1) / math.sqrt(D_MODEL)
@@ -247,8 +251,9 @@ def train_model(x: np.ndarray, y_action: np.ndarray, y_state: np.ndarray):
             action_score, state_norm = model(tx[idx].float())
             action_pred = torch.tanh(action_score)
             action_loss = F.mse_loss(action_pred, ta[idx])
-            state_loss = F.mse_loss(state_norm, ts[idx])
-            loss = action_loss + 0.65 * state_loss
+            state_weights = torch.tensor([1.0, 1.5, 4.0, 2.5], dtype=state_norm.dtype, device=state_norm.device)
+            state_loss = (((state_norm - ts[idx]) ** 2) * state_weights).mean()
+            loss = action_loss + 0.85 * state_loss
             opt.zero_grad(set_to_none=True)
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
@@ -363,12 +368,13 @@ def save_artifact(model, losses, ablation, closed_full, closed_repeat):
         "patch_size": PATCH_SIZE,
         "grid_size": GRID_SIZE,
         "feature_dim": FEATURE_DIM,
+        "token_input_dim": TOKEN_INPUT_DIM,
         "d_model": D_MODEL,
         "d_ff": D_FF,
         "state_scale": STATE_SCALE.tolist(),
         "controller_gain": EXPERT_GAIN.tolist(),
         "training": {
-            "objective": "pixels-only visual state inference + transparent state-feedback action",
+            "objective": "pixels-only patch+delta visual state inference + transparent state-feedback action",
             "epochs": len(losses),
             "final_train_loss": losses[-1][0],
             "final_val_action_mse": losses[-1][1],
@@ -402,7 +408,7 @@ Generated deterministically by `scripts/train_vision_transformer.py`.
 
 ## Input contract
 
-`32×32 grayscale frame → 2×2 patches → 16×16 = 256 patch-average features → learned 256→24 frame token`.
+`32×32 grayscale frame → 2×2 patches → 16×16 = 256 patch means → concatenate Δpatch to previous sampled frame → 512D inspectable visual feature → learned 512→24 frame token`.
 
 The Transformer receives eight visual observations sampled every {FRAME_STRIDE*TAU:.2f} s (a {(SEQ_LEN-1)*FRAME_STRIDE*TAU:.2f} s history span) and **never receives simulator state directly**. Its final hidden token estimates normalized `[x, x_dot, theta, theta_dot]`; the same transparent fixed state-feedback equation used elsewhere maps that estimate to force.
 
@@ -413,7 +419,8 @@ The Transformer receives eight visual observations sampled every {FRAME_STRIDE*T
 - visual history span: {(SEQ_LEN-1)*FRAME_STRIDE*TAU:.2f} s
 - frame size: {FRAME_SIZE}×{FRAME_SIZE}
 - patch grid: {GRID_SIZE}×{GRID_SIZE}
-- frame feature width: {FEATURE_DIM}
+- patch feature width: {FEATURE_DIM}
+- token input width (patch + delta): {TOKEN_INPUT_DIM}
 - model width: {D_MODEL}
 - heads: 1
 - transformer blocks: 1
