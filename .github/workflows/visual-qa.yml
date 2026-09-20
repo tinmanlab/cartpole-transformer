@@ -10,12 +10,19 @@ on:
       - "scripts/visual_qa.mjs"
       - "scripts/check_*.mjs"
       - ".github/workflows/visual-qa.yml"
+  pull_request:
+    paths:
+      - "src/**"
+      - "public/model/**"
+      - "scripts/visual_qa.mjs"
+      - "scripts/check_*.mjs"
+      - ".github/workflows/visual-qa.yml"
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: visual-qa
+  group: visual-qa-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -23,8 +30,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -63,8 +68,36 @@ jobs:
           name: visual-qa
           path: qa-output/
           retention-days: 14
+      - name: Upload candidate build for PR review
+        # Lets a reviewer download and preview the exact built output for this
+        # PR without a deploy step; only after a fully green build + QA run.
+        if: success() && github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-preview
+          path: dist/
+          retention-days: 14
+  publish:
+    # Separate job so only this one narrow, main-only, post-success publisher
+    # gets contents:write; the qa job (which also runs on untrusted PRs) stays
+    # read-only.
+    needs: qa
+    if: needs.qa.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          name: visual-qa
+          path: qa-output
       - name: Publish latest visual QA snapshot
-        if: always()
+        # Only a fully green run on main is allowed to overwrite the last
+        # known-good snapshot; failing runs and PR runs must never touch it.
         run: |
           if [ ! -f qa-output/report.json ]; then
             echo "No completed QA report; preserving last known-good qa-visual snapshot"

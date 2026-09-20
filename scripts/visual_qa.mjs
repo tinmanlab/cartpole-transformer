@@ -221,6 +221,56 @@ async function auditLayout(page, name, { minFont=9.75 } = {}) {
     const clippedText=[];
     const viewportEscapes=[];
     const smallControls=[];
+    const tinySvgText=[];
+
+    // SVG <text> is styled in local user units; when the viewBox (or any
+    // ancestor <g transform>) scales down to fit a narrow container, declared
+    // font-size no longer equals rendered size on screen. Measure the real
+    // screen size via the text element's OWN screen-space transform
+    // (getScreenCTM), which folds in every ancestor transform, not just the
+    // root <svg>'s. This UI never rotates/skews text, so (c,d) is the
+    // vertical (font-size) axis scale factor to use.
+    for(const el of [...document.querySelectorAll('svg text')]){
+      if(!visible(el)) continue;
+      const text=(el.textContent||'').trim();
+      if(!text) continue;
+      const ctm=el.getScreenCTM();
+      if(!ctm) continue;
+      const scale=Math.hypot(ctm.c,ctm.d);
+      const declared=parseFloat(getComputedStyle(el).fontSize);
+      if(!Number.isFinite(declared)) continue;
+      const effective=declared*scale;
+      if(effective<minFont){
+        tinySvgText.push({class:cls(el),text:text.slice(0,60),declared:Number(declared.toFixed(2)),effective:Number(effective.toFixed(2))});
+      }
+    }
+
+    // Essential readouts and control labels have a stricter, curated 14px
+    // floor (design contract), separate from the blanket ~10px minFont floor
+    // above that still covers every other compact/eyebrow label in the app.
+    const coreFontSelectors='.state-readout span,.action-readout span,.vision-hidden-state,.sim-controls button,'+
+      '.steps b,.steps p,.claim,.qkv-key,.panel-head small,.stage-head>span,.stage-head>small,.attention-read,.attention-read strong,.force-value,'+
+      '.fd-badge,.fd-stages button,.fd-content p,.fd-values span,.fd-values b,.fd-result-tick,.fd-ba-label,.fd-details summary,.follow-decision-entry';
+    const coreTextTooSmall=[];
+    for(const el of [...document.querySelectorAll(coreFontSelectors)]){
+      if(!visible(el)) continue;
+      const fs=parseFloat(getComputedStyle(el).fontSize);
+      if(Number.isFinite(fs) && fs<14){
+        coreTextTooSmall.push({tag:el.tagName.toLowerCase(),class:cls(el),text:textPreview(el)||el.textContent.trim().slice(0,60),fontSize:Number(fs.toFixed(2))});
+      }
+    }
+
+    // Primary controls (Pause/Run, Step, Reset, Push) get a stricter 44px
+    // touch-target floor, separate from the blanket 28px smallControls floor.
+    const primaryControlSelectors='.sim-controls button';
+    const undersizedPrimaryControls=[];
+    for(const el of [...document.querySelectorAll(primaryControlSelectors)]){
+      if(!visible(el)) continue;
+      const r=el.getBoundingClientRect();
+      if(r.height<44 || r.width<44){
+        undersizedPrimaryControls.push({tag:el.tagName.toLowerCase(),class:cls(el),text:el.textContent.trim().slice(0,40),width:Number(r.width.toFixed(1)),height:Number(r.height.toFixed(1))});
+      }
+    }
 
     for(const el of [...document.querySelectorAll('body *')]){
       if(el.matches('script,style,noscript,template,svg,svg *,canvas')) continue;
@@ -314,6 +364,9 @@ async function auditLayout(page, name, { minFont=9.75 } = {}) {
       document:{scrollWidth:document.documentElement.scrollWidth,scrollHeight:document.documentElement.scrollHeight},
       tinyText,
       clippedText,
+      tinySvgText,
+      coreTextTooSmall,
+      undersizedPrimaryControls,
       smallControls,
       viewportEscapes,
       clippedContainers,
@@ -326,6 +379,9 @@ async function auditLayout(page, name, { minFont=9.75 } = {}) {
 
   if(data.document.scrollWidth>data.viewport.width+2) pushError(name+': page-level horizontal overflow '+data.document.scrollWidth+' > '+data.viewport.width);
   if(data.tinyText.length) pushError(name+': text below 10px '+JSON.stringify(data.tinyText.slice(0,12)));
+  if(data.tinySvgText.length) pushError(name+': SVG text renders below 10px on screen (effective size, not declared) '+JSON.stringify(data.tinySvgText.slice(0,12)));
+  if(data.coreTextTooSmall.length) pushError(name+': essential readout/control text below 14px '+JSON.stringify(data.coreTextTooSmall.slice(0,12)));
+  if(data.undersizedPrimaryControls.length) pushError(name+': primary control smaller than 44px touch target '+JSON.stringify(data.undersizedPrimaryControls.slice(0,12)));
   if(data.clippedText.length) pushError(name+': clipped visible text '+JSON.stringify(data.clippedText.slice(0,10)));
   if(data.smallControls.length) pushError(name+': controls shorter than 28px '+JSON.stringify(data.smallControls.slice(0,10)));
   if(data.viewportEscapes.length) pushError(name+': elements escape viewport '+JSON.stringify(data.viewportEscapes.slice(0,10)));
@@ -412,6 +468,9 @@ async function runDesktop(browser) {
   await page.goto(baseURL, { waitUntil:'networkidle', timeout:30000 });
   await waitLearned(page);
   await page.waitForTimeout(700);
+
+  const stateActionReadouts=await page.locator('.action-readout span').count();
+  if(stateActionReadouts!==2) pushError('state mode: expected exactly 2 action-readout cells (force+push), found '+stateActionReadouts);
 
   const t0=await page.locator('.time').innerText();
   const canvas0=await page.locator('.embedding-overview canvas').first().evaluate(el=>el.toDataURL());
@@ -579,6 +638,144 @@ async function runDesktop(browser) {
   report.interactions.decisionTrace={state:stateDecisionTrace};
   await page.screenshot({path:path.join(outDir,'desktop-decision-trace.jpg'),type:'jpeg',quality:84,fullPage:true});
 
+  // "Follow one decision" guide (State/learned mode only): frozen event
+  // snapshot must survive Apply-step without leaking live post-step data
+  // back into the earlier stages, and must never apply a second step.
+  await page.getByRole('button',{name:'Reset'}).click();
+  await page.waitForTimeout(300);
+
+  const readFdValues=async () => (await page.locator('.fd-values span').allInnerTexts()).map(t=>t.trim());
+
+  const followEntry=page.getByRole('button',{name:'한 판단 따라가기 · Follow one decision'});
+  await followEntry.click();
+  await page.waitForTimeout(120);
+
+  const guideCount0=await page.locator('.follow-decision-guide').count();
+  if(guideCount0!==1) pushError('follow-decision guide: entry click did not open exactly one guide');
+
+  const runDisabledOnOpen=await page.getByRole('button',{name:/^(Pause|Run)$/}).isDisabled().catch(()=>false);
+  const pushDisabledOnOpen=await page.getByRole('button',{name:'Push →'}).isDisabled().catch(()=>false);
+  if(!runDisabledOnOpen || !pushDisabledOnOpen) pushError('follow-decision guide: Run/Push are not disabled while the guide owns the frozen event');
+
+  const badgeText0=await page.locator('.fd-badge').innerText();
+  const capturedTickMatch=badgeText0.match(/captured tick (\d+)/);
+  const capturedTick=capturedTickMatch?Number(capturedTickMatch[1]):NaN;
+  const tickAtOpen=Number(await page.locator('main').getAttribute('data-sync-tick'));
+  if(!Number.isFinite(capturedTick) || capturedTick!==tickAtOpen) pushError('follow-decision guide: badge captured tick does not match plant tick at open');
+
+  const entryInputValues=await readFdValues();
+
+  await page.getByRole('tab',{name:/Calculation/}).click();
+  await page.waitForTimeout(150);
+  const calcDetailHeading=await page.locator('.transformer-detail-wide h2').innerText().catch(()=>'');
+  if(calcDetailHeading!=='Self Attention') pushError('follow-decision guide: Calculation stage did not open the Self Attention detail, got '+JSON.stringify(calcDetailHeading));
+  const traceBefore=await page.locator('.attention-cell-trace').evaluate(el=>el.dataset.weight).catch(()=>null);
+
+  await page.getByRole('tab',{name:/Action/}).click();
+  await page.waitForTimeout(150);
+  const actionDetailHeading=await page.locator('.transformer-detail-wide h2').innerText().catch(()=>'');
+  if(actionDetailHeading!=='Action head') pushError('follow-decision guide: Action stage did not open the Action head detail, got '+JSON.stringify(actionDetailHeading));
+  const entryActionValues=await readFdValues();
+
+  await page.getByRole('tab',{name:/Result/}).click();
+  await page.waitForTimeout(100);
+  const applyButton=page.getByRole('button',{name:/Apply one 20ms step/});
+  if(await applyButton.count()!==1) pushError('follow-decision guide: Result stage missing the explicit Apply-step button');
+
+  // Regression: two synchronous DOM clicks in the same task must not apply
+  // two physics steps. This bypasses Playwright's own actionability
+  // re-checks (which a real double-click on a still-enabled button would
+  // also bypass, since disabling only lands after the first click's await),
+  // so it exercises the reentrancy guard directly rather than relying on a
+  // human being unlikely to double-click fast enough.
+  await applyButton.evaluate(el => { el.click(); el.click(); });
+  await page.waitForTimeout(200);
+
+  const tickAfterApply=Number(await page.locator('main').getAttribute('data-sync-tick'));
+  if(tickAfterApply!==capturedTick+1) pushError('follow-decision guide: duplicate-click Apply-step advanced the plant by '+(tickAfterApply-capturedTick)+' ticks, expected exactly 1');
+
+  const guideTrace=page.locator('.follow-decision-guide .decision-trace');
+  const guideTickFrom=Number(await guideTrace.getAttribute('data-tick-from').catch(()=>NaN));
+  const guideTickTo=Number(await guideTrace.getAttribute('data-tick-to').catch(()=>NaN));
+  if(guideTickFrom!==capturedTick || guideTickTo!==capturedTick+1) pushError('follow-decision guide: displayed Result trace tick range is not t->t+1 for the captured event');
+
+  // Result stage must lead with a readable (>=14px) summary of the actual
+  // captured transition, matching the trace exactly, with the old verbose
+  // per-field trace present but collapsed by default.
+  const detailsOpenBeforeExpand=await page.locator('.follow-decision-guide .fd-details').evaluate(el=>el.open);
+  if(detailsOpenBeforeExpand) pushError('follow-decision guide: full dynamics detail is not collapsed by default');
+  const summaryTickText=await page.locator('.fd-result-tick').innerText();
+  if(!summaryTickText.includes(String(capturedTick)) || !summaryTickText.includes(String(capturedTick+1))) {
+    pushError('follow-decision guide: Result summary tick text does not match the captured trace t->t+1');
+  }
+  const summaryForceText=await page.locator('.fd-result-summary .fd-values').first().innerText();
+  const traceAppliedForce=Number(await guideTrace.getAttribute('data-applied-policy-force'));
+  if(!summaryForceText.includes(traceAppliedForce.toFixed(2))) {
+    pushError('follow-decision guide: Result summary applied-force does not match the captured trace');
+  }
+  const summaryFontSize=await page.locator('.fd-result-tick').evaluate(el=>parseFloat(getComputedStyle(el).fontSize));
+  if(summaryFontSize<14) pushError('follow-decision guide: Result summary text is below the 14px essential-text floor');
+
+  // Revisit Input/Calculation/Action AFTER Apply: must still show the frozen
+  // captured-event data, not the now-advanced live plant.
+  await page.getByRole('tab',{name:/^Input/}).click();
+  await page.waitForTimeout(100);
+  const postApplyInputValues=await readFdValues();
+  if(JSON.stringify(postApplyInputValues)!==JSON.stringify(entryInputValues)) {
+    pushError('follow-decision guide: Input values changed after Apply-step (captured snapshot leaked to live) '+JSON.stringify({before:entryInputValues,after:postApplyInputValues}));
+  }
+
+  await page.getByRole('tab',{name:/Calculation/}).click();
+  await page.waitForTimeout(150);
+  const traceAfter=await page.locator('.attention-cell-trace').evaluate(el=>el.dataset.weight).catch(()=>null);
+  if(traceAfter!==traceBefore) pushError('follow-decision guide: Calculation attention trace changed after Apply-step (not frozen to the captured event) '+JSON.stringify({before:traceBefore,after:traceAfter}));
+
+  await page.getByRole('tab',{name:/Action/}).click();
+  await page.waitForTimeout(150);
+  const postApplyActionValues=await readFdValues();
+  if(JSON.stringify(postApplyActionValues)!==JSON.stringify(entryActionValues)) {
+    pushError('follow-decision guide: Action values changed after Apply-step (captured snapshot leaked to live) '+JSON.stringify({before:entryActionValues,after:postApplyActionValues}));
+  }
+
+  // Result revisit must not apply a second step.
+  await page.getByRole('tab',{name:/Result/}).click();
+  await page.waitForTimeout(100);
+  const tickAfterRevisit=Number(await page.locator('main').getAttribute('data-sync-tick'));
+  if(tickAfterRevisit!==tickAfterApply) pushError('follow-decision guide: revisiting Result advanced the tick again');
+  if(await applyButton.count()!==0) pushError('follow-decision guide: Apply-step button reappeared after a step was already applied');
+
+  // New decision: fresh event id and a newly captured tick.
+  const newDecisionButton=page.getByRole('button',{name:/Follow next decision/});
+  await newDecisionButton.click();
+  await page.waitForTimeout(150);
+  const badgeText1=await page.locator('.fd-badge').innerText();
+  if(badgeText1===badgeText0) pushError('follow-decision guide: new-decision capture did not change the event badge');
+  const eventId0=badgeText0.match(/event #(\d+)/)?.[1];
+  const eventId1=badgeText1.match(/event #(\d+)/)?.[1];
+  if(!eventId1 || eventId0===eventId1) pushError('follow-decision guide: new-decision capture did not advance the event id');
+
+  // Exit restores public controls without any extra physics.
+  const tickBeforeClose=Number(await page.locator('main').getAttribute('data-sync-tick'));
+  await page.getByRole('button',{name:'close follow-one-decision guide'}).click();
+  await page.waitForTimeout(100);
+  if(await page.locator('.follow-decision-guide').count()!==0) pushError('follow-decision guide: close did not unmount the guide');
+  const tickAfterClose=Number(await page.locator('main').getAttribute('data-sync-tick'));
+  if(tickAfterClose!==tickBeforeClose) pushError('follow-decision guide: closing the guide changed the plant tick');
+  const pushReenabled=await page.getByRole('button',{name:'Push →'}).isDisabled().catch(()=>true);
+  if(pushReenabled) pushError('follow-decision guide: Push stayed disabled after the guide was closed');
+
+  // Mode change must invalidate/close a still-open guide cleanly.
+  await followEntry.click();
+  await page.waitForTimeout(100);
+  await page.getByRole('button',{name:'Vision'}).click();
+  await page.waitForTimeout(150);
+  if(await page.locator('.follow-decision-guide').count()!==0) pushError('follow-decision guide: mode change to Vision left the guide mounted');
+  await page.getByRole('button',{name:'State'}).click();
+  await page.waitForTimeout(150);
+  if(await page.locator('.follow-decision-guide').count()!==0) pushError('follow-decision guide: guide leaked across a mode-change round trip');
+
+  await page.screenshot({path:path.join(outDir,'desktop-follow-decision.jpg'),type:'jpeg',quality:84,fullPage:true});
+
   // Optional pixels-only mode becomes mandatory once the trained artifact is present.
   const visionButton=page.getByRole('button',{name:'Vision'});
   const visionEnabled=await visionButton.isEnabled().catch(()=>false);
@@ -615,10 +812,12 @@ async function runDesktop(browser) {
     const frameCount=await page.locator('.vision-stage-frame .vision-frame').count();
     const patchGridCount=await page.locator('.vision-stage-patch .patch-grid').count();
     const patchCellCount=await page.locator('.vision-stage-patch .cell').count();
+    const visionActionReadouts=await page.locator('.action-readout span').count();
 
     if(pipelineCount!==1) pushError('vision mode: pipeline missing');
     if(hiddenStateCount!==1) pushError('vision mode: hidden-state label missing');
     if(stateReadoutCount!==0) pushError('vision mode: explicit state readout leaked into pixels-only mode');
+    if(visionActionReadouts!==2) pushError('vision mode: expected exactly 2 action-readout cells (force+push) despite hidden state, found '+visionActionReadouts);
     if(frameCount!==8) pushError('vision mode: expected 8 sampled frames, found '+frameCount);
     if(patchGridCount!==2) pushError('vision mode: expected patch and delta grids, found '+patchGridCount);
     if(patchCellCount!==512) pushError('vision mode: expected 512 visible patch+delta cells, found '+patchCellCount);
@@ -685,8 +884,23 @@ async function runDesktop(browser) {
     await fusionButton.click();
     await page.waitForTimeout(260);
 
-    const pauseFusion=page.getByRole('button',{name:'Pause'});
-    if(await pauseFusion.count()) await pauseFusion.click();
+    // Mode-switch continuity: switching alone (before any Reset) must not
+    // rewind the shared episode clock. Checked here, once, before the
+    // deliberate fresh-episode reset below establishes a new baseline.
+    const timeAfterSwitch=parseFloat((await page.locator('.sim-card .time').innerText()).replace(' s',''));
+    const fusionSameEpisode=timeAfterSwitch>=timeBeforeFusion;
+    if(!fusionSameEpisode) pushError('fusion mode: mode switch reset or rewound the episode clock');
+
+    // `running` and `elapsed` are shared app state across modes: Vision's own
+    // Run/push exploration can legitimately run the pole to a terminal fall
+    // (status='fell') before Fusion is ever reached, which disables every
+    // control (Pause/Run/Step) and cascades into unrelated failures below.
+    // Qualify this mode from a known-fresh episode via the same public
+    // Reset/Pause controls a user would use, rather than trusting whatever
+    // state leaked over from the previous mode.
+    await page.getByRole('button',{name:'Reset'}).click();
+    await page.waitForTimeout(300);
+    await page.getByRole('button',{name:'Pause'}).click();
     await page.waitForTimeout(60);
     const fusionSync0=await readAtomicSnapshot(page);
     verifyAtomicSnapshot(fusionSync0,'fusion pause');
@@ -712,16 +926,16 @@ async function runDesktop(browser) {
     const fusionAttentionCells=await page.locator('.fusion-stage-attention .cell').count();
     const fusionScenarioButtons=await page.locator('.fusion-pipeline .scenario-bar button').count();
     const fusionStateReadout=await page.locator('.state-readout').count();
-    const timeAfterFusion=parseFloat((await page.locator('.sim-card .time').innerText()).replace(' s',''));
+    const fusionActionReadouts=await page.locator('.action-readout span').count();
 
     if(fusionModeAttr!=='fusion') pushError('fusion mode: main observation mode did not switch to fusion');
+    if(fusionActionReadouts!==2) pushError('fusion mode: expected exactly 2 action-readout cells (force+push), found '+fusionActionReadouts);
     if(fusionPipelineCount!==1) pushError('fusion mode: pipeline missing');
     if(fusionPairCount!==8) pushError('fusion mode: expected 8 aligned timestamp pairs, found '+fusionPairCount);
     if(fusionTokenCount!==16) pushError('fusion mode: expected 16 typed tokens, found '+fusionTokenCount);
     if(fusionAttentionCells!==256) pushError('fusion mode: expected 16x16 attention matrix, found '+fusionAttentionCells+' cells');
     if(fusionScenarioButtons!==5) pushError('fusion mode: expected 5 degradation controls, found '+fusionScenarioButtons);
     if(fusionStateReadout!==1) pushError('fusion mode: explicit state readout should be visible');
-    if(!(timeAfterFusion>=timeBeforeFusion)) pushError('fusion mode: mode switch reset or rewound the episode clock');
 
     await page.screenshot({path:path.join(outDir,'desktop-fusion-overview.jpg'),type:'jpeg',quality:82,fullPage:true});
 
@@ -764,7 +978,7 @@ async function runDesktop(browser) {
     report.interactions.fusionMode={
       available:true,modeAttr:fusionModeAttr,pipelineCount:fusionPipelineCount,pairCount:fusionPairCount,
       tokenCount:fusionTokenCount,attentionCells:fusionAttentionCells,scenarioButtons:fusionScenarioButtons,
-      stateReadoutCount:fusionStateReadout,sameEpisode:timeAfterFusion>=timeBeforeFusion,
+      stateReadoutCount:fusionStateReadout,sameEpisode:fusionSameEpisode,
       missingStateOff,partialVision,missingVisionOff,noisyActive,
       detailCount:fusionDetailCount,detailAttentionCells:fusionDetailCells,ablationCount:fusionAblations
     };
@@ -1029,6 +1243,7 @@ try {
   await runResponsiveLayoutAudit(browser,1024,'audit-laptop');
   await runResponsiveLayoutAudit(browser,768,'audit-tablet');
   await runResponsiveLayoutAudit(browser,390,'audit-mobile');
+  await runResponsiveLayoutAudit(browser,320,'audit-mobile-small');
 } catch (error) {
   pushError('unhandled visual QA exception: ' + (error?.stack || String(error)));
 } finally {

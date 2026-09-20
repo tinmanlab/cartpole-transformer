@@ -94,6 +94,11 @@ The cleanup raised the normal typography floor to 10 px, made controls at least 
 
 The final strict sweep covers **48 mode/detail/viewport states** with zero layout errors or warnings, followed by manual review of the generated desktop/laptop/tablet/mobile screenshot set.
 
+### 0.9 — Follow one decision guide — complete
+State mode (learned model only) has an opt-in **"한 판단 따라가기 · Follow one decision"** button below the lab. It freezes the simulation, captures one real tick's observation/attention/action once, and walks through the shared four-stage reading order — Input / Calculation / Action / Result — reusing the existing detail views: Calculation opens the Self Attention detail, Action opens the Action head detail, Result requires an explicit "Apply one 20 ms step" (the same single `Step` transition used elsewhere) before showing that transition's before/after state. Navigating stages never advances the simulation; only the explicit Apply button does, and only once per captured event. Closing the guide, resetting, or switching mode returns control to the normal live/step/push buttons. Vision, Fusion, and Compare are unaffected — this guide does not exist there.
+
+This view follows the small cross-repo presentation contract in [docs/learning-suite.md](docs/learning-suite.md), shared as documentation only (no runtime dependency) with the sibling PPO and DiffusionPolicy CartPole apps.
+
 ### Later
 Additional replay scenarios, video history, partial observability, attention-head comparison, and extensions to more complex control tasks.
 
@@ -133,6 +138,8 @@ This separation lets later state, image, video, and multimodal models reuse the 
 ## Status
 
 **v0.8 comprehensive visual QA is implemented.** State / Vision / Fusion / Compare / Decision Trace and every State detail stage are now swept at 1440/1024/768/390 px for typography, clipping, overlap, control size, viewport escape and horizontal overflow. The strict sweep covers 48 rendered states with zero errors/warnings, in addition to the existing state/vision/fusion/comparison/dynamics checks and screenshot-based manual review.
+
+**v0.9 readability repair.** The sweep now runs at 320/390/768/1024/1440px and measures the *effective* on-screen size of SVG `<text>` (via each element's own `getScreenCTM`) instead of trusting declared font-size, since viewBox scaling was silently shrinking Cart-Pole diagram labels on narrow screens; `CartPoleView` now counter-scales those labels to stay readable at every width, and the numeric labels that duplicated the HTML readout were dropped from the SVG (the arrows stay). A curated set of essential explanations and readouts (state readout, sim controls, `.steps`/`.claim`/`.qkv-key`, stage/panel headings, attention/force readouts) carries a stricter 14px text / 44px touch-target floor; this is scoped to that curated set, not every label in the app. The Fusion pipeline's token grid and 16×16 attention matrix reflow/scroll locally instead of clipping or forcing the page wider, and a Fusion mode-switch bug that could cascade into unrelated test failures (reusing a possibly-fallen episode from Vision mode) is fixed. Full browser QA (320–1440px, all modes) is green.
 
 ## License
 
