@@ -439,34 +439,70 @@ async function runResponsiveLayoutAudit(browser, width, label) {
 
     // Per-tile numeric readout check: each Action tile's actual value text
     // (not just its presence in the DOM/dataset) must render as one complete,
-    // readable line inside its own tile, never clipped by or bleeding into a
-    // neighboring tile.
-    const actionTileRects=await page.locator('.follow-decision-guide .fd-action-values span').evaluateAll(spans=>spans.map(span=>{
+    // single-line numeric token inside its own tile, never clipped, never
+    // colliding with its own label, and never bleeding into a neighboring
+    // tile — at whatever precision the component actually displays.
+    const actionTiles=await page.locator('.follow-decision-guide .fd-action-values span').evaluateAll(spans=>spans.map(span=>{
       const tile=span.getBoundingClientRect();
-      const label=span.querySelector('b')?.getBoundingClientRect();
-      const value=span.querySelector('output')?.getBoundingClientRect();
-      const cs=value?getComputedStyle(span.querySelector('output')):null;
+      const labelEl=span.querySelector('b');
+      const valueEl=span.querySelector('output');
+      const labelRect=labelEl?labelEl.getBoundingClientRect():null;
+      let valueRects=[];
+      if(valueEl){
+        const range=document.createRange();
+        range.selectNodeContents(valueEl);
+        valueRects=Array.from(range.getClientRects());
+      }
+      const cs=valueEl?getComputedStyle(valueEl):null;
+      const r=rect=>rect&&{left:rect.left,right:rect.right,top:rect.top,bottom:rect.bottom};
       return {
-        text:span.textContent.trim(),
-        tile:{left:tile.left,right:tile.right,top:tile.top,bottom:tile.bottom},
-        value:value?{left:value.left,right:value.right,top:value.top,bottom:value.bottom,height:value.height}:null,
+        labelText:labelEl?labelEl.textContent.trim():'',
+        valueText:valueEl?valueEl.textContent.trim():'',
+        tile:r(tile),
+        label:r(labelRect),
+        value:valueRects.map(r),
         fontSize:cs?parseFloat(cs.fontSize):0
       };
     }));
-    for(const t of actionTileRects){
-      if(!t.value){ pushError(label+': Action tile "'+t.text+'" has no numeric value element'); continue; }
-      if(t.fontSize<14) pushError(label+': Action tile "'+t.text+'" numeric text is smaller than 14px ('+t.fontSize.toFixed(1)+'px)');
-      if(t.value.left<t.tile.left-0.5 || t.value.right>t.tile.right+0.5 || t.value.bottom>t.tile.bottom+0.5){
-        pushError(label+': Action tile "'+t.text+'" numeric value escapes its own tile bounds '+JSON.stringify({tile:t.tile,value:t.value}));
+    if(actionTiles.length!==4) pushError(label+': Action stage does not render exactly 4 readout tiles, found '+actionTiles.length);
+    const intersects=(a,b)=>a && b && a.left<b.right-0.5 && a.right>b.left+0.5 && a.top<b.bottom-0.5 && a.bottom>b.top+0.5;
+    for(const t of actionTiles){
+      if(!t.valueText){ pushError(label+': Action tile "'+t.labelText+'" has an empty numeric value'); continue; }
+      if(t.value.length!==1){
+        pushError(label+': Action tile "'+t.labelText+'" numeric value "'+t.valueText+'" does not render as one line (client rects: '+t.value.length+')');
+        continue;
       }
-      for(const other of actionTileRects){
+      const v=t.value[0];
+      if(t.fontSize<14) pushError(label+': Action tile "'+t.labelText+'" numeric text is smaller than 14px ('+t.fontSize.toFixed(1)+'px)');
+      if(v.left<t.tile.left-0.5 || v.right>t.tile.right+0.5 || v.bottom>t.tile.bottom+0.5){
+        pushError(label+': Action tile "'+t.labelText+'" numeric value escapes its own tile bounds '+JSON.stringify({tile:t.tile,value:v}));
+      }
+      if(intersects(v,t.label)){
+        pushError(label+': Action tile "'+t.labelText+'" numeric value overlaps its own label');
+      }
+      for(const other of actionTiles){
         if(other===t) continue;
-        const overlapsX=t.value.left<other.tile.right-0.5 && t.value.right>other.tile.left+0.5;
-        const overlapsY=t.value.top<other.tile.bottom-0.5 && t.value.bottom>other.tile.top+0.5;
-        if(overlapsX && overlapsY && !(other.tile.left>=t.tile.left-0.5 && other.tile.right<=t.tile.right+0.5)){
-          pushError(label+': Action tile "'+t.text+'" numeric value overlaps neighboring tile "'+other.text+'"');
+        const ownTile=other.tile.left>=t.tile.left-0.5 && other.tile.right<=t.tile.right+0.5 && other.tile.top>=t.tile.top-0.5 && other.tile.bottom<=t.tile.bottom+0.5;
+        if(!ownTile && intersects(v,other.tile)){
+          pushError(label+': Action tile "'+t.labelText+'" numeric value overlaps neighboring tile "'+other.labelText+'"');
         }
       }
+    }
+    const tileByLabel=text=>actionTiles.find(t=>t.labelText.includes(text));
+    const scoreTile=tileByLabel('action score');
+    const forceTile=tileByLabel('10·tanh(score)');
+    const commandTile=tileByLabel('force command');
+    const tickTile=tileByLabel('captured tick');
+    if(!scoreTile || !forceTile || !commandTile || !tickTile){
+      pushError(label+': Action stage is missing one of the 4 expected readout tiles '+JSON.stringify(actionTiles.map(t=>t.labelText)));
+    } else {
+      const scoreVal=Number(scoreTile.valueText);
+      const expectedForceText=(10*Math.tanh(scoreVal)).toFixed(2);
+      if(forceTile.valueText!==expectedForceText){
+        pushError(label+': Action tile "10·tanh(score) [N]" shows '+forceTile.valueText+' but action score '+scoreTile.valueText+' implies '+expectedForceText);
+      }
+      if(String(Number(tickTile.valueText))===''||Number.isNaN(Number(tickTile.valueText))) pushError(label+': Action tile "captured tick" is not a readable number, got '+tickTile.valueText);
+      if(Number.isNaN(Number(commandTile.valueText))) pushError(label+': Action tile "force command [N]" is not a readable number, got '+commandTile.valueText);
     }
 
     await page.screenshot({path:path.join(outDir,label+'-follow-decision-action.jpg'),type:'jpeg',quality:74,fullPage:true});

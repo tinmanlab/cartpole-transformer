@@ -381,8 +381,10 @@ header h3{font-size:15px;margin:5px 0 0}
 .fd-values{display:flex;flex-wrap:wrap;gap:6px}
 .fd-values span{display:flex;justify-content:space-between;gap:6px;flex:1;min-width:110px;border:1px solid #e4e7ec;background:#fafbfc;border-radius:6px;padding:6px 7px;font:14px ui-monospace,SFMono-Regular,Menlo,monospace;color:#596273}
 .fd-values b{font-family:Inter,ui-sans-serif,system-ui;font-size:14px;color:#8b93a1}
-.fd-action-values span output{font:inherit;color:inherit}
-@media(max-width:600px){.fd-action-values span{flex-direction:column;align-items:flex-start;justify-content:flex-start;min-width:0}.fd-action-values span output{white-space:normal;word-break:break-word}}
+.fd-action-values{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.fd-action-values span{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;flex:none;min-width:0}
+.fd-action-values span output{display:block;font:inherit;color:inherit;white-space:nowrap;overflow-wrap:normal;word-break:normal}
+@media(min-width:600px){.fd-action-values{grid-template-columns:repeat(4,minmax(0,1fr))}}
 .fd-token-select,.fd-key-select,.fd-dim-select,.fd-action-dim-select{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:10px}
 .fd-selectors{display:flex;flex-wrap:wrap;gap:6px 16px}
 .fd-selector-label{font-size:14px;color:#8b93a1;min-width:28px}
