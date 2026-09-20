@@ -1729,6 +1729,36 @@ async function runFollowGuideSelectionRoundtrip(browser, width, label, keyIndex,
     preBias:Number(el.dataset.preBiasScore), bias:Number(el.dataset.biasValue)
   }));
 
+  // Cross-check the guide's own Calculation-stage numbers against the full
+  // shared drawer's numbers for the SAME cell, both read straight off the
+  // live DOM (no recomputation) -- this is the actual F3 identity claim
+  // (not just matching row/col/dim ids). weight/vDim/contributionDim come
+  // from the guide's data-contribution-dim step; weight/highlighted-v/
+  // -contribution/-context come from the drawer's data-weight and
+  // .dim-highlight block. Raw values (not just a boolean) are captured into
+  // the report so the coordinator can verify the comparison directly.
+  const eps=1e-6;
+  async function crossCheckGuideVsTrace(point) {
+    const guide=await page.locator('.follow-decision-guide .fd-calc-step[data-contribution-dim]').evaluate(el=>({
+      weight:Number(el.dataset.weight), vDim:Number(el.dataset.vDim), contributionDim:Number(el.dataset.contributionDim)
+    }));
+    const traceEl=page.locator('.attention-cell-trace');
+    const drawer=await traceEl.evaluate(el=>({
+      weight:Number(el.dataset.weight),
+      source:el.dataset.source
+    }));
+    const highlight=await traceEl.locator('.dim-highlight').evaluate(el=>({
+      v:Number(el.dataset.highlightedV), contribution:Number(el.dataset.highlightedContribution), context:Number(el.dataset.highlightedContext)
+    })).catch(()=>null);
+    const tick=Number(await page.locator('main').getAttribute('data-sync-tick'));
+    const record={point, tick, guide, drawer, highlight};
+    (report.interactions[label+'-crossCheck']=report.interactions[label+'-crossCheck']||[]).push(record);
+    if(!highlight) { pushError(label+': '+point+': drawer has no .dim-highlight block to cross-check against the guide'); return; }
+    if(Math.abs(guide.weight-drawer.weight)>eps) pushError(label+': '+point+': guide weight != drawer weight '+JSON.stringify(record));
+    if(Math.abs(guide.vDim-highlight.v)>eps) pushError(label+': '+point+': guide V[dim] != drawer highlighted V '+JSON.stringify(record));
+    if(Math.abs(guide.contributionDim-highlight.contribution)>eps) pushError(label+': '+point+': guide contribution[dim] != drawer highlighted contribution '+JSON.stringify(record));
+  }
+
   // 1) Identity on open: the shared drawer must show exactly the guide's
   // current Query (locked to last)/Key/dim -- no separate sync call needed,
   // both surfaces read the same App state.
@@ -1742,6 +1772,7 @@ async function runFollowGuideSelectionRoundtrip(browser, width, label, keyIndex,
   if(trace.lockQuery!=='true') pushError(label+': drawer Query is not locked while guide is open');
   const queryButtonsDisabled=await page.locator('.attention-cell-trace .trace-query-button').evaluateAll(els=>els.every(el=>el.disabled));
   if(!queryButtonsDisabled) pushError(label+': Query selector buttons are not all disabled while guide is open');
+  await crossCheckGuideVsTrace('first-open');
 
   // Bounds/typography: the new interactive per-dim tiles must meet the 44px
   // touch target floor, and the selected-dim readout must meet the 14px
@@ -1829,10 +1860,16 @@ async function runFollowGuideSelectionRoundtrip(browser, width, label, keyIndex,
   if(trace.col!==colAfterHover||trace.dim!==altDim) pushError(label+': selected Calculation cell changed after Apply advanced the live plant '+JSON.stringify({trace,colAfterHover,altDim}));
   const preBiasCheck=Number.isFinite(trace.preBias)&&Number.isFinite(trace.bias)&&Number.isFinite(trace.score);
   if(!preBiasCheck) pushError(label+': attention trace has a non-finite score/preBias/bias value after Apply '+JSON.stringify(trace));
+  await crossCheckGuideVsTrace('post-apply');
   await page.getByRole('button',{name:'close Transformer detail'}).click();
   await page.waitForTimeout(60);
 
-  // 7) A new event deliberately resets Query/Key/dim to defaults.
+  // 7) A new event deliberately resets Query/Key/dim to defaults. "Follow
+  // next decision" only renders on the Result stage (after Apply) -- step 6
+  // above navigated away to Calculation to inspect the post-Apply cell, so
+  // return to Result first rather than exposing the button elsewhere.
+  await page.getByRole('tab',{name:/Result/}).click();
+  await page.waitForTimeout(100);
   await page.getByRole('button',{name:/Follow next decision/}).click();
   await page.waitForTimeout(150);
   await page.getByRole('tab',{name:/Calculation/}).click();
