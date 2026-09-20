@@ -92,12 +92,19 @@ See docs/learning-suite.md for the four-stage contract this follows.
 
   $: forceFromActionScore = forceFromScore(result?.actionScore ?? 0);
 
+  // Switching stages never auto-opens the full advanced detail drawer — that
+  // used to recreate the exact detached/vertical-overload problem this guide
+  // fixes. The drawer only opens when the user explicitly clicks the
+  // full-detail button below (Calculation/Action), and closes again on any
+  // stage change so it doesn't linger behind a later stage.
   function goStage(next) {
     stage = next;
     onSelectToken(lastIndex);
-    if (next === 'calculation') onExpandedStageChange('attention');
-    else if (next === 'action') onExpandedStageChange('action');
-    else onExpandedStageChange(null);
+    onExpandedStageChange(null);
+  }
+
+  function openFullDetail(kind) {
+    onExpandedStageChange(kind);
   }
 
   function handleTabKey(e, idx) {
@@ -255,6 +262,7 @@ See docs/learning-suite.md for the four-stage contract this follows.
         </div>
       </div>
       <p class="fd-caveat">attention weight는 정보를 섞을 뿐 action 확률도 causal 중요도도 아닙니다. weighted V는 힘(force)이 아닙니다.</p>
+      <button type="button" class="fd-open-detail" on:click={()=>openFullDetail('attention')}>전체 Self Attention 상세 열기 · open full Self Attention detail</button>
     {:else if stage === 'action'}
       <p>Action / 행동 — force = 10·tanh(action score). tick {capturedTick}에서 실제로 나온 score와 force입니다.</p>
       <div class="fd-values">
@@ -263,6 +271,7 @@ See docs/learning-suite.md for the four-stage contract this follows.
         <span><b>10·tanh(score) [N]</b>{forceFromActionScore.toFixed(2)}</span>
         <span><b>force command [N]</b>{controllerForce.toFixed(2)}</span>
       </div>
+      <button type="button" class="fd-open-detail" on:click={()=>openFullDetail('action')}>전체 Action head 상세 열기 · open full Action head detail</button>
     {:else}
       <p>Result / 결과 — apply exactly one real 20&nbsp;ms physics step from this frozen event to see what actually happens next.</p>
       {#if !capturedTrace}
@@ -343,6 +352,7 @@ header h3{font-size:15px;margin:5px 0 0}
 .fd-caveat{font-size:14px;color:#7b8492;font-style:italic}
 .fd-apply,.fd-new{margin-top:6px;border:1px solid #243047;border-radius:8px;background:#243047;color:#fff;padding:10px 14px;min-height:44px;font-size:14px;cursor:pointer}
 .fd-apply:disabled,.fd-new:disabled{opacity:.4;cursor:not-allowed}
+.fd-open-detail{margin-top:4px;border:1px solid #d9dde5;border-radius:8px;background:#fff;color:#4b5563;padding:10px 14px;min-height:44px;font-size:14px;cursor:pointer}
 .fd-result-summary{border:1px solid #ded4f3;background:#f8f6fd;border-radius:10px;padding:10px;margin-bottom:10px}
 .fd-result-tick{font:14px ui-monospace,SFMono-Regular,Menlo,monospace;color:#5d4b92;margin-bottom:8px}
 .fd-before-after{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}

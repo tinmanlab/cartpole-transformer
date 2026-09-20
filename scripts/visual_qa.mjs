@@ -252,7 +252,7 @@ async function auditLayout(page, name, { minFont=9.75 } = {}) {
       '.steps b,.steps p,.claim,.qkv-key,.panel-head small,.stage-head>span,.stage-head>small,.attention-read,.attention-read strong,.force-value,'+
       '.fd-badge,.fd-stages button,.fd-content p,.fd-values span,.fd-values b,.fd-result-tick,.fd-ba-label,.fd-details summary,.follow-decision-entry,'+
       '.fd-repo-row,.fd-repo-row span,.fd-token-select button,.fd-key-select button,.fd-dim-select button,.fd-selector-label,.fd-weight-bar-label,.fd-weight-bar-value,'+
-      '.fd-calc-step b,.fd-calc-step code,.fd-caveat,.fd-vector-details summary';
+      '.fd-calc-step b,.fd-calc-step code,.fd-caveat,.fd-vector-details summary,.fd-open-detail';
     const coreTextTooSmall=[];
     for(const el of [...document.querySelectorAll(coreFontSelectors)]){
       if(!visible(el)) continue;
@@ -424,6 +424,8 @@ async function runResponsiveLayoutAudit(browser, width, label) {
     await page.getByRole('tab',{name:/Calculation/}).click();
     await page.waitForTimeout(120);
     await auditLayout(page,label+'-follow-decision-calculation');
+    const auditAdvancedOpen=await page.locator('.transformer-detail-wide').count();
+    if(auditAdvancedOpen!==0) pushError(label+': advanced detail drawer auto-opened on Calculation entry (should stay closed until explicitly opened)');
     const auditVectorDetailsOpen=await page.locator('.follow-decision-guide .fd-vector-details').evaluateAll(els=>els.some(el=>el.open)).catch(()=>false);
     if(auditVectorDetailsOpen) pushError(label+': full vector details are expanded by default in the Calculation screenshot (should be collapsed)');
     await page.screenshot({path:path.join(outDir,label+'-follow-decision.jpg'),type:'jpeg',quality:74,fullPage:true});
@@ -742,16 +744,13 @@ async function runDesktop(browser) {
 
   await page.getByRole('tab',{name:/Calculation/}).click();
   await page.waitForTimeout(150);
-  const calcDetailHeading=await page.locator('.transformer-detail-wide h2').innerText().catch(()=>'');
-  if(calcDetailHeading!=='Self Attention') pushError('follow-decision guide: Calculation stage did not open the Self Attention detail, got '+JSON.stringify(calcDetailHeading));
-  const traceBefore=await page.locator('.attention-cell-trace').evaluate(el=>el.dataset.weight).catch(()=>null);
 
-  // F3: the shared drawer must relabel itself FROZEN while it is showing the
-  // guide's captured snapshot, not the always-on LIVE label.
-  const frozenEyebrow=await page.locator('.transformer-detail-wide .detail-head .eyebrow').innerText();
-  if(!frozenEyebrow.includes('FROZEN')) pushError('follow-decision guide: shared detail drawer eyebrow does not say FROZEN while guide is open, got '+JSON.stringify(frozenEyebrow));
-  const frozenTraceSource=await page.locator('.attention-cell-trace').getAttribute('data-source');
-  if(frozenTraceSource!=='frozen') pushError('follow-decision guide: attention trace data-source is not "frozen" while guide is open, got '+JSON.stringify(frozenTraceSource));
+  // Precondition: entering Calculation must NOT auto-open the large advanced
+  // detail drawer — that recreates the exact detached/vertical-overload
+  // problem this guide fixes. The guide's own arithmetic below must already
+  // be fully readable with the drawer closed.
+  const advancedOpenOnCalcEntry=await page.locator('.transformer-detail-wide').count();
+  if(advancedOpenOnCalcEntry!==0) pushError('follow-decision guide: Calculation stage auto-opened the advanced detail drawer on entry (should stay closed until explicitly opened)');
 
   // F1: the guide itself must show a self-contained, readable numeric trace
   // for the selected key/dimension (query fixed to the latest/controller
@@ -815,12 +814,49 @@ async function runDesktop(browser) {
   await fdDimButtons.nth(0).click();
   await page.waitForTimeout(80);
 
+  // Explicit full-detail open (Calculation): the guide's own arithmetic
+  // above was already fully readable without this — this only tests the
+  // advanced-drawer path, which must exist behind one 44px button.
+  const openCalcDetailButton=page.getByRole('button',{name:/open full Self Attention detail/});
+  if(await openCalcDetailButton.count()!==1) pushError('follow-decision guide: Calculation stage is missing the explicit full-detail open button');
+  await openCalcDetailButton.click();
+  await page.waitForTimeout(150);
+  const calcDetailHeading=await page.locator('.transformer-detail-wide h2').innerText().catch(()=>'');
+  if(calcDetailHeading!=='Self Attention') pushError('follow-decision guide: explicit full-detail button did not open the Self Attention detail, got '+JSON.stringify(calcDetailHeading));
+  const traceBefore=await page.locator('.attention-cell-trace').evaluate(el=>el.dataset.weight).catch(()=>null);
+
+  // F3: the shared drawer must relabel itself FROZEN while it is showing the
+  // guide's captured snapshot, not the always-on LIVE label.
+  const frozenEyebrow=await page.locator('.transformer-detail-wide .detail-head .eyebrow').innerText();
+  if(!frozenEyebrow.includes('FROZEN')) pushError('follow-decision guide: shared detail drawer eyebrow does not say FROZEN while guide is open, got '+JSON.stringify(frozenEyebrow));
+  const frozenTraceSource=await page.locator('.attention-cell-trace').getAttribute('data-source');
+  if(frozenTraceSource!=='frozen') pushError('follow-decision guide: attention trace data-source is not "frozen" while guide is open, got '+JSON.stringify(frozenTraceSource));
+
+  // Order assertion: the guide must appear BEFORE the advanced detail drawer
+  // both in the DOM and on screen, so the guide's arithmetic is never pushed
+  // below this much larger panel.
+  const calcOrder=await page.evaluate(()=>{
+    const guide=document.querySelector('.follow-decision-guide');
+    const detail=document.querySelector('.transformer-detail-wide');
+    if(!guide || !detail) return null;
+    return {
+      domGuideBeforeDetail: !!(guide.compareDocumentPosition(detail) & Node.DOCUMENT_POSITION_FOLLOWING),
+      guideTop: guide.getBoundingClientRect().top,
+      detailTop: detail.getBoundingClientRect().top
+    };
+  });
+  if(!calcOrder || !calcOrder.domGuideBeforeDetail) pushError('follow-decision guide: advanced detail drawer is not positioned after the guide in the DOM');
+  if(!calcOrder || !(calcOrder.guideTop < calcOrder.detailTop)) pushError('follow-decision guide: advanced detail drawer does not render below the guide on screen '+JSON.stringify(calcOrder));
+
   await page.getByRole('tab',{name:/Action/}).click();
   await page.waitForTimeout(150);
-  const actionDetailHeading=await page.locator('.transformer-detail-wide h2').innerText().catch(()=>'');
-  if(actionDetailHeading!=='Action head') pushError('follow-decision guide: Action stage did not open the Action head detail, got '+JSON.stringify(actionDetailHeading));
-  const actionFrozenEyebrow=await page.locator('.transformer-detail-wide .detail-head .eyebrow').innerText();
-  if(!actionFrozenEyebrow.includes('FROZEN')) pushError('follow-decision guide: Action head drawer eyebrow does not say FROZEN while guide is open, got '+JSON.stringify(actionFrozenEyebrow));
+
+  // Precondition: entering Action must NOT auto-open the advanced drawer
+  // either (switching stages always closes it; only the explicit button
+  // below reopens it for the new stage).
+  const advancedOpenOnActionEntry=await page.locator('.transformer-detail-wide').count();
+  if(advancedOpenOnActionEntry!==0) pushError('follow-decision guide: Action stage auto-opened the advanced detail drawer on entry (should stay closed until explicitly opened)');
+
   const entryActionValues=await readFdValues();
 
   // F2: Action must show the real actionScore and the real score->force
@@ -836,6 +872,17 @@ async function runDesktop(browser) {
   if(!Number.isFinite(forceFromRelation) || !Number.isFinite(forceCommand) || Math.abs(forceFromRelation-forceCommand)>0.01) {
     pushError('follow-decision guide: 10*tanh(score) relation does not match the displayed force command '+JSON.stringify({forceFromRelation,forceCommand}));
   }
+
+  // Explicit full-detail open (Action): the guide's own score/force values
+  // above were already fully readable without this.
+  const openActionDetailButton=page.getByRole('button',{name:/open full Action head detail/});
+  if(await openActionDetailButton.count()!==1) pushError('follow-decision guide: Action stage is missing the explicit full-detail open button');
+  await openActionDetailButton.click();
+  await page.waitForTimeout(150);
+  const actionDetailHeading=await page.locator('.transformer-detail-wide h2').innerText().catch(()=>'');
+  if(actionDetailHeading!=='Action head') pushError('follow-decision guide: explicit full-detail button did not open the Action head detail, got '+JSON.stringify(actionDetailHeading));
+  const actionFrozenEyebrow=await page.locator('.transformer-detail-wide .detail-head .eyebrow').innerText();
+  if(!actionFrozenEyebrow.includes('FROZEN')) pushError('follow-decision guide: Action head drawer eyebrow does not say FROZEN while guide is open, got '+JSON.stringify(actionFrozenEyebrow));
 
   await page.getByRole('tab',{name:/Result/}).click();
   await page.waitForTimeout(100);
@@ -887,6 +934,10 @@ async function runDesktop(browser) {
 
   await page.getByRole('tab',{name:/Calculation/}).click();
   await page.waitForTimeout(150);
+  const advancedOpenOnCalcRevisit=await page.locator('.transformer-detail-wide').count();
+  if(advancedOpenOnCalcRevisit!==0) pushError('follow-decision guide: revisiting Calculation after Apply auto-opened the advanced detail drawer');
+  await page.getByRole('button',{name:/open full Self Attention detail/}).click();
+  await page.waitForTimeout(150);
   const traceAfter=await page.locator('.attention-cell-trace').evaluate(el=>el.dataset.weight).catch(()=>null);
   if(traceAfter!==traceBefore) pushError('follow-decision guide: Calculation attention trace changed after Apply-step (not frozen to the captured event) '+JSON.stringify({before:traceBefore,after:traceAfter}));
 
@@ -914,11 +965,15 @@ async function runDesktop(browser) {
   const eventId1=badgeText1.match(/event #(\d+)/)?.[1];
   if(!eventId1 || eventId0===eventId1) pushError('follow-decision guide: new-decision capture did not advance the event id');
 
-  // Capture the actual Calculation stage (guide still open, full vectors
-  // collapsed by default) BEFORE the guide closes — a screenshot taken
-  // after close would show none of the numeric trace.
+  // Capture the actual Calculation stage (guide still open, advanced detail
+  // CLOSED, full vectors collapsed by default) BEFORE the guide closes — a
+  // screenshot taken after close would show none of the numeric trace, and
+  // one taken with the advanced drawer open would recreate the detached/
+  // vertical-overload layout this guide fixes.
   await page.getByRole('tab',{name:/Calculation/}).click();
   await page.waitForTimeout(120);
+  const advancedOpenAtScreenshot=await page.locator('.transformer-detail-wide').count();
+  if(advancedOpenAtScreenshot!==0) pushError('follow-decision guide: advanced detail drawer is open in the representative Calculation screenshot (should be closed by default)');
   const vectorDetailsOpenAtCapture=await page.locator('.follow-decision-guide .fd-vector-details').evaluateAll(els=>els.some(el=>el.open));
   if(vectorDetailsOpenAtCapture) pushWarning('follow-decision guide: full vector details were expanded before the representative screenshot was captured');
   await page.screenshot({path:path.join(outDir,'desktop-follow-decision.jpg'),type:'jpeg',quality:84,fullPage:true});
