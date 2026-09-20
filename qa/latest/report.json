@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-20T06:56:01.629Z",
+  "generatedAt": "2026-09-20T13:03:26.183Z",
   "baseURL": "http://127.0.0.1:4173/cartpole-transformer/",
   "errors": [],
   "warnings": [],
@@ -141,7 +141,7 @@
       ],
       "detailMinFont": null,
       "learnedText": "learned state · 1 head · 8D",
-      "bodyText": "Cart-Pole Transformer\nState\nVision\nFusion\nCompare\nlearned state · 1 head · 8D\nPHYSICS · 50 Hz · TICK 95\nCart-Pole + 8-frame history\n1.9 s\n−2.4 m\n0\n+2.4 m\nforce\n0.01 N\npush\n0.00 N\nx\n0.04 m\nẋ\n-0.01 m/s\nθ\n-0.1°\nθ̇\n-0.2°/s\nselected\nt\nPause\nStep\nReset\n← Push\nPush →\n한 판단 따라가기 · Follow one decision\nPipeline overview · Embedding → Action (5 stages) · LIVE tick 95\nTransformer · 1 block · 1 head\n단계를 클릭하면 아래에서 live tensor 계산을 크게 펼칩니다\nLEARNED · → 0.01 N\n1\nEmbedding\nstate → 8D token\nt−7\n8D\nt−6\n8D\nt−5\n8D\nt−4\n8D\nt−3\n8D\nt−2\n8D\nt−1\n8D\nt\n8D\n2\nQ · K · V\nlearned projections\nQ\nK\nV\n−7\n−6\n−5\n−4\n−3\n−2\n−1\nt\n3\nSelf Attention\nweights × V → context\n×\n→\nQ t → K t\n72.2%\n4\nTransformer block\nresidual + MLP\ncontext\n→\nWₒ + residual\n→\nLN · GELU MLP\n→\n-0.26 -0.19 0.96\n5\nAction\nfinal t only\n→\n0.01 N\ntanh(score) × 10\nPlant transition detail · tick 94 → 95 · balancing\n읽는 순서 참고 · Reading order reference\nCart-Pole에는 Transformer나 multimodal fusion이 필요하지 않습니다. 이 lab은 observation, temporal/multimodal attention, 그리고 동일 조건 replay에서 나타나는 실제 제어 차이를 관찰하기 위한 교육용 모델입니다.\nPolo Club Transformer Explainer의 MIT-licensed VectorCanvas, MatrixSvg, Sankey, attention expansion/animation 패턴을 vendoring·adaptation하여 사용합니다."
+      "bodyText": "Cart-Pole Transformer\nState\nVision\nFusion\nCompare\nlearned state · 1 head · 8D\nPHYSICS · 50 Hz · TICK 103\nCart-Pole + 8-frame history\n2.1 s\n−2.4 m\n0\n+2.4 m\nforce\n-0.04 N\npush\n0.00 N\nx\n0.04 m\nẋ\n-0.01 m/s\nθ\n-0.1°\nθ̇\n0.1°/s\nselected\nt\nPause\nStep\nReset\n← Push\nPush →\n한 판단 따라가기 · Follow one decision\nPipeline overview · Embedding → Action (5 stages) · LIVE tick 103\nTransformer · 1 block · 1 head\n단계를 클릭하면 아래에서 live tensor 계산을 크게 펼칩니다\nLEARNED · ← 0.04 N\n1\nEmbedding\nstate → 8D token\nt−7\n8D\nt−6\n8D\nt−5\n8D\nt−4\n8D\nt−3\n8D\nt−2\n8D\nt−1\n8D\nt\n8D\n2\nQ · K · V\nlearned projections\nQ\nK\nV\n−7\n−6\n−5\n−4\n−3\n−2\n−1\nt\n3\nSelf Attention\nweights × V → context\n×\n→\nQ t → K t\n72.2%\n4\nTransformer block\nresidual + MLP\ncontext\n→\nWₒ + residual\n→\nLN · GELU MLP\n→\n-0.25 -0.19 0.95\n5\nAction\nfinal t only\n←\n0.04 N\ntanh(score) × 10\nPlant transition detail · tick 102 → 103 · balancing\n읽는 순서 참고 · Reading order reference\nCart-Pole에는 Transformer나 multimodal fusion이 필요하지 않습니다. 이 lab은 observation, temporal/multimodal attention, 그리고 동일 조건 replay에서 나타나는 실제 제어 차이를 관찰하기 위한 교육용 모델입니다.\nPolo Club Transformer Explainer의 MIT-licensed VectorCanvas, MatrixSvg, Sankey, attention expansion/animation 패턴을 vendoring·adaptation하여 사용합니다."
     },
     "desktop-attention": {
       "viewport": {
@@ -150,7 +150,7 @@
       },
       "document": {
         "scrollWidth": 1440,
-        "scrollHeight": 1758
+        "scrollHeight": 1802
       },
       "lab": {
         "x": 16,
@@ -188,9 +188,9 @@
         "x": 16,
         "y": 728,
         "width": 1408,
-        "height": 839,
+        "height": 883,
         "right": 1424,
-        "bottom": 1567
+        "bottom": 1611
       },
       "stages": {
         ".embedding-overview": {
@@ -287,7 +287,7 @@
       ],
       "detailMinFont": 10,
       "learnedText": "learned state · 1 head · 8D",
-      "bodyText": "Cart-Pole Transformer\nState\nVision\nFusion\nCompare\nlearned state · 1 head · 8D\nPHYSICS · 50 Hz · TICK 282\nCart-Pole + 8-frame history\n5.6 s\n−2.4 m\n0\n+2.4 m\nt−2 · θ 0.1°\nforce\n0.01 N\npush\n0.00 N\nx\n-0.04 m\nẋ\n-0.02 m/s\nθ\n0.1°\nθ̇\n0.0°/s\nselected\nt−2\nPause\nStep\nReset\n← Push\nPush →\n한 판단 따라가기 · Follow one decision\nPipeline overview · Embedding → Action (5 stages) · LIVE tick 282\nTransformer · 1 block · 1 head\n단계를 클릭하면 아래에서 live tensor 계산을 크게 펼칩니다\nLEARNED · → 0.01 N\n1\nEmbedding\nstate → 8D token\nt−7\n8D\nt−6\n8D\nt−5\n8D\nt−4\n8D\nt−3\n8D\nt−2\n8D\nt−1\n8D\nt\n8D\n2\nQ · K · V\nlearned projections\nQ\nK\nV\n−7\n−6\n−5\n−4\n−3\n−2\n−1\nt\n3\nSelf Attention\nweights × V → context\n0.0%\n×\n→\nQ t−4 → K t−2\n0.0%\n4\nTransformer block\nresidual + MLP\ncontext\n→\nWₒ + residual\n→\nLN · GELU MLP\n→\n0.30 -0.25 0.44\n5\nAction\nfinal t only\n→\n0.01 N\ntanh(score) × 10\nPlant transition detail · tick 281 → 282 · balancing\nLIVE TENSOR DETAIL · t−2\nSelf Attention\n\n실제 Q·K score에 causal mask와 softmax를 적용하고, 그 weight로 실제 V를 섞습니다.\n\n×\n1\nDot product\nQKᵀ / √d\n\nQuery와 Key가 얼마나 비슷한지 모든 시간쌍을 비교합니다.\n\n2\nCausal mask\nfuture → −∞\n\n현재 시점은 미래 token을 볼 수 없습니다. 위쪽 삼각형이 차단됩니다.\n\n3\nSoftmax\nΣ a = 1\n\n점수를 양수 비율로 바꿉니다. 마지막 row가 지금 force를 만드는 attention입니다.\n\nSELECTED ATTENTION CELL · ACTUAL LIVE ARITHMETIC\nQ t−4 × K t−2\n\nmatrix 한 칸이 어떤 계산을 뜻하는지 이 경로만 따라가면 됩니다.\n\nCAUSALLY MASKED\n0%\nQuery\nt−7\nt−6\nt−5\nt−4\nt−3\nt−2\nt−1\nt\nKey\nt−7\nt−6\nt−5\nt−4\nt−3\nt−2\nt−1\nt\nA\nQ와 K 원소별 곱\nQ t−4\n×\nK t−2\nd0\n-2.913 × 0.336\n-0.979\nd1\n1.094 × -0.478\n-0.523\nd2\n-1.362 × 0.733\n-0.998\nd3\n-2.219 × -0.724\n1.607\nd4\n-0.595 × 0.554\n-0.330\nd5\n-2.980 × 1.287\n-3.835\nd6\n0.771 × 1.012\n0.780\nd7\n-0.488 × 0.513\n-0.250\n→\nB\n합하고 √d로 나눔\nΣ(QᵢKᵢ)\n-4.52691\n÷ √8\n2.82843\n= score\n-1.60051\n\n이 값이 Q·Kᵀ matrix의 선택한 한 칸입니다.\n\n→\nC\nCausal mask\nt−2 is future of t−4\n-1.60051 → −∞\n따라서 softmax weight = 0\n→\nD\nStable softmax\nrow max\n-2.11228\nscore − max\n-999999997.88772\nexp(·)\n0.000e+0\nΣ exp\n1.91904\nweight\n0.000%\nt−7\n20.7%\nt−6\n7.9%\nt−5\n19.4%\nt−4\n52.1%\nt−3\n0.0%\nt−2\n0.0%\nt−1\n0.0%\nt\n0.0%\n→\nE\nweight × V\nV t−2\n× 0.00%\n이 Key의 기여량\nΣ all keys →\nContext · Q t−4\nV = [-0.69, 0.24, -0.82, 0.44, -0.76, -0.87, -0.86, 0.51]\ncontribution = [0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000]\ncontext = [-0.539, -0.111, -0.583, 0.267, -0.788, -1.062, -0.651, 0.707]\n읽는 순서 참고 · Reading order reference\nCart-Pole에는 Transformer나 multimodal fusion이 필요하지 않습니다. 이 lab은 observation, temporal/multimodal attention, 그리고 동일 조건 replay에서 나타나는 실제 제어 차이를 관찰하기 위한 교육용 모델입니다.\nPolo Club Transformer Explainer의 MIT-licensed VectorCanvas, MatrixSvg, Sankey, attention expansion/animation 패턴을 vendoring·adaptation하여 사용합니다."
+      "bodyText": "Cart-Pole Transformer\nState\nVision\nFusion\nCompare\nlearned state · 1 head · 8D\nPHYSICS · 50 Hz · TICK 294\nCart-Pole + 8-frame history\n5.9 s\n−2.4 m\n0\n+2.4 m\nt−2 · θ 0.1°\nforce\n0.01 N\npush\n0.00 N\nx\n-0.05 m\nẋ\n-0.01 m/s\nθ\n0.1°\nθ̇\n0.0°/s\nselected\nt−2\nPause\nStep\nReset\n← Push\nPush →\n한 판단 따라가기 · Follow one decision\nPipeline overview · Embedding → Action (5 stages) · LIVE tick 294\nTransformer · 1 block · 1 head\n단계를 클릭하면 아래에서 live tensor 계산을 크게 펼칩니다\nLEARNED · → 0.01 N\n1\nEmbedding\nstate → 8D token\nt−7\n8D\nt−6\n8D\nt−5\n8D\nt−4\n8D\nt−3\n8D\nt−2\n8D\nt−1\n8D\nt\n8D\n2\nQ · K · V\nlearned projections\nQ\nK\nV\n−7\n−6\n−5\n−4\n−3\n−2\n−1\nt\n3\nSelf Attention\nweights × V → context\n0.0%\n×\n→\nQ t−4 → K t−2\n0.0%\n4\nTransformer block\nresidual + MLP\ncontext\n→\nWₒ + residual\n→\nLN · GELU MLP\n→\n0.69 -0.11 0.26\n5\nAction\nfinal t only\n→\n0.01 N\ntanh(score) × 10\nPlant transition detail · tick 293 → 294 · balancing\nLIVE TENSOR DETAIL · t−2\nSelf Attention\n\n실제 Q·K score에 causal mask와 softmax를 적용하고, 그 weight로 실제 V를 섞습니다.\n\n×\n1\nDot product\nQKᵀ / √d\n\nQuery와 Key가 얼마나 비슷한지 모든 시간쌍을 비교합니다.\n\n2\nCausal mask\nfuture → −∞\n\n현재 시점은 미래 token을 볼 수 없습니다. 위쪽 삼각형이 차단됩니다.\n\n3\nSoftmax\nΣ a = 1\n\n점수를 양수 비율로 바꿉니다. 마지막 row가 지금 force를 만드는 attention입니다.\n\nSELECTED ATTENTION CELL · ACTUAL LIVE ARITHMETIC\nQ t−4 × K t−2\n\nmatrix 한 칸이 어떤 계산을 뜻하는지 이 경로만 따라가면 됩니다.\n\nCAUSALLY MASKED\n0%\nQuery\nt−7\nt−6\nt−5\nt−4\nt−3\nt−2\nt−1\nt\nKey\nt−7\nt−6\nt−5\nt−4\nt−3\nt−2\nt−1\nt\nA\nQ와 K 원소별 곱\nQ t−4\n×\nK t−2\nd0\n-2.912 × 0.335\n-0.977\nd1\n1.094 × -0.477\n-0.522\nd2\n-1.362 × 0.733\n-0.998\nd3\n-2.219 × -0.724\n1.608\nd4\n-0.595 × 0.554\n-0.330\nd5\n-2.980 × 1.286\n-3.833\nd6\n0.772 × 1.013\n0.781\nd7\n-0.488 × 0.512\n-0.250\n→\nB\n합하고 √d로 나눔\nΣ(QᵢKᵢ)\n-4.52091\n÷ √8\n2.82843\n= score\n-1.59838\n\n이 값이 Q·Kᵀ matrix의 선택한 한 칸입니다.\n\n→\nC\nCausal mask\nt−2 is future of t−4\n-1.59838 → −∞\n따라서 softmax weight = 0\n→\nD\nStable softmax\nrow max\n-2.11019\nscore − max\n-999999997.88981\nexp(·)\n0.000e+0\nΣ exp\n1.91871\nweight\n0.000%\nt−7\n20.6%\nt−6\n7.9%\nt−5\n19.4%\nt−4\n52.1%\nt−3\n0.0%\nt−2\n0.0%\nt−1\n0.0%\nt\n0.0%\n→\nE\nweight × V\nV t−2\n× 0.00%\n이 Key의 기여량\nΣ all keys →\nContext · Q t−4\nV = [-0.69, 0.24, -0.82, 0.44, -0.76, -0.87, -0.86, 0.51]\ncontribution = [0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000]\ncontext = [-0.539, -0.110, -0.582, 0.268, -0.788, -1.062, -0.651, 0.707]\nselected dim d0 → V[d0]=-0.689 · contribution[d0]=0.000 · context[d0]=-0.539\n읽는 순서 참고 · Reading order reference\nCart-Pole에는 Transformer나 multimodal fusion이 필요하지 않습니다. 이 lab은 observation, temporal/multimodal attention, 그리고 동일 조건 replay에서 나타나는 실제 제어 차이를 관찰하기 위한 교육용 모델입니다.\nPolo Club Transformer Explainer의 MIT-licensed VectorCanvas, MatrixSvg, Sankey, attention expansion/animation 패턴을 vendoring·adaptation하여 사용합니다."
     },
     "mobile-overview": {
       "viewport": {
@@ -426,7 +426,7 @@
       ],
       "detailMinFont": null,
       "learnedText": "learned state · 1 head · 8D",
-      "bodyText": "Cart-Pole Transformer\nState\nVision\nFusion\nCompare\nPHYSICS · 50 Hz · TICK 53\nCart-Pole + 8-frame history\n1.1 s\n−2.4 m\n0\n+2.4 m\nẋ\nforce\n0.39 N\npush\n0.00 N\nx\n0.04 m\nẋ\n-0.03 m/s\nθ\n-0.1°\nθ̇\n2.4°/s\nselected\nt\nPause\nStep\nReset\n← Push\nPush →\n한 판단 따라가기 · Follow one decision\nPipeline overview · Embedding → Action (5 stages) · LIVE tick 53\nTransformer · 1 block · 1 head\n단계를 클릭하면 아래에서 live tensor 계산을 크게 펼칩니다\nLEARNED · → 0.39 N\n1\nEmbedding\nstate → 8D token\nt−7\n8D\nt−6\n8D\nt−5\n8D\nt−4\n8D\nt−3\n8D\nt−2\n8D\nt−1\n8D\nt\n8D\n2\nQ · K · V\nlearned projections\nQ\nK\nV\n−7\n−6\n−5\n−4\n−3\n−2\n−1\nt\n3\nSelf Attention\nweights × V → context\n×\n→\nQ t → K t\n72.8%\n4\nTransformer block\nresidual + MLP\ncontext\n→\nWₒ + residual\n→\nLN · GELU MLP\n→\n-0.28 -0.20 0.98\n5\nAction\nfinal t only\n→\n0.39 N\ntanh(score) × 10\nPlant transition detail · tick 52 → 53 · balancing\n읽는 순서 참고 · Reading order reference\nCart-Pole에는 Transformer나 multimodal fusion이 필요하지 않습니다. 이 lab은 observation, temporal/multimodal attention, 그리고 동일 조건 replay에서 나타나는 실제 제어 차이를 관찰하기 위한 교육용 모델입니다.\nPolo Club Transformer Explainer의 MIT-licensed VectorCanvas, MatrixSvg, Sankey, attention expansion/animation 패턴을 vendoring·adaptation하여 사용합니다."
+      "bodyText": "Cart-Pole Transformer\nState\nVision\nFusion\nCompare\nPHYSICS · 50 Hz · TICK 56\nCart-Pole + 8-frame history\n1.1 s\n−2.4 m\n0\n+2.4 m\nforce\n0.45 N\npush\n0.00 N\nx\n0.04 m\nẋ\n-0.00 m/s\nθ\n0.0°\nθ̇\n0.1°/s\nselected\nt\nPause\nStep\nReset\n← Push\nPush →\n한 판단 따라가기 · Follow one decision\nPipeline overview · Embedding → Action (5 stages) · LIVE tick 56\nTransformer · 1 block · 1 head\n단계를 클릭하면 아래에서 live tensor 계산을 크게 펼칩니다\nLEARNED · → 0.45 N\n1\nEmbedding\nstate → 8D token\nt−7\n8D\nt−6\n8D\nt−5\n8D\nt−4\n8D\nt−3\n8D\nt−2\n8D\nt−1\n8D\nt\n8D\n2\nQ · K · V\nlearned projections\nQ\nK\nV\n−7\n−6\n−5\n−4\n−3\n−2\n−1\nt\n3\nSelf Attention\nweights × V → context\n×\n→\nQ t → K t\n72.8%\n4\nTransformer block\nresidual + MLP\ncontext\n→\nWₒ + residual\n→\nLN · GELU MLP\n→\n-0.28 -0.19 0.99\n5\nAction\nfinal t only\n→\n0.45 N\ntanh(score) × 10\nPlant transition detail · tick 55 → 56 · balancing\n읽는 순서 참고 · Reading order reference\nCart-Pole에는 Transformer나 multimodal fusion이 필요하지 않습니다. 이 lab은 observation, temporal/multimodal attention, 그리고 동일 조건 replay에서 나타나는 실제 제어 차이를 관찰하기 위한 교육용 모델입니다.\nPolo Club Transformer Explainer의 MIT-licensed VectorCanvas, MatrixSvg, Sankey, attention expansion/animation 패턴을 vendoring·adaptation하여 사용합니다."
     },
     "mobile-attention": {
       "viewport": {
@@ -435,7 +435,7 @@
       },
       "document": {
         "scrollWidth": 390,
-        "scrollHeight": 4633
+        "scrollHeight": 4716
       },
       "lab": {
         "x": 10,
@@ -473,9 +473,9 @@
         "x": 10,
         "y": 1035,
         "width": 370,
-        "height": 2438,
+        "height": 2521,
         "right": 380,
-        "bottom": 3473
+        "bottom": 3556
       },
       "stages": {
         ".embedding-overview": {
@@ -572,13 +572,13 @@
       ],
       "detailMinFont": 10,
       "learnedText": "learned state · 1 head · 8D",
-      "bodyText": "Cart-Pole Transformer\nState\nVision\nFusion\nCompare\nPHYSICS · 50 Hz · TICK 83\nCart-Pole + 8-frame history\n1.7 s\n−2.4 m\n0\n+2.4 m\nt−2 · θ -0.1°\nforce\n-0.13 N\npush\n0.00 N\nx\n0.04 m\nẋ\n-0.01 m/s\nθ\n-0.1°\nθ̇\n-0.1°/s\nselected\nt−2\nPause\nStep\nReset\n← Push\nPush →\n한 판단 따라가기 · Follow one decision\nPipeline overview · Embedding → Action (5 stages) · LIVE tick 83\nTransformer · 1 block · 1 head\n단계를 클릭하면 아래에서 live tensor 계산을 크게 펼칩니다\nLEARNED · ← 0.13 N\n1\nEmbedding\nstate → 8D token\nt−7\n8D\nt−6\n8D\nt−5\n8D\nt−4\n8D\nt−3\n8D\nt−2\n8D\nt−1\n8D\nt\n8D\n2\nQ · K · V\nlearned projections\nQ\nK\nV\n−7\n−6\n−5\n−4\n−3\n−2\n−1\nt\n3\nSelf Attention\nweights × V → context\n×\n→\nQ t−4 → K t−2\n0.0%\n4\nTransformer block\nresidual + MLP\ncontext\n→\nWₒ + residual\n→\nLN · GELU MLP\n→\n0.32 -0.24 0.44\n5\nAction\nfinal t only\n←\n0.13 N\ntanh(score) × 10\nPlant transition detail · tick 82 → 83 · balancing\nLIVE TENSOR DETAIL · t−2\nSelf Attention\n\n실제 Q·K score에 causal mask와 softmax를 적용하고, 그 weight로 실제 V를 섞습니다.\n\n×\n1\nDot product\nQKᵀ / √d\n\nQuery와 Key가 얼마나 비슷한지 모든 시간쌍을 비교합니다.\n\n2\nCausal mask\nfuture → −∞\n\n현재 시점은 미래 token을 볼 수 없습니다. 위쪽 삼각형이 차단됩니다.\n\n3\nSoftmax\nΣ a = 1\n\n점수를 양수 비율로 바꿉니다. 마지막 row가 지금 force를 만드는 attention입니다.\n\nSELECTED ATTENTION CELL · ACTUAL LIVE ARITHMETIC\nQ t−4 × K t−2\n\nmatrix 한 칸이 어떤 계산을 뜻하는지 이 경로만 따라가면 됩니다.\n\nCAUSALLY MASKED\n0%\nQuery\nt−7\nt−6\nt−5\nt−4\nt−3\nt−2\nt−1\nt\nKey\nt−7\nt−6\nt−5\nt−4\nt−3\nt−2\nt−1\nt\nA\nQ와 K 원소별 곱\nQ t−4\n×\nK t−2\nd0\n-2.916 × 0.326\n-0.951\nd1\n1.093 × -0.484\n-0.529\nd2\n-1.355 × 0.731\n-0.991\nd3\n-2.220 × -0.729\n1.617\nd4\n-0.600 × 0.541\n-0.324\nd5\n-2.972 × 1.277\n-3.794\nd6\n0.772 × 1.024\n0.790\nd7\n-0.481 × 0.509\n-0.245\n→\nB\n합하고 √d로 나눔\nΣ(QᵢKᵢ)\n-4.42753\n÷ √8\n2.82843\n= score\n-1.56537\n\n이 값이 Q·Kᵀ matrix의 선택한 한 칸입니다.\n\n→\nC\nCausal mask\nt−2 is future of t−4\n-1.56537 → −∞\n따라서 softmax weight = 0\n→\nD\nStable softmax\nrow max\n-2.07328\nscore − max\n-999999997.92672\nexp(·)\n0.000e+0\nΣ exp\n1.91212\nweight\n0.000%\nt−7\n20.4%\nt−6\n7.9%\nt−5\n19.4%\nt−4\n52.3%\nt−3\n0.0%\nt−2\n0.0%\nt−1\n0.0%\nt\n0.0%\n→\nE\nweight × V\nV t−2\n× 0.00%\n이 Key의 기여량\nΣ all keys →\nContext · Q t−4\nV = [-0.69, 0.24, -0.81, 0.44, -0.76, -0.88, -0.85, 0.51]\ncontribution = [0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000]\ncontext = [-0.543, -0.115, -0.574, 0.267, -0.789, -1.070, -0.646, 0.709]\n읽는 순서 참고 · Reading order reference\nCart-Pole에는 Transformer나 multimodal fusion이 필요하지 않습니다. 이 lab은 observation, temporal/multimodal attention, 그리고 동일 조건 replay에서 나타나는 실제 제어 차이를 관찰하기 위한 교육용 모델입니다.\nPolo Club Transformer Explainer의 MIT-licensed VectorCanvas, MatrixSvg, Sankey, attention expansion/animation 패턴을 vendoring·adaptation하여 사용합니다."
+      "bodyText": "Cart-Pole Transformer\nState\nVision\nFusion\nCompare\nPHYSICS · 50 Hz · TICK 85\nCart-Pole + 8-frame history\n1.7 s\n−2.4 m\n0\n+2.4 m\nt−2 · θ -0.1°\nforce\n-0.09 N\npush\n0.00 N\nx\n0.04 m\nẋ\n-0.01 m/s\nθ\n-0.1°\nθ̇\n0.2°/s\nselected\nt−2\nPause\nStep\nReset\n← Push\nPush →\n한 판단 따라가기 · Follow one decision\nPipeline overview · Embedding → Action (5 stages) · LIVE tick 85\nTransformer · 1 block · 1 head\n단계를 클릭하면 아래에서 live tensor 계산을 크게 펼칩니다\nLEARNED · ← 0.09 N\n1\nEmbedding\nstate → 8D token\nt−7\n8D\nt−6\n8D\nt−5\n8D\nt−4\n8D\nt−3\n8D\nt−2\n8D\nt−1\n8D\nt\n8D\n2\nQ · K · V\nlearned projections\nQ\nK\nV\n−7\n−6\n−5\n−4\n−3\n−2\n−1\nt\n3\nSelf Attention\nweights × V → context\n×\n→\nQ t−4 → K t−2\n0.0%\n4\nTransformer block\nresidual + MLP\ncontext\n→\nWₒ + residual\n→\nLN · GELU MLP\n→\n0.72 -0.09 0.25\n5\nAction\nfinal t only\n←\n0.09 N\ntanh(score) × 10\nPlant transition detail · tick 84 → 85 · balancing\nLIVE TENSOR DETAIL · t−2\nSelf Attention\n\n실제 Q·K score에 causal mask와 softmax를 적용하고, 그 weight로 실제 V를 섞습니다.\n\n×\n1\nDot product\nQKᵀ / √d\n\nQuery와 Key가 얼마나 비슷한지 모든 시간쌍을 비교합니다.\n\n2\nCausal mask\nfuture → −∞\n\n현재 시점은 미래 token을 볼 수 없습니다. 위쪽 삼각형이 차단됩니다.\n\n3\nSoftmax\nΣ a = 1\n\n점수를 양수 비율로 바꿉니다. 마지막 row가 지금 force를 만드는 attention입니다.\n\nSELECTED ATTENTION CELL · ACTUAL LIVE ARITHMETIC\nQ t−4 × K t−2\n\nmatrix 한 칸이 어떤 계산을 뜻하는지 이 경로만 따라가면 됩니다.\n\nCAUSALLY MASKED\n0%\nQuery\nt−7\nt−6\nt−5\nt−4\nt−3\nt−2\nt−1\nt\nKey\nt−7\nt−6\nt−5\nt−4\nt−3\nt−2\nt−1\nt\nA\nQ와 K 원소별 곱\nQ t−4\n×\nK t−2\nd0\n-2.915 × 0.327\n-0.954\nd1\n1.092 × -0.484\n-0.529\nd2\n-1.353 × 0.730\n-0.988\nd3\n-2.219 × -0.728\n1.616\nd4\n-0.602 × 0.541\n-0.325\nd5\n-2.971 × 1.277\n-3.794\nd6\n0.774 × 1.023\n0.791\nd7\n-0.480 × 0.509\n-0.244\n→\nB\n합하고 √d로 나눔\nΣ(QᵢKᵢ)\n-4.42701\n÷ √8\n2.82843\n= score\n-1.56518\n\n이 값이 Q·Kᵀ matrix의 선택한 한 칸입니다.\n\n→\nC\nCausal mask\nt−2 is future of t−4\n-1.56518 → −∞\n따라서 softmax weight = 0\n→\nD\nStable softmax\nrow max\n-2.07159\nscore − max\n-999999997.92841\nexp(·)\n0.000e+0\nΣ exp\n1.91187\nweight\n0.000%\nt−7\n20.3%\nt−6\n7.9%\nt−5\n19.5%\nt−4\n52.3%\nt−3\n0.0%\nt−2\n0.0%\nt−1\n0.0%\nt\n0.0%\n→\nE\nweight × V\nV t−2\n× 0.00%\n이 Key의 기여량\nΣ all keys →\nContext · Q t−4\nV = [-0.69, 0.24, -0.81, 0.44, -0.76, -0.88, -0.85, 0.51]\ncontribution = [0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000]\ncontext = [-0.545, -0.116, -0.571, 0.267, -0.790, -1.073, -0.645, 0.711]\nselected dim d0 → V[d0]=-0.693 · contribution[d0]=0.000 · context[d0]=-0.545\n읽는 순서 참고 · Reading order reference\nCart-Pole에는 Transformer나 multimodal fusion이 필요하지 않습니다. 이 lab은 observation, temporal/multimodal attention, 그리고 동일 조건 replay에서 나타나는 실제 제어 차이를 관찰하기 위한 교육용 모델입니다.\nPolo Club Transformer Explainer의 MIT-licensed VectorCanvas, MatrixSvg, Sankey, attention expansion/animation 패턴을 vendoring·adaptation하여 사용합니다."
     }
   },
   "interactions": {
     "live": {
-      "t0": "1.3 s",
-      "t1": "1.9 s",
+      "t0": "1.4 s",
+      "t1": "2.0 s",
       "canvasChanged": true,
       "matrixChanged": true
     },
@@ -601,7 +601,7 @@
       "attention": {
         "detailCount": 1,
         "containsExpected": true,
-        "textLength": 1353,
+        "textLength": 1430,
         "liveChanged": true
       },
       "block": {
@@ -613,7 +613,7 @@
       "action": {
         "detailCount": 1,
         "containsExpected": true,
-        "textLength": 221,
+        "textLength": 219,
         "liveChanged": true
       }
     },
@@ -621,15 +621,15 @@
       "allowed": {
         "row": 7,
         "col": 5,
-        "dotSum": -5.5201212522004734,
+        "dotSum": -5.5062112951228,
         "scale": 2.8284271247461903,
-        "score": -1.9516575852014653,
+        "score": -1.946739672713647,
         "masked": false,
-        "exp": 0.059976390309135666,
-        "denominator": 1.3819881822733358,
-        "weight": 0.043398627483540425,
-        "v0": -0.6891387908654188,
-        "contribution0": -0.029907677669225783
+        "exp": 0.06002951912083372,
+        "denominator": 1.382292493758225,
+        "weight": 0.043427508571375784,
+        "v0": -0.6889388603907091,
+        "contribution0": -0.02991889826477138
       },
       "masked": {
         "row": 2,
@@ -644,107 +644,107 @@
       "selectedText": "selected\nt−5"
     },
     "push": {
-      "before": "ẋ\n0.01 m/s",
-      "after": "ẋ\n-0.78 m/s",
+      "before": "ẋ\n-0.01 m/s",
+      "after": "ẋ\n-0.72 m/s",
       "changed": true
     },
     "atomicSync": {
       "state": {
         "before": {
           "mode": "state",
-          "tick": 590,
+          "tick": 703,
           "sim": [
-            -0.0470502621795729,
-            -0.21023234569785645,
-            0.045013247263024345,
-            0.08043431510511984
+            -0.06282537031249513,
+            0.2265786085063013,
+            0.024890383725835435,
+            -0.5652548511912768
           ],
           "stateToken": [
-            -0.0470502621795729,
-            -0.21023234569785645,
-            0.045013247263024345,
-            0.08043431510511984
+            -0.06282537031249513,
+            0.2265786085063013,
+            0.024890383725835435,
+            -0.5652548511912768
           ],
           "visionState": [
-            -0.0470502621795729,
-            -0.21023234569785645,
-            0.045013247263024345,
-            0.08043431510511984
+            -0.06282537031249513,
+            0.2265786085063013,
+            0.024890383725835435,
+            -0.5652548511912768
           ],
-          "actionScore": 0.9557433489736701,
-          "force": 7.423721570334303
+          "actionScore": 0.037751525419710136,
+          "force": 0.3773360142722575
         },
         "after": {
           "mode": "state",
-          "tick": 591,
+          "tick": 704,
           "sim": [
-            -0.05125490909353003,
-            0.05101082345586852,
-            0.04662193356512674,
-            -0.29780408287642335
+            -0.0582937981423691,
+            0.35065975046421427,
+            0.013585286702009898,
+            -0.7440018957596559
           ],
           "stateToken": [
-            -0.05125490909353003,
-            0.05101082345586852,
-            0.04662193356512674,
-            -0.29780408287642335
+            -0.0582937981423691,
+            0.35065975046421427,
+            0.013585286702009898,
+            -0.7440018957596559
           ],
           "visionState": [
-            -0.05125490909353003,
-            0.05101082345586852,
-            0.04662193356512674,
-            -0.29780408287642335
+            -0.0582937981423691,
+            0.35065975046421427,
+            0.013585286702009898,
+            -0.7440018957596559
           ],
-          "actionScore": 0.7163596558719219,
-          "force": 6.146493249266692
+          "actionScore": -0.32278573558053647,
+          "force": -3.1202362212976853
         },
         "stepDelta": 1
       },
       "vision": {
         "before": {
           "mode": "vision",
-          "tick": 37,
+          "tick": 41,
           "sim": [
-            0.09012864703632448,
-            0.2544054762729727,
-            -0.02580932278271051,
-            -0.2346843336481607
+            -0.07107178777813027,
+            -0.1058975487389564,
+            -0.007663487382677683,
+            0.009129135291619739
           ],
           "stateToken": [
-            0.09012864703632448,
-            0.2544054762729727,
-            -0.02580932278271051,
-            -0.2346843336481607
+            -0.07107178777813027,
+            -0.1058975487389564,
+            -0.007663487382677683,
+            0.009129135291619739
           ],
           "visionState": [
-            0.09012864703632448,
-            0.2544054762729727,
-            -0.02580932278271051,
-            -0.2346843336481607
+            -0.07107178777813027,
+            -0.1058975487389564,
+            -0.007663487382677683,
+            0.009129135291619739
           ],
           "actionScore": 0.03624763057937997,
           "force": 0.36231763776380843
         },
         "after": {
           "mode": "vision",
-          "tick": 38,
+          "tick": 42,
           "sim": [
-            0.09521675656178394,
-            0.2618433187109537,
-            -0.030503009455673726,
-            -0.25342448014485
+            -0.07318973875290939,
+            -0.09871806644841066,
+            -0.007480904676845288,
+            -0.0038928151498545116
           ],
           "stateToken": [
-            0.09521675656178394,
-            0.2618433187109537,
-            -0.030503009455673726,
-            -0.25342448014485
+            -0.07318973875290939,
+            -0.09871806644841066,
+            -0.007480904676845288,
+            -0.0038928151498545116
           ],
           "visionState": [
-            0.09521675656178394,
-            0.2618433187109537,
-            -0.030503009455673726,
-            -0.25342448014485
+            -0.07318973875290939,
+            -0.09871806644841066,
+            -0.007480904676845288,
+            -0.0038928151498545116
           ],
           "actionScore": 0.03624763057937997,
           "force": 0.36231763776380843
@@ -754,51 +754,51 @@
       "fusion": {
         "before": {
           "mode": "fusion",
-          "tick": 19,
+          "tick": 25,
           "sim": [
-            -0.017047662759134094,
-            -0.0031265215960618598,
-            -0.008352644590876973,
-            0.005943834005018592
+            0.014823128166304855,
+            0.04378432802991358,
+            -0.0007509531342161963,
+            -0.04611560052088118
           ],
           "stateToken": [
-            -0.017047662759134094,
-            -0.0031265215960618598,
-            -0.008352644590876973,
-            0.005943834005018592
+            0.014823128166304855,
+            0.04378432802991358,
+            -0.0007509531342161963,
+            -0.04611560052088118
           ],
           "visionState": [
-            -0.017047662759134094,
-            -0.0031265215960618598,
-            -0.008352644590876973,
-            0.005943834005018592
+            0.014823128166304855,
+            0.04378432802991358,
+            -0.0007509531342161963,
+            -0.04611560052088118
           ],
-          "actionScore": -0.21408512718550665,
-          "force": -2.1087331506834417
+          "actionScore": -0.07289426227607136,
+          "force": -0.7276542642785998
         },
         "after": {
           "mode": "fusion",
-          "tick": 20,
+          "tick": 26,
           "sim": [
-            -0.01711019319105533,
-            -0.04415254157687544,
-            -0.008233767910776601,
-            0.06502506834632733
+            0.015698814726903126,
+            0.029596964834195584,
+            -0.0016732651446338198,
+            -0.025055341928528953
           ],
           "stateToken": [
-            -0.01711019319105533,
-            -0.04415254157687544,
-            -0.008233767910776601,
-            0.06502506834632733
+            0.015698814726903126,
+            0.029596964834195584,
+            -0.0016732651446338198,
+            -0.025055341928528953
           ],
           "visionState": [
-            -0.01711019319105533,
-            -0.04415254157687544,
-            -0.008233767910776601,
-            0.06502506834632733
+            0.015698814726903126,
+            0.029596964834195584,
+            -0.0016732651446338198,
+            -0.025055341928528953
           ],
-          "actionScore": -0.1678099314378036,
-          "force": -1.662522889094701
+          "actionScore": -0.07522525705624605,
+          "force": -0.7508368162834399
         },
         "stepDelta": 1
       }
@@ -807,55 +807,55 @@
       "state": {
         "hasTrace": true,
         "mode": "state",
-        "tickFrom": 590,
-        "tickTo": 591,
+        "tickFrom": 703,
+        "tickTo": 704,
         "beforeState": [
-          -0.0470502621795729,
-          -0.21023234569785645,
-          0.045013247263024345,
-          0.08043431510511984
+          -0.06282537031249513,
+          0.2265786085063013,
+          0.024890383725835435,
+          -0.5652548511912768
         ],
-        "appliedActionScore": 0.9557433489736701,
-        "appliedPolicyForce": 7.423721570334303,
-        "appliedControl": 7.423721570334303,
+        "appliedActionScore": 0.037751525419710136,
+        "appliedPolicyForce": 0.3773360142722575,
+        "appliedControl": 0.3773360142722575,
         "disturbance": 6,
-        "totalForce": 13.423721570334303,
-        "xAcc": 13.062158457686248,
-        "thetaAcc": -18.91191989907716,
+        "totalForce": 6.377336014272258,
+        "xAcc": 6.204057097895648,
+        "thetaAcc": -8.937352228418957,
         "dt": 0.02,
         "nextState": [
-          -0.05125490909353003,
-          0.05101082345586852,
-          0.04662193356512674,
-          -0.29780408287642335
+          -0.0582937981423691,
+          0.35065975046421427,
+          0.013585286702009898,
+          -0.7440018957596559
         ],
-        "nextActionScore": 0.7163596558719219,
-        "nextPolicyForce": 6.146493249266692
+        "nextActionScore": -0.32278573558053647,
+        "nextPolicyForce": -3.1202362212976853
       },
       "vision": {
         "hasTrace": true,
         "mode": "vision",
-        "tickFrom": 37,
-        "tickTo": 38,
+        "tickFrom": 41,
+        "tickTo": 42,
         "beforeState": [
-          0.09012864703632448,
-          0.2544054762729727,
-          -0.02580932278271051,
-          -0.2346843336481607
+          -0.07107178777813027,
+          -0.1058975487389564,
+          -0.007663487382677683,
+          0.009129135291619739
         ],
         "appliedActionScore": 0.03624763057937997,
         "appliedPolicyForce": 0.36231763776380843,
         "appliedControl": 0.36231763776380843,
         "disturbance": 0,
         "totalForce": 0.36231763776380843,
-        "xAcc": 0.37189212189904813,
-        "thetaAcc": -0.937007324834464,
+        "xAcc": 0.3589741145272868,
+        "thetaAcc": -0.6510975220737125,
         "dt": 0.02,
         "nextState": [
-          0.09521675656178394,
-          0.2618433187109537,
-          -0.030503009455673726,
-          -0.25342448014485
+          -0.07318973875290939,
+          -0.09871806644841066,
+          -0.007480904676845288,
+          -0.0038928151498545116
         ],
         "nextActionScore": 0.03624763057937997,
         "nextPolicyForce": 0.36231763776380843
@@ -863,30 +863,30 @@
       "fusion": {
         "hasTrace": true,
         "mode": "fusion",
-        "tickFrom": 19,
-        "tickTo": 20,
+        "tickFrom": 25,
+        "tickTo": 26,
         "beforeState": [
-          -0.017047662759134094,
-          -0.0031265215960618598,
-          -0.008352644590876973,
-          0.005943834005018592
+          0.014823128166304855,
+          0.04378432802991358,
+          -0.0007509531342161963,
+          -0.04611560052088118
         ],
-        "appliedActionScore": -0.21408512718550665,
-        "appliedPolicyForce": -2.1087331506834417,
-        "appliedControl": -2.1087331506834417,
+        "appliedActionScore": -0.07289426227607136,
+        "appliedPolicyForce": -0.7276542642785998,
+        "appliedControl": -0.7276542642785998,
         "disturbance": 0,
-        "totalForce": -2.1087331506834417,
-        "xAcc": -2.051300999040679,
-        "thetaAcc": 2.954061717065437,
+        "totalForce": -0.7276542642785998,
+        "xAcc": -0.7093681597859,
+        "thetaAcc": 1.0530129296176112,
         "dt": 0.02,
         "nextState": [
-          -0.01711019319105533,
-          -0.04415254157687544,
-          -0.008233767910776601,
-          0.06502506834632733
+          0.015698814726903126,
+          0.029596964834195584,
+          -0.0016732651446338198,
+          -0.025055341928528953
         ],
-        "nextActionScore": -0.1678099314378036,
-        "nextPolicyForce": -1.662522889094701
+        "nextActionScore": -0.07522525705624605,
+        "nextPolicyForce": -0.7508368162834399
       }
     },
     "visionMode": {
@@ -926,7 +926,7 @@
       "modeAttr": "compare",
       "labCount": 1,
       "cardCount": 3,
-      "firstTick": 12,
+      "firstTick": 13,
       "sharedDisturbance": 0,
       "scrubTick": 5,
       "finalTick": 500,
@@ -974,6 +974,147 @@
       "cardCount": 3,
       "singleColumn": true,
       "finalTick": 500
+    },
+    "roundtrip-1440-first-key-crossCheck": [
+      {
+        "point": "first-open",
+        "tick": 20,
+        "guide": {
+          "weight": 0.024859403941148786,
+          "vDim": 0.08926936588610059,
+          "contributionDim": 0.0022191832261327818
+        },
+        "drawer": {
+          "weight": 0.024859403941148786,
+          "source": "frozen"
+        },
+        "highlight": {
+          "v": 0.08926936588610059,
+          "contribution": 0.0022191832261327818,
+          "context": -0.1160994419125361
+        }
+      },
+      {
+        "point": "post-apply",
+        "tick": 21,
+        "guide": {
+          "weight": 0.024859403941148786,
+          "vDim": 0.05531128076843776,
+          "contributionDim": 0.0013750054711248888
+        },
+        "drawer": {
+          "weight": 0.024859403941148786,
+          "source": "frozen"
+        },
+        "highlight": {
+          "v": 0.05531128076843776,
+          "contribution": 0.0013750054711248888,
+          "context": 0.4013161299222497
+        }
+      }
+    ],
+    "roundtrip-1440-first-key": {
+      "keyIndex": 0,
+      "dimIndex": 0,
+      "altKey": 7,
+      "altDim": 1,
+      "pageErrors": 0
+    },
+    "roundtrip-390-middle-key-crossCheck": [
+      {
+        "point": "first-open",
+        "tick": 20,
+        "guide": {
+          "weight": 0.020052991216686453,
+          "vDim": 0.30438225395819984,
+          "contributionDim": 0.0061037746651390066
+        },
+        "drawer": {
+          "weight": 0.020052991216686453,
+          "source": "frozen"
+        },
+        "highlight": {
+          "v": 0.30438225395819984,
+          "contribution": 0.0061037746651390066,
+          "context": 0.6240322705128307
+        }
+      },
+      {
+        "point": "post-apply",
+        "tick": 21,
+        "guide": {
+          "weight": 0.024888837379952133,
+          "vDim": 0.08916636161581754,
+          "contributionDim": 0.0022192470740180887
+        },
+        "drawer": {
+          "weight": 0.024888837379952133,
+          "source": "frozen"
+        },
+        "highlight": {
+          "v": 0.08916636161581754,
+          "contribution": 0.0022192470740180887,
+          "context": -0.11709769870498428
+        }
+      }
+    ],
+    "roundtrip-390-middle-key": {
+      "keyIndex": 3,
+      "dimIndex": 3,
+      "altKey": 0,
+      "altDim": 0,
+      "pageErrors": 0
+    },
+    "roundtrip-320-last-key-crossCheck": [
+      {
+        "point": "first-open",
+        "tick": 18,
+        "guide": {
+          "weight": 0.7407799201329702,
+          "vDim": -0.3311635951164186,
+          "contributionDim": -0.24531934154128784
+        },
+        "drawer": {
+          "weight": 0.7407799201329702,
+          "source": "frozen"
+        },
+        "highlight": {
+          "v": -0.3311635951164186,
+          "contribution": -0.24531934154128784,
+          "context": -0.4474516834501837
+        }
+      },
+      {
+        "point": "post-apply",
+        "tick": 19,
+        "guide": {
+          "weight": 0.02385680182498443,
+          "vDim": 0.054340019204124373,
+          "contributionDim": 0.0012963790693186433
+        },
+        "drawer": {
+          "weight": 0.02385680182498443,
+          "source": "frozen"
+        },
+        "highlight": {
+          "v": 0.054340019204124373,
+          "contribution": 0.0012963790693186433,
+          "context": -0.09532686217225017
+        }
+      }
+    ],
+    "roundtrip-320-last-key": {
+      "keyIndex": 7,
+      "dimIndex": 5,
+      "altKey": 0,
+      "altDim": 0,
+      "pageErrors": 0
+    },
+    "modelLoadFailureFixture": {
+      "label": "DELIBERATE LOCAL TEST FIXTURE (page.route 503 on tiny-transformer.json only) -- not a real/production outage",
+      "modelState": "toy-fallback",
+      "bannerPresent": true,
+      "unexpectedPageErrors": []
     }
   },
   "layouts": {
@@ -1098,7 +1239,7 @@
       },
       "document": {
         "scrollWidth": 1440,
-        "scrollHeight": 2003
+        "scrollHeight": 2047
       },
       "tinyText": [],
       "clippedText": [],
@@ -1383,7 +1524,7 @@
       },
       "document": {
         "scrollWidth": 1280,
-        "scrollHeight": 2003
+        "scrollHeight": 2068
       },
       "tinyText": [],
       "clippedText": [],
@@ -1668,7 +1809,7 @@
       },
       "document": {
         "scrollWidth": 1024,
-        "scrollHeight": 3627
+        "scrollHeight": 3668
       },
       "tinyText": [],
       "clippedText": [],
@@ -1953,7 +2094,7 @@
       },
       "document": {
         "scrollWidth": 768,
-        "scrollHeight": 4798
+        "scrollHeight": 4839
       },
       "tinyText": [],
       "clippedText": [],
@@ -2238,7 +2379,7 @@
       },
       "document": {
         "scrollWidth": 390,
-        "scrollHeight": 5303
+        "scrollHeight": 5386
       },
       "tinyText": [],
       "clippedText": [],
@@ -2523,7 +2664,7 @@
       },
       "document": {
         "scrollWidth": 320,
-        "scrollHeight": 5543
+        "scrollHeight": 5647
       },
       "tinyText": [],
       "clippedText": [],
