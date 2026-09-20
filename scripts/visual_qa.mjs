@@ -410,7 +410,27 @@ async function runResponsiveLayoutAudit(browser, width, label) {
 
   const pause=page.getByRole('button',{name:'Pause'});
   if(await pause.count()) await pause.click();
+
+  // Precondition for the essential-text-floor checks on .steps/.qkv-key
+  // below: those now live inside a closed-by-default reference <details>
+  // (F1 reflow), so open it once up front and leave it open for every
+  // auditLayout call in this page session (state/vision/fusion/compare all
+  // reuse the same persistent element) rather than losing that coverage.
+  const explainSummary=page.locator('.explain-disclosure summary');
+  if(await explainSummary.count()) await explainSummary.click();
+
   await auditLayout(page,label+'-state-overview');
+
+  // F1: the primary guide entry must sit ahead of the secondary Pipeline
+  // overview in the DOM (and thus cannot be displaced by it), on every
+  // audited width.
+  const entryPipelineOrder=await page.evaluate(()=>{
+    const entry=document.querySelector('.follow-decision-entry');
+    const pipeline=document.querySelector('.pipeline-shell');
+    if(!entry || !pipeline) return null;
+    return !!(entry.compareDocumentPosition(pipeline) & Node.DOCUMENT_POSITION_FOLLOWING);
+  });
+  if(!entryPipelineOrder) pushError(label+': follow-decision entry is not positioned before the Pipeline overview in the DOM');
 
   // Follow-one-decision guide: exercise the self-contained Calculation trace
   // (weight bars, key selector, numeric steps) at every audited width so it
@@ -549,6 +569,14 @@ async function runResponsiveLayoutAudit(browser, width, label) {
   const step=page.getByRole('button',{name:'Step'});
   if(await step.isEnabled().catch(()=>false)) await step.click();
   await page.waitForTimeout(70);
+
+  // Precondition: DecisionTrace is now a closed-by-default disclosure in
+  // State mode (F1 reflow) — open it so the existing font/overflow checks
+  // below still exercise its real rendered content instead of silently
+  // skipping a hidden subtree.
+  const decisionTraceSummary=page.locator('.decision-trace-disclosure summary');
+  if(await decisionTraceSummary.count()) await decisionTraceSummary.click();
+  await page.waitForTimeout(60);
   await auditLayout(page,label+'-decision-trace');
 
   await page.getByRole('button',{name:'Vision'}).click();
@@ -762,6 +790,14 @@ async function runDesktop(browser) {
     state:{before:stateSync0,after:stateSync1,stepDelta:stateSync1.tick-stateSync0.tick}
   };
   report.interactions.decisionTrace={state:stateDecisionTrace};
+  await page.screenshot({path:path.join(outDir,'desktop-decision-trace-closed.jpg'),type:'jpeg',quality:84,fullPage:true});
+
+  // Reference case: open the secondary trace disclosure and capture it
+  // expanded too, so both the default-collapsed and expanded states are on
+  // record (not just the collapsed default).
+  const desktopTraceSummary=page.locator('.decision-trace-disclosure summary');
+  if(await desktopTraceSummary.count()) await desktopTraceSummary.click();
+  await page.waitForTimeout(80);
   await page.screenshot({path:path.join(outDir,'desktop-decision-trace.jpg'),type:'jpeg',quality:84,fullPage:true});
 
   // "Follow one decision" guide (State/learned mode only): frozen event
@@ -778,6 +814,35 @@ async function runDesktop(browser) {
 
   const guideCount0=await page.locator('.follow-decision-guide').count();
   if(guideCount0!==1) pushError('follow-decision guide: entry click did not open exactly one guide');
+
+  // F1: while the guide owns the workspace, Pipeline must be an explicit
+  // collapsed overview positioned after the guide (not just after it in the
+  // DOM by chance, but also visually below it), and reopenable without
+  // recapturing the event.
+  const guidePipelineOnOpen=await page.evaluate(()=>{
+    const guide=document.querySelector('.follow-decision-guide');
+    const disclosure=document.querySelector('.pipeline-disclosure');
+    if(!guide || !disclosure) return null;
+    return {
+      domGuideBeforePipeline: !!(guide.compareDocumentPosition(disclosure) & Node.DOCUMENT_POSITION_FOLLOWING),
+      guideTop: guide.getBoundingClientRect().top,
+      pipelineTop: disclosure.getBoundingClientRect().top,
+      pipelineOpen: disclosure.open
+    };
+  });
+  if(!guidePipelineOnOpen || !guidePipelineOnOpen.domGuideBeforePipeline) pushError('follow-decision guide: Pipeline is not positioned after the guide in the DOM');
+  if(!guidePipelineOnOpen || !(guidePipelineOnOpen.guideTop < guidePipelineOnOpen.pipelineTop)) pushError('follow-decision guide: Pipeline does not render below the guide on screen');
+  if(!guidePipelineOnOpen || guidePipelineOnOpen.pipelineOpen) pushError('follow-decision guide: Pipeline did not collapse to a closed overview while the guide is open');
+
+  const capturedTickBeforeReopen=await page.locator('.fd-badge').innerText();
+  await page.locator('.pipeline-disclosure summary').click();
+  await page.waitForTimeout(80);
+  const pipelineReopened=await page.locator('.pipeline-disclosure').evaluate(el=>el.open);
+  if(!pipelineReopened) pushError('follow-decision guide: Pipeline overview did not reopen on manual toggle while the guide is open');
+  const capturedTickAfterReopen=await page.locator('.fd-badge').innerText();
+  if(capturedTickAfterReopen!==capturedTickBeforeReopen) pushError('follow-decision guide: manually reopening Pipeline recaptured/changed the frozen event');
+  await page.locator('.pipeline-disclosure summary').click();
+  await page.waitForTimeout(80);
 
   const runDisabledOnOpen=await page.getByRole('button',{name:/^(Pause|Run)$/}).isDisabled().catch(()=>false);
   const pushDisabledOnOpen=await page.getByRole('button',{name:'Push →'}).isDisabled().catch(()=>false);
@@ -1117,6 +1182,8 @@ async function runDesktop(browser) {
   if(tickAfterClose!==tickBeforeClose) pushError('follow-decision guide: closing the guide changed the plant tick');
   const pushReenabled=await page.getByRole('button',{name:'Push →'}).isDisabled().catch(()=>true);
   if(pushReenabled) pushError('follow-decision guide: Push stayed disabled after the guide was closed');
+  const pipelineRestoredOnClose=await page.locator('.pipeline-disclosure').evaluate(el=>el.open).catch(()=>false);
+  if(!pipelineRestoredOnClose) pushError('follow-decision guide: Pipeline overview did not restore to its default-visible state after the guide closed');
 
   // Mode change must invalidate/close a still-open guide cleanly.
   await followEntry.click();
