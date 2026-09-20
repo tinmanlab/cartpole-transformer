@@ -251,7 +251,8 @@ async function auditLayout(page, name, { minFont=9.75 } = {}) {
     const coreFontSelectors='.state-readout span,.action-readout span,.vision-hidden-state,.sim-controls button,'+
       '.steps b,.steps p,.claim,.qkv-key,.panel-head small,.stage-head>span,.stage-head>small,.attention-read,.attention-read strong,.force-value,'+
       '.fd-badge,.fd-stages button,.fd-content p,.fd-values span,.fd-values b,.fd-result-tick,.fd-ba-label,.fd-details summary,.follow-decision-entry,'+
-      '.fd-repo-row,.fd-token-select button,.fd-key-select button,.fd-weight-bar-label,.fd-weight-bar-value,.fd-calc-step b,.fd-calc-step code,.fd-caveat';
+      '.fd-repo-row,.fd-repo-row span,.fd-token-select button,.fd-key-select button,.fd-dim-select button,.fd-selector-label,.fd-weight-bar-label,.fd-weight-bar-value,'+
+      '.fd-calc-step b,.fd-calc-step code,.fd-caveat,.fd-vector-details summary';
     const coreTextTooSmall=[];
     for(const el of [...document.querySelectorAll(coreFontSelectors)]){
       if(!visible(el)) continue;
@@ -423,6 +424,8 @@ async function runResponsiveLayoutAudit(browser, width, label) {
     await page.getByRole('tab',{name:/Calculation/}).click();
     await page.waitForTimeout(120);
     await auditLayout(page,label+'-follow-decision-calculation');
+    const auditVectorDetailsOpen=await page.locator('.follow-decision-guide .fd-vector-details').evaluateAll(els=>els.some(el=>el.open)).catch(()=>false);
+    if(auditVectorDetailsOpen) pushError(label+': full vector details are expanded by default in the Calculation screenshot (should be collapsed)');
     await page.screenshot({path:path.join(outDir,label+'-follow-decision.jpg'),type:'jpeg',quality:74,fullPage:true});
     const closeGuide=page.getByRole('button',{name:'close follow-one-decision guide'});
     if(await closeGuide.count()) await closeGuide.click();
@@ -751,22 +754,65 @@ async function runDesktop(browser) {
   if(frozenTraceSource!=='frozen') pushError('follow-decision guide: attention trace data-source is not "frozen" while guide is open, got '+JSON.stringify(frozenTraceSource));
 
   // F1: the guide itself must show a self-contained, readable numeric trace
-  // for the selected key (query fixed to the latest/controller token) —
-  // not just prose pointing at the drawer above.
+  // for the selected key/dimension (query fixed to the latest/controller
+  // token) — not just prose pointing at the drawer above. Full per-dimension
+  // vectors are collapsed by default (native <details>), so the emptiness/
+  // change checks below read textContent (unaffected by collapse) rather
+  // than innerText (which only reflects rendered/visible text).
+  const calcStepCodeText=async () => page.locator('.follow-decision-guide .fd-calc-step > code').evaluateAll(els=>els.map(el=>el.textContent.trim()));
   const fdKeyButtons=page.locator('.follow-decision-guide .fd-key-select button');
   const fdKeyCount=await fdKeyButtons.count();
   if(fdKeyCount<2) pushError('follow-decision guide: Calculation key selector exposes fewer than 2 keys, got '+fdKeyCount);
+  const fdDimButtons=page.locator('.follow-decision-guide .fd-dim-select button');
+  const fdDimCount=await fdDimButtons.count();
+  if(fdDimCount<2) pushError('follow-decision guide: Calculation value-dimension selector exposes fewer than 2 dimensions, got '+fdDimCount);
   const fdBarCount=await page.locator('.follow-decision-guide .fd-weight-bar').count();
   if(fdBarCount!==fdKeyCount) pushError('follow-decision guide: weight-bar count does not match key count '+JSON.stringify({bars:fdBarCount,keys:fdKeyCount}));
-  const calcStepTextsBefore=await page.locator('.follow-decision-guide .fd-calc-step code').allInnerTexts();
-  if(calcStepTextsBefore.some(t=>!t.trim())) pushError('follow-decision guide: a Calculation step shows no numeric value');
+
+  const vectorDetailsOpenByDefault=await page.locator('.follow-decision-guide .fd-vector-details').evaluateAll(els=>els.some(el=>el.open));
+  if(vectorDetailsOpenByDefault) pushError('follow-decision guide: full per-dimension vector/product details are expanded by default (should be collapsed native <details>)');
+
+  const calcStepTextsBefore=await calcStepCodeText();
+  if(calcStepTextsBefore.some(t=>!t)) pushError('follow-decision guide: a Calculation step shows no numeric value');
+  const entryCommandForce=await page.locator('main').getAttribute('data-controller-force');
+
   await fdKeyButtons.nth(0).click();
   await page.waitForTimeout(80);
-  const calcStepTextsAfter=await page.locator('.follow-decision-guide .fd-calc-step code').allInnerTexts();
-  if(JSON.stringify(calcStepTextsAfter)===JSON.stringify(calcStepTextsBefore) && fdKeyCount>1) {
+  const calcStepTextsAfterKey=await calcStepCodeText();
+  if(JSON.stringify(calcStepTextsAfterKey)===JSON.stringify(calcStepTextsBefore) && fdKeyCount>1) {
     pushError('follow-decision guide: selecting a different key token did not change the Calculation numeric trace');
   }
+  const badgeAfterKeyChange=await page.locator('.fd-badge').innerText();
+  if(badgeAfterKeyChange!==badgeText0) pushError('follow-decision guide: selecting a different key token changed the captured-event badge (frozen identity violated)');
+
+  await fdDimButtons.nth(fdDimCount-1).click();
+  await page.waitForTimeout(80);
+  const calcStepTextsAfterDim=await calcStepCodeText();
+  if(JSON.stringify(calcStepTextsAfterDim)===JSON.stringify(calcStepTextsAfterKey) && fdDimCount>1) {
+    pushError('follow-decision guide: selecting a different value dimension did not change the Calculation numeric trace');
+  }
+  const badgeAfterDimChange=await page.locator('.fd-badge').innerText();
+  if(badgeAfterDimChange!==badgeText0) pushError('follow-decision guide: selecting a different value dimension changed the captured-event badge (frozen identity violated)');
+  const commandForceAfterSelectors=await page.locator('main').getAttribute('data-controller-force');
+  if(Number(commandForceAfterSelectors)!==Number(entryCommandForce)) {
+    pushError('follow-decision guide: selecting key/dimension changed the commanded force (frozen identity violated) '+JSON.stringify({entryCommandForce,commandForceAfterSelectors}));
+  }
+
+  // Exact-value check: weight * V[key][dim] must equal the displayed
+  // contribution[dim] at display precision, read from data-* attributes
+  // exposed on the same frozen tensors (no recomputation of the model).
+  const contributionStep=page.locator('.follow-decision-guide .fd-calc-step[data-contribution-dim]');
+  const {weightAttr,vDimAttr,contribAttr}=await contributionStep.evaluate(el=>({
+    weightAttr:Number(el.dataset.weight),
+    vDimAttr:Number(el.dataset.vDim),
+    contribAttr:Number(el.dataset.contributionDim)
+  }));
+  if(!Number.isFinite(weightAttr) || !Number.isFinite(vDimAttr) || !Number.isFinite(contribAttr) || Math.abs(weightAttr*vDimAttr-contribAttr)>1e-8) {
+    pushError('follow-decision guide: displayed weight*V[dim] does not equal displayed contribution[dim] '+JSON.stringify({weightAttr,vDimAttr,contribAttr}));
+  }
+
   await fdKeyButtons.nth(fdKeyCount-1).click();
+  await fdDimButtons.nth(0).click();
   await page.waitForTimeout(80);
 
   await page.getByRole('tab',{name:/Action/}).click();
@@ -868,6 +914,15 @@ async function runDesktop(browser) {
   const eventId1=badgeText1.match(/event #(\d+)/)?.[1];
   if(!eventId1 || eventId0===eventId1) pushError('follow-decision guide: new-decision capture did not advance the event id');
 
+  // Capture the actual Calculation stage (guide still open, full vectors
+  // collapsed by default) BEFORE the guide closes — a screenshot taken
+  // after close would show none of the numeric trace.
+  await page.getByRole('tab',{name:/Calculation/}).click();
+  await page.waitForTimeout(120);
+  const vectorDetailsOpenAtCapture=await page.locator('.follow-decision-guide .fd-vector-details').evaluateAll(els=>els.some(el=>el.open));
+  if(vectorDetailsOpenAtCapture) pushWarning('follow-decision guide: full vector details were expanded before the representative screenshot was captured');
+  await page.screenshot({path:path.join(outDir,'desktop-follow-decision.jpg'),type:'jpeg',quality:84,fullPage:true});
+
   // Exit restores public controls without any extra physics.
   const tickBeforeClose=Number(await page.locator('main').getAttribute('data-sync-tick'));
   await page.getByRole('button',{name:'close follow-one-decision guide'}).click();
@@ -887,8 +942,6 @@ async function runDesktop(browser) {
   await page.getByRole('button',{name:'State'}).click();
   await page.waitForTimeout(150);
   if(await page.locator('.follow-decision-guide').count()!==0) pushError('follow-decision guide: guide leaked across a mode-change round trip');
-
-  await page.screenshot({path:path.join(outDir,'desktop-follow-decision.jpg'),type:'jpeg',quality:84,fullPage:true});
 
   // Optional pixels-only mode becomes mandatory once the trained artifact is present.
   const visionButton=page.getByRole('button',{name:'Vision'});

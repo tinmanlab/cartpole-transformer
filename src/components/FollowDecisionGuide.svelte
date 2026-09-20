@@ -8,9 +8,12 @@ Calculation/Action keep showing the captured event even after Apply advances
 the live plant by one tick. The Calculation/Action numeric traces below read
 straight out of that frozen `result` object (qkProducts/scores/raw/softmax*/
 weights/weightedValueContributions/perTokenContext/actionScore) — no model or
-softmax math is reimplemented here. The full Self Attention / Action head
-drawer stays a single advanced instance opened above (not copied into this
-guide); this guide only adds an in-place readable witness of the numbers.
+softmax math is reimplemented here. Query is fixed to the latest token; Key
+and value-dimension are selectable, each showing one real number in place
+(score/mask/softmax stay visible; full per-dimension product/contribution/
+context vectors sit behind native <details>, collapsed by default). The full
+Self Attention / Action head drawer stays a single advanced instance opened
+above (not copied into this guide).
 See docs/learning-suite.md for the four-stage contract this follows.
 -->
 <script>
@@ -60,6 +63,10 @@ See docs/learning-suite.md for the four-stage contract this follows.
   let selectedKeyInit = false;
   $: if (!selectedKeyInit && result) { selectedKey = lastIndex; selectedKeyInit = true; }
 
+  let selectedDim = 0;
+  let selectedDimInit = false;
+  $: if (!selectedDimInit && result) { selectedDim = 0; selectedDimInit = true; }
+
   function label(i) {
     return i === lastIndex ? 't' : 't−' + (lastIndex - i);
   }
@@ -78,6 +85,10 @@ See docs/learning-suite.md for the four-stage contract this follows.
   $: contributionSel = result?.weightedValueContributions?.[lastIndex]?.[selectedKey] || [];
   $: contextSel = result?.perTokenContext?.[lastIndex] || [];
   $: weightsRow = result?.weights?.[lastIndex] || [];
+  $: dimCount = contributionSel.length || contextSel.length || 0;
+  $: vSel = result?.v?.[selectedKey]?.[selectedDim] ?? 0;
+  $: contributionDim = contributionSel[selectedDim] ?? 0;
+  $: contextDim = contextSel[selectedDim] ?? 0;
 
   $: forceFromActionScore = forceFromScore(result?.actionScore ?? 0);
 
@@ -141,7 +152,11 @@ See docs/learning-suite.md for the four-stage contract this follows.
     <button type="button" class="fd-close" on:click={onClose} aria-label="close follow-one-decision guide">×</button>
   </header>
 
-  <p class="fd-repo-row"><b>PPO</b> — learning method (policy optimization) · <b>Transformer</b> (this lab) — information mixing via self-attention · <b>DiffusionPolicy</b> — action generation via iterative denoising.</p>
+  <nav class="fd-repo-row" aria-label="cartpole teaching suite">
+    <span>PPO · learning</span>
+    <span>Transformer · mixing</span>
+    <span>Diffusion · generation</span>
+  </nav>
 
   <div class="fd-stages" role="tablist" aria-label="decision stages">
     {#each STAGES as [key,en,ko],i}
@@ -162,7 +177,7 @@ See docs/learning-suite.md for the four-stage contract this follows.
 
   <div class="fd-content" role="tabpanel" id="fd-panel" aria-labelledby="fd-tab-{stage}" tabindex="0">
     {#if stage === 'input'}
-      <p>Input / 입력 — the model reads the full frozen history, not just one tick: {result?.rawTokens?.length || 0} tokens × {inputValues.length}D each (x, ẋ, θ, θ̇). Pick any history token below to read its physical units (frozen at tick {capturedTick}; not the live plant above).</p>
+      <p>Input / 입력 — 실제 입력은 tick 하나가 아니라 {result?.rawTokens?.length || 0} token × {inputValues.length}D 전체 history입니다. 아래 token을 선택해 물리값을 확인하세요 (frozen tick {capturedTick}).</p>
       <div class="fd-token-select" role="group" aria-label="select input history token">
         {#each result?.rawTokens || [] as _,i}
           <button type="button" class:active={i===selectedInputToken} on:click={()=>selectedInputToken=i}>{label(i)}</button>
@@ -174,11 +189,20 @@ See docs/learning-suite.md for the four-stage contract this follows.
         {/each}
       </div>
     {:else if stage === 'calculation'}
-      <p>Calculation / 계산 — real Q·K softmax attention for the captured tick {capturedTick}. Query is fixed to the actual controller query (token {label(lastIndex)}); pick a Key token below to read its numeric contribution. Full expandable Self Attention detail is also open above (same frozen event).</p>
-      <div class="fd-key-select" role="group" aria-label="select key token to inspect">
-        {#each weightsRow as _,i}
-          <button type="button" class:active={i===selectedKey} on:click={()=>selectedKey=i}>{label(i)}</button>
-        {/each}
+      <p>Calculation / 계산 — score = Σ(QᵢKᵢ) ÷ √d → causal mask → softmax → weight × V. Query는 t (tick {capturedTick})로 고정, 아래에서 Key token과 value dimension을 선택하세요.</p>
+      <div class="fd-selectors">
+        <div class="fd-key-select" role="group" aria-label="select key token to inspect">
+          <span class="fd-selector-label">Key</span>
+          {#each weightsRow as _,i}
+            <button type="button" class:active={i===selectedKey} on:click={()=>selectedKey=i}>{label(i)}</button>
+          {/each}
+        </div>
+        <div class="fd-dim-select" role="group" aria-label="select value dimension">
+          <span class="fd-selector-label">dim</span>
+          {#each Array(dimCount) as _,d}
+            <button type="button" class:active={d===selectedDim} on:click={()=>selectedDim=d}>d{d}</button>
+          {/each}
+        </div>
       </div>
       <div class="fd-weight-bars" role="group" aria-label="attention weight per key token, 0 to 1 scale">
         {#each weightsRow as w,i}
@@ -191,8 +215,11 @@ See docs/learning-suite.md for the four-stage contract this follows.
       </div>
       <div class="fd-calc-steps">
         <div class="fd-calc-step">
-          <b>A · Q·K per dimension</b>
-          <code>{qkProductsSel.map(x=>x.toFixed(3)).join(' + ')}</code>
+          <b>A · Q·K → score</b>
+          <details class="fd-vector-details">
+            <summary>dimension별 곱 전체 보기 · full per-dimension products</summary>
+            <code>{qkProductsSel.map(x=>x.toFixed(3)).join(' + ')}</code>
+          </details>
         </div>
         <div class="fd-calc-step">
           <b>B · Σ ÷ √d = score</b>
@@ -210,18 +237,26 @@ See docs/learning-suite.md for the four-stage contract this follows.
           <b>D · Stable softmax</b>
           <code>exp(score − row max) = {expValSel.toExponential(3)} · Σexp (row) = {denomSel.toFixed(5)} · weight = {(weightSel*100).toFixed(3)}%</code>
         </div>
-        <div class="fd-calc-step">
-          <b>E · weighted V contribution</b>
-          <code>weight × V[{label(selectedKey)}] = [{contributionSel.map(x=>x.toFixed(3)).join(', ')}]</code>
+        <div class="fd-calc-step" data-weight={weightSel} data-v-dim={vSel} data-contribution-dim={contributionDim}>
+          <b>E · weight × V[key][dim]</b>
+          <code>{(weightSel*100).toFixed(3)}% × V[{label(selectedKey)}][d{selectedDim}]({vSel.toFixed(3)}) = {contributionDim.toFixed(3)}</code>
+          <details class="fd-vector-details">
+            <summary>contribution vector 전체 보기 · full contribution vector</summary>
+            <code>[{contributionSel.map(x=>x.toFixed(3)).join(', ')}]</code>
+          </details>
         </div>
-        <div class="fd-calc-step">
-          <b>Summed context (Q {label(lastIndex)}, over all keys)</b>
-          <code>[{contextSel.map(x=>x.toFixed(3)).join(', ')}]</code>
+        <div class="fd-calc-step" data-context-dim={contextDim}>
+          <b>Summed context[d{selectedDim}]</b>
+          <code>context[d{selectedDim}] = {contextDim.toFixed(3)}</code>
+          <details class="fd-vector-details">
+            <summary>context vector 전체 보기 · full context vector</summary>
+            <code>[{contextSel.map(x=>x.toFixed(3)).join(', ')}]</code>
+          </details>
         </div>
       </div>
-      <p class="fd-caveat">Attention weights mix information across tokens — they are not action probabilities and do not by themselves show causal importance. The weighted V above is a mixed representation, not a force.</p>
+      <p class="fd-caveat">attention weight는 정보를 섞을 뿐 action 확률도 causal 중요도도 아닙니다. weighted V는 힘(force)이 아닙니다.</p>
     {:else if stage === 'action'}
-      <p>Action / 행동 — real action score → force command from the captured tick {capturedTick}. force = 10·tanh(score), read from the model's forceFromScore function (not a guessed equation). See the Action head detail opened above for the full weight matrix.</p>
+      <p>Action / 행동 — force = 10·tanh(action score). tick {capturedTick}에서 실제로 나온 score와 force입니다.</p>
       <div class="fd-values">
         <span><b>captured tick</b>{capturedTick}</span>
         <span><b>action score</b>{(result?.actionScore ?? 0).toFixed(6)}</span>
@@ -276,7 +311,7 @@ header{display:flex;justify-content:space-between;align-items:flex-start;gap:12p
 .fd-badge{display:block;font-size:14px;letter-spacing:.02em;color:#674e9f;font:14px ui-monospace,SFMono-Regular,Menlo,monospace}
 header h3{font-size:15px;margin:5px 0 0}
 .fd-close{width:36px;height:36px;min-width:44px;min-height:44px;border:1px solid #dfe3e8;border-radius:9px;background:#fff;color:#667085;font-size:18px;cursor:pointer}
-.fd-repo-row{font-size:14px;color:#7d8593;margin:10px 0 0;line-height:1.5}
+.fd-repo-row{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:14px;color:#7d8593;margin:10px 0 0}
 .fd-stages{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:12px}
 .fd-stages button{border:1px solid #d9dde5;border-radius:8px;background:#fff;padding:10px 8px;min-height:44px;font-size:14px;cursor:pointer;color:#4b5563}
 .fd-stages button.active{background:#243047;color:#fff;border-color:#243047}
@@ -286,9 +321,11 @@ header h3{font-size:15px;margin:5px 0 0}
 .fd-values{display:flex;flex-wrap:wrap;gap:6px}
 .fd-values span{display:flex;justify-content:space-between;gap:6px;flex:1;min-width:110px;border:1px solid #e4e7ec;background:#fafbfc;border-radius:6px;padding:6px 7px;font:14px ui-monospace,SFMono-Regular,Menlo,monospace;color:#596273}
 .fd-values b{font-family:Inter,ui-sans-serif,system-ui;font-size:14px;color:#8b93a1}
-.fd-token-select,.fd-key-select{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
-.fd-token-select button,.fd-key-select button{border:1px solid #d9dde5;border-radius:8px;background:#fff;min-height:44px;min-width:44px;padding:8px 10px;font-size:14px;color:#4b5563;cursor:pointer}
-.fd-token-select button.active,.fd-key-select button.active{background:#ece7f7;border-color:#a895cf;color:#5e4894}
+.fd-token-select,.fd-key-select,.fd-dim-select{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:10px}
+.fd-selectors{display:flex;flex-wrap:wrap;gap:6px 16px}
+.fd-selector-label{font-size:14px;color:#8b93a1;min-width:28px}
+.fd-token-select button,.fd-key-select button,.fd-dim-select button{border:1px solid #d9dde5;border-radius:8px;background:#fff;min-height:44px;min-width:44px;padding:8px 10px;font-size:14px;color:#4b5563;cursor:pointer}
+.fd-token-select button.active,.fd-key-select button.active,.fd-dim-select button.active{background:#ece7f7;border-color:#a895cf;color:#5e4894}
 .fd-weight-bars{display:flex;flex-direction:column;gap:7px;margin-bottom:10px}
 .fd-weight-bar{display:grid;grid-template-columns:40px 1fr 60px;align-items:center;gap:8px}
 .fd-weight-bar-label{font:14px ui-monospace,SFMono-Regular,Menlo,monospace;color:#596273}
@@ -300,6 +337,9 @@ header h3{font-size:15px;margin:5px 0 0}
 .fd-calc-step{border:1px solid #e4e7ec;background:#fafbfc;border-radius:8px;padding:9px 10px}
 .fd-calc-step b{display:block;font-size:14px;color:#596273;margin-bottom:4px}
 .fd-calc-step code{display:block;font-size:14px;color:#4b5563;white-space:normal;overflow-wrap:anywhere;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;line-height:1.5}
+.fd-vector-details{margin-top:6px}
+.fd-vector-details summary{font-size:14px;cursor:pointer;color:#7d6aaa;min-height:44px;display:flex;align-items:center}
+.fd-vector-details code{margin-top:4px}
 .fd-caveat{font-size:14px;color:#7b8492;font-style:italic}
 .fd-apply,.fd-new{margin-top:6px;border:1px solid #243047;border-radius:8px;background:#243047;color:#fff;padding:10px 14px;min-height:44px;font-size:14px;cursor:pointer}
 .fd-apply:disabled,.fd-new:disabled{opacity:.4;cursor:not-allowed}
