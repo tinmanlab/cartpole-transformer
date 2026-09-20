@@ -429,6 +429,14 @@ async function runResponsiveLayoutAudit(browser, width, label) {
     const auditVectorDetailsOpen=await page.locator('.follow-decision-guide .fd-vector-details').evaluateAll(els=>els.some(el=>el.open)).catch(()=>false);
     if(auditVectorDetailsOpen) pushError(label+': full vector details are expanded by default in the Calculation screenshot (should be collapsed)');
     await page.screenshot({path:path.join(outDir,label+'-follow-decision.jpg'),type:'jpeg',quality:74,fullPage:true});
+    await page.getByRole('tab',{name:/Action/}).click();
+    await page.waitForTimeout(120);
+    await auditLayout(page,label+'-follow-decision-action');
+    const auditActionAdvancedOpen=await page.locator('.transformer-detail-wide').count();
+    if(auditActionAdvancedOpen!==0) pushError(label+': advanced detail drawer auto-opened on Action entry (should stay closed until explicitly opened)');
+    const auditActionVectorDetailsOpen=await page.locator('.follow-decision-guide .fd-vector-details').evaluateAll(els=>els.some(el=>el.open)).catch(()=>false);
+    if(auditActionVectorDetailsOpen) pushError(label+': full action-product details are expanded by default in the Action screenshot (should be collapsed)');
+    await page.screenshot({path:path.join(outDir,label+'-follow-decision-action.jpg'),type:'jpeg',quality:74,fullPage:true});
     const closeGuide=page.getByRole('button',{name:'close follow-one-decision guide'});
     if(await closeGuide.count()) await closeGuide.click();
     await page.waitForTimeout(80);
@@ -872,6 +880,39 @@ async function runDesktop(browser) {
   if(!Number.isFinite(forceFromRelation) || !Number.isFinite(forceCommand) || Math.abs(forceFromRelation-forceCommand)>0.01) {
     pushError('follow-decision guide: 10*tanh(score) relation does not match the displayed force command '+JSON.stringify({forceFromRelation,forceCommand}));
   }
+
+  // New arithmetic connection: a selected final-hidden component h[j] times
+  // the real action-head weight[0][j], summed over every j plus bias[0],
+  // must reproduce the already-displayed frozen action score -- read from
+  // the same frozen result object, no second inference.
+  const hiddenDimButtons=page.locator('.follow-decision-guide .fd-action-dim-select button');
+  const hiddenDimCount=await hiddenDimButtons.count();
+  if(hiddenDimCount<2) pushError('follow-decision guide: Action stage final-hidden dimension selector exposes fewer than 2 dimensions, got '+hiddenDimCount);
+  const productStep=page.locator('.follow-decision-guide .fd-calc-step[data-action-product]');
+  const productBefore=await productStep.getAttribute('data-action-product');
+  await hiddenDimButtons.nth(1).click();
+  await page.waitForTimeout(80);
+  const productAfter=await productStep.getAttribute('data-action-product');
+  if(productBefore===productAfter) pushError('follow-decision guide: selecting a different final-hidden dimension did not change the product step');
+  const badgeAfterHiddenDimChange=await page.locator('.fd-badge').innerText();
+  if(badgeAfterHiddenDimChange!==badgeText0) pushError('follow-decision guide: selecting a final-hidden dimension changed the captured-event badge (frozen identity violated)');
+
+  const sumStep=page.locator('.follow-decision-guide .fd-calc-step[data-action-sum]');
+  const sumAttr=Number(await sumStep.getAttribute('data-action-sum'));
+  const biasAttr=Number(await sumStep.getAttribute('data-action-bias'));
+  const scoreCheckAttr=Number(await sumStep.getAttribute('data-action-score-check'));
+  if(!Number.isFinite(sumAttr) || !Number.isFinite(biasAttr) || !Number.isFinite(scoreCheckAttr) || Math.abs(sumAttr+biasAttr-scoreCheckAttr)>1e-6) {
+    pushError('follow-decision guide: sum(h*weight)+bias does not equal the frozen action-score check '+JSON.stringify({sumAttr,biasAttr,scoreCheckAttr}));
+  }
+  const actionScoreDisplayed=Number(actionScoreText.replace('action score','').trim());
+  if(!Number.isFinite(actionScoreDisplayed) || Math.abs(actionScoreDisplayed-scoreCheckAttr)>1e-6) {
+    pushError('follow-decision guide: displayed action score does not match the chain-equation score '+JSON.stringify({actionScoreDisplayed,scoreCheckAttr}));
+  }
+  const actionVectorDetailsOpenByDefault=await page.locator('.follow-decision-guide .fd-calc-step[data-action-product] .fd-vector-details').evaluateAll(els=>els.some(el=>el.open));
+  if(actionVectorDetailsOpenByDefault) pushError('follow-decision guide: full per-dimension action-product details are expanded by default (should be collapsed native <details>)');
+  const pipelineStepText=await page.locator('.follow-decision-guide .fd-calc-step b').filter({hasText:'final hidden'}).count();
+  if(pipelineStepText<1) pushError('follow-decision guide: Action stage does not name the context -> output projection/residual -> LayerNorm/MLP -> final hidden pipeline');
+  await page.screenshot({path:path.join(outDir,'desktop-follow-decision-action.jpg'),type:'jpeg',quality:84,fullPage:true});
 
   // Explicit full-detail open (Action): the guide's own score/force values
   // above were already fully readable without this.

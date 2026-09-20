@@ -63,6 +63,25 @@ for (let r = 0; r < model.sequence_length; r++) {
   }
 }
 
+// Verify the final-hidden -> action-score decomposition the guide's Action
+// stage now displays: h[last] dotted with the real action-head weight row,
+// plus bias, must reproduce the already-computed actionScore exactly -- this
+// is the same arithmetic the UI shows per-dimension, checked here against
+// the frozen model weights themselves.
+{
+  const last = out.hidden.length - 1;
+  const hiddenLast = out.hidden[last];
+  const weightRow = out.modelWeights.action.weight[0];
+  const bias = out.modelWeights.action.bias[0];
+  assert(hiddenLast.length === weightRow.length, 'final hidden width does not match action weight row width');
+  const products = hiddenLast.map((h, j) => h * weightRow[j]);
+  assert(products.every(Number.isFinite), 'a hidden*weight product is non-finite');
+  const sum = products.reduce((a, b) => a + b, 0);
+  assert(close(sum + bias, out.actionScore, 1e-9), 'sum(h*w_action)+bias does not reproduce actionScore');
+  const forceFromScore = 10 * Math.tanh(out.actionScore);
+  assert(Number.isFinite(forceFromScore) && Math.abs(forceFromScore) <= 10, 'force derived from action score is out of the +-10N range');
+}
+
 for (let i = 0; i < 100; i++) runLearnedAttention(history, model);
 const runs = 2000;
 const start = performance.now();

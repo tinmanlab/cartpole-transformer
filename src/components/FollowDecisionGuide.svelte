@@ -92,6 +92,26 @@ See docs/learning-suite.md for the four-stage contract this follows.
 
   $: forceFromActionScore = forceFromScore(result?.actionScore ?? 0);
 
+  // Action-stage chain: the frozen final hidden vector h[last] dotted with
+  // the real learned action-head weight row, plus its bias, reproduces the
+  // already-computed actionScore above. All read from the frozen `result`
+  // object -- no second inference, same convention as qkProductsSel/dotSum
+  // in the Calculation stage above.
+  $: hiddenVec = result?.hidden?.[lastIndex] || [];
+  $: actionWeightRow = result?.modelWeights?.action?.weight?.[0] || [];
+  $: actionBias = result?.modelWeights?.action?.bias?.[0];
+  $: hasActionHead = hiddenVec.length > 0 && actionWeightRow.length === hiddenVec.length && Number.isFinite(actionBias);
+
+  let selectedHiddenDim = 0;
+  let selectedHiddenDimInit = false;
+  $: if (!selectedHiddenDimInit && result) { selectedHiddenDim = 0; selectedHiddenDimInit = true; }
+
+  $: hSel = hiddenVec[selectedHiddenDim] ?? 0;
+  $: wActionSel = actionWeightRow[selectedHiddenDim] ?? 0;
+  $: actionProductSel = hSel * wActionSel;
+  $: actionProducts = hiddenVec.map((h, j) => h * (actionWeightRow[j] ?? 0));
+  $: actionProductsSum = actionProducts.reduce((sum, x) => sum + x, 0);
+
   // Switching stages never auto-opens the full advanced detail drawer — that
   // used to recreate the exact detached/vertical-overload problem this guide
   // fixes. The drawer only opens when the user explicitly clicks the
@@ -271,6 +291,37 @@ See docs/learning-suite.md for the four-stage contract this follows.
         <span><b>10·tanh(score) [N]</b>{forceFromActionScore.toFixed(2)}</span>
         <span><b>force command [N]</b>{controllerForce.toFixed(2)}</span>
       </div>
+      {#if hasActionHead}
+        <div class="fd-selectors">
+          <div class="fd-action-dim-select" role="group" aria-label="select final hidden dimension">
+            <span class="fd-selector-label">dim</span>
+            {#each hiddenVec as _,d}
+              <button type="button" class:active={d===selectedHiddenDim} on:click={()=>selectedHiddenDim=d}>d{d}</button>
+            {/each}
+          </div>
+        </div>
+        <div class="fd-calc-steps">
+          <div class="fd-calc-step">
+            <b>context → output projection/residual → LayerNorm/MLP → final hidden</b>
+            <code>attention context 자체가 아니라, output projection + residual + LayerNorm + MLP를 모두 거친 뒤의 final hidden h[t]를 사용합니다 · uses the final hidden h[t] after output projection, residual, LayerNorm and the MLP — not the attention context alone.</code>
+          </div>
+          <div class="fd-calc-step" data-action-product={actionProductSel} data-action-h={hSel} data-action-w={wActionSel}>
+            <b>H · h[j] × action weight[0][j]</b>
+            <code>h[d{selectedHiddenDim}]({hSel.toFixed(4)}) × w_action[0][d{selectedHiddenDim}]({wActionSel.toFixed(4)}) = {actionProductSel.toFixed(6)}</code>
+            <details class="fd-vector-details">
+              <summary>전체 hidden dimension 곱 보기 · full per-dimension products</summary>
+              <code>{actionProducts.map(x=>x.toFixed(4)).join(' + ')}</code>
+            </details>
+          </div>
+          <div class="fd-calc-step" data-action-sum={actionProductsSum} data-action-bias={actionBias} data-action-score-check={actionProductsSum + actionBias}>
+            <b>I · Σ(h · w_action) + bias = action score</b>
+            <code>{actionProductsSum.toFixed(6)} + {actionBias.toFixed(6)} = {(actionProductsSum + actionBias).toFixed(6)}</code>
+          </div>
+        </div>
+        <p class="fd-caveat">hidden component 하나의 기여도가 곧 force나 causal 중요도를 뜻하지 않습니다 · one hidden component's contribution here is not itself a force or a causal-importance claim.</p>
+      {:else}
+        <p class="fd-caveat">이 기록에는 학습된 action head 가중치가 없어 dimension별 계산을 표시할 수 없습니다 · learned action-head weights are not present on this recorded event, so the per-dimension breakdown cannot be shown.</p>
+      {/if}
       <button type="button" class="fd-open-detail" on:click={()=>openFullDetail('action')}>전체 Action head 상세 열기 · open full Action head detail</button>
     {:else}
       <p>Result / 결과 — apply exactly one real 20&nbsp;ms physics step from this frozen event to see what actually happens next.</p>
@@ -330,11 +381,11 @@ header h3{font-size:15px;margin:5px 0 0}
 .fd-values{display:flex;flex-wrap:wrap;gap:6px}
 .fd-values span{display:flex;justify-content:space-between;gap:6px;flex:1;min-width:110px;border:1px solid #e4e7ec;background:#fafbfc;border-radius:6px;padding:6px 7px;font:14px ui-monospace,SFMono-Regular,Menlo,monospace;color:#596273}
 .fd-values b{font-family:Inter,ui-sans-serif,system-ui;font-size:14px;color:#8b93a1}
-.fd-token-select,.fd-key-select,.fd-dim-select{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:10px}
+.fd-token-select,.fd-key-select,.fd-dim-select,.fd-action-dim-select{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:10px}
 .fd-selectors{display:flex;flex-wrap:wrap;gap:6px 16px}
 .fd-selector-label{font-size:14px;color:#8b93a1;min-width:28px}
-.fd-token-select button,.fd-key-select button,.fd-dim-select button{border:1px solid #d9dde5;border-radius:8px;background:#fff;min-height:44px;min-width:44px;padding:8px 10px;font-size:14px;color:#4b5563;cursor:pointer}
-.fd-token-select button.active,.fd-key-select button.active,.fd-dim-select button.active{background:#ece7f7;border-color:#a895cf;color:#5e4894}
+.fd-token-select button,.fd-key-select button,.fd-dim-select button,.fd-action-dim-select button{border:1px solid #d9dde5;border-radius:8px;background:#fff;min-height:44px;min-width:44px;padding:8px 10px;font-size:14px;color:#4b5563;cursor:pointer}
+.fd-token-select button.active,.fd-key-select button.active,.fd-dim-select button.active,.fd-action-dim-select button.active{background:#ece7f7;border-color:#a895cf;color:#5e4894}
 .fd-weight-bars{display:flex;flex-direction:column;gap:7px;margin-bottom:10px}
 .fd-weight-bar{display:grid;grid-template-columns:40px 1fr 60px;align-items:center;gap:8px}
 .fd-weight-bar-label{font:14px ui-monospace,SFMono-Regular,Menlo,monospace;color:#596273}
