@@ -35,8 +35,44 @@
       if (width > 0) labelScale = viewBoxWidth / width;
     });
     ro.observe(svgEl);
-    return () => ro.disconnect();
+
+    // A held push must not survive the pointer leaving the app entirely
+    // (OS focus switch, tab hidden) or releasing outside the button --
+    // window/document catch what the button's own pointer events miss.
+    // Window pointerup fires for every pointer release on the page (e.g.
+    // clicking Step), so it's gated on the pointerId that actually started
+    // the held push, not treated as a blanket "clear on any release".
+    const onWindowPointerUp = (e) => endPush(e.pointerId);
+    const onBlur = () => forceEndPush();
+    const onVisibility = () => { if (document.hidden) forceEndPush(); };
+    window.addEventListener('blur', onBlur);
+    window.addEventListener('pointerup', onWindowPointerUp);
+    document.addEventListener('visibilitychange', onVisibility);
+
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('blur', onBlur);
+      window.removeEventListener('pointerup', onWindowPointerUp);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
   });
+
+  let heldPointerId = null;
+
+  function primaryPush(e, v) {
+    if (e.button !== 0) return;
+    heldPointerId = e.pointerId;
+    onPush(v);
+  }
+  function endPush(pointerId) {
+    if (pointerId !== undefined && pointerId !== heldPointerId) return;
+    heldPointerId = null;
+    onPushEnd();
+  }
+  function forceEndPush() {
+    heldPointerId = null;
+    onPushEnd();
+  }
 
   function pose(values) {
     const [x, xDot, theta, thetaDot] = values;
@@ -195,8 +231,8 @@
     <button disabled={running || status==='fell' || guideActive} on:click={onStep}>Step</button>
     <button on:click={onReset}>Reset</button>
     <span class="spacer"></span>
-    <button class="push" disabled={guideActive} on:pointerdown={() => onPush(-6)} on:pointerup={onPushEnd} on:pointerleave={onPushEnd}>← Push</button>
-    <button class="push" disabled={guideActive} on:pointerdown={() => onPush(6)} on:pointerup={onPushEnd} on:pointerleave={onPushEnd}>Push →</button>
+    <button class="push" disabled={guideActive} on:pointerdown={(e) => primaryPush(e,-6)} on:pointerup={(e) => endPush(e.pointerId)} on:pointerleave={(e) => endPush(e.pointerId)} on:pointercancel={(e) => endPush(e.pointerId)}>← Push</button>
+    <button class="push" disabled={guideActive} on:pointerdown={(e) => primaryPush(e,6)} on:pointerup={(e) => endPush(e.pointerId)} on:pointerleave={(e) => endPush(e.pointerId)} on:pointercancel={(e) => endPush(e.pointerId)}>Push →</button>
   </div>
 </div>
 

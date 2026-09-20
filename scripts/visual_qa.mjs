@@ -819,6 +819,124 @@ async function runDesktop(browser) {
   report.interactions.push={before:xdot0,after:xdot1,changed:xdot0!==xdot1};
   if(xdot0===xdot1) pushWarning('push interaction did not change visible xdot');
 
+  // Input-lifecycle regression: a held push must clear on every cancellation
+  // path (not just the button's own pointerup/pointerleave), and must never
+  // silently reappear afterward. Each case confirms nonzero force is actually
+  // applied before checking the cancellation clears it.
+  async function readPush(){
+    const t=await page.locator('.disturbance-readout').innerText();
+    return parseFloat(t.replace(/[^-0-9.]/g,''));
+  }
+  async function beginLeftPush(dir){
+    const btn=page.getByRole('button',{name: dir>0?'Push →':'← Push'});
+    await btn.dispatchEvent('pointerdown',{button:0,pointerId:1,isPrimary:true});
+    await page.waitForTimeout(120);
+    return btn;
+  }
+  // Each case gets its own Reset: a fixed ±6N disturbance is a large
+  // perturbation relative to the controller's margin, and chaining several
+  // held pushes back-to-back risks the pole falling mid-case (a sim-dynamics
+  // flake, not evidence about the cancellation contract under test).
+  async function freshPole(){
+    await page.getByRole('button',{name:'Reset'}).click();
+    await page.waitForTimeout(150);
+  }
+  // Reset also resumes the sim (running=true); for cases that aren't
+  // themselves testing Pause, pause immediately after so a real-time fall
+  // (physics ticks, not the cancellation path under test) can't zero the
+  // disturbance readout and produce a false pass.
+  async function freshPausedPole(){
+    await freshPole();
+    await page.getByRole('button',{name:'Pause'}).click();
+    await page.waitForTimeout(80);
+  }
+
+  const rightPushBtn=page.getByRole('button',{name:'Push →'});
+  await rightPushBtn.dispatchEvent('pointerdown',{button:2,pointerId:2,isPrimary:true});
+  await page.waitForTimeout(80);
+  const afterRightClick=await readPush();
+  if(afterRightClick!==0) pushError('input-lifecycle: right-click pointerdown applied force ('+afterRightClick+' N), primary-button-only guard missing');
+  await rightPushBtn.dispatchEvent('pointerup',{button:2,pointerId:2});
+
+  {
+    await freshPausedPole();
+    const btn=await beginLeftPush(1);
+    const held=await readPush();
+    if(held===0) pushError('input-lifecycle: pointerdown did not apply push force before pointercancel case');
+    await btn.dispatchEvent('pointercancel',{pointerId:1});
+    await page.waitForTimeout(80);
+    const after=await readPush();
+    if(after!==0) pushError('input-lifecycle: pointercancel did not clear held push force (still '+after+' N)');
+  }
+
+  {
+    await freshPausedPole();
+    const btn=await beginLeftPush(-1);
+    const held=await readPush();
+    if(held===0) pushError('input-lifecycle: pointerdown did not apply push force before window-blur case');
+    await page.evaluate(()=>window.dispatchEvent(new Event('blur')));
+    await page.waitForTimeout(80);
+    const after=await readPush();
+    if(after!==0) pushError('input-lifecycle: window blur (OS focus loss) did not clear held push force (still '+after+' N)');
+    await btn.dispatchEvent('pointerup',{pointerId:1});
+  }
+
+  {
+    await freshPausedPole();
+    const btn=await beginLeftPush(1);
+    const held=await readPush();
+    if(held===0) pushError('input-lifecycle: pointerdown did not apply push force before hidden-document case');
+    await page.evaluate(()=>{
+      Object.defineProperty(document,'hidden',{configurable:true,get:()=>true});
+      Object.defineProperty(document,'visibilityState',{configurable:true,get:()=>'hidden'});
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    await page.waitForTimeout(80);
+    const after=await readPush();
+    if(after!==0) pushError('input-lifecycle: document hidden (tab switch) did not clear held push force (still '+after+' N)');
+    await page.evaluate(()=>{
+      Object.defineProperty(document,'hidden',{configurable:true,get:()=>false});
+      Object.defineProperty(document,'visibilityState',{configurable:true,get:()=>'visible'});
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    await btn.dispatchEvent('pointerup',{pointerId:1});
+  }
+
+  {
+    await freshPole();
+    const btn=await beginLeftPush(1);
+    const held=await readPush();
+    if(held===0) pushError('input-lifecycle: pointerdown did not apply push force before pause case');
+    await page.getByRole('button',{name:'Pause'}).click();
+    await page.waitForTimeout(80);
+    const afterPause=await readPush();
+    if(afterPause!==0) pushError('input-lifecycle: Pause did not clear held push force (still '+afterPause+' N)');
+    await btn.dispatchEvent('pointerup',{pointerId:1});
+    await page.getByRole('button',{name:'Run'}).click();
+    await page.waitForTimeout(150);
+    const afterResume=await readPush();
+    if(afterResume!==0) pushError('input-lifecycle: resuming after a cleared push showed residual force reappearing ('+afterResume+' N)');
+  }
+
+  {
+    await waitAllModes(page);
+    await freshPausedPole();
+    const btn=await beginLeftPush(1);
+    const held=await readPush();
+    if(held===0) pushError('input-lifecycle: pointerdown did not apply push force before mode-switch case');
+    await page.getByRole('button',{name:'Vision'}).click();
+    await page.waitForTimeout(150);
+    await page.getByRole('button',{name:'State',exact:true}).click();
+    await page.waitForTimeout(150);
+    const after=await readPush();
+    if(after!==0) pushError('input-lifecycle: switching mode did not clear held push force (still '+after+' N)');
+    await btn.dispatchEvent('pointerup',{pointerId:1});
+  }
+
+  await page.getByRole('button',{name:'Reset'}).click();
+  await page.waitForTimeout(150);
+  report.interactions.inputLifecycle={checked:true};
+
   // Atomic snapshot contract: pose, latest model observations and displayed action
   // must describe the same simulation tick.
   const pauseState=page.getByRole('button',{name:'Pause'});

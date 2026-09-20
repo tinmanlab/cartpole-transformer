@@ -276,6 +276,7 @@
     if (next === 'fusion' && fusionModelState !== 'learned') return;
     if (next === 'compare' && (modelState !== 'learned' || visionModelState !== 'learned' || fusionModelState !== 'learned')) return;
 
+    pushEnd();
     mode = next;
     lastDecisionTrace = null;
     expandedStage = null;
@@ -379,6 +380,7 @@
   function toggle(){
     if (mode === 'compare' || status === 'fell') return;
     running = !running;
+    pushEnd();
   }
   function push(v){ disturbance = v; }
   function pushEnd(){ disturbance = 0; }
