@@ -147,6 +147,8 @@ Uses visualization primitives adapted from poloclub/transformer-explainer
         weights={result.weights}
         {selectedRow}
         {selectedCol}
+        scoreLabel={isLearned ? 'Dot product' : 'Dot product + fixed bias'}
+        scoreFormula={isLearned ? 'QKᵀ / √d' : 'QKᵀ/√d + ' + (result.recencyBiasPerStep ?? 0).toFixed(2) + '×j'}
         onSelect={(r,c)=>onSelectAttention(r,c)}
       />
       <AttentionCellTrace

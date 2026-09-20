@@ -85,7 +85,7 @@ Detailed calculations live in TransformerDetail.svelte.
 <section class="pipeline-shell resize-watch">
   <div class="panel-head">
     <div>
-      <strong>Transformer · 1 block · 1 head</strong>
+      <strong>{isLearned ? 'Transformer · 1 block · 1 head' : 'Transformer · fixed attention + feedback · 1 head'}</strong>
       <small>단계를 클릭하면 아래에서 live tensor 계산을 크게 펼칩니다</small>
     </div>
     <span>{isLearned ? 'LEARNED' : 'TOY'} · {controllerForce >= 0 ? '→' : '←'} {Math.abs(controllerForce).toFixed(2)} N</span>
@@ -101,7 +101,7 @@ Detailed calculations live in TransformerDetail.svelte.
           <div class:selected={i===selectedToken} class="embedding-token token-row" on:mouseenter={() => selectToken(i)} on:focus={() => selectToken(i)}>
             <span class="time-label">{i===last?'t':'t−'+(last-i)}</span>
             <div class="token-vector vector"><UpstreamVectorCanvas data={token} colorScale="gray" active={i===selectedToken}/></div>
-            <span class="dim-label">8D</span>
+            <span class="dim-label">{token.length}D</span>
           </div>
         {/each}
       </div>

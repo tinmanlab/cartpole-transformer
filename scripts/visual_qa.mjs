@@ -1946,6 +1946,21 @@ async function runModelLoadFailureFixture(browser) {
 
   await page.screenshot({path:path.join(outDir,'network-fixture-toy-fallback-overview.jpg'),type:'jpeg',quality:82,fullPage:true});
 
+  // Two more reachable places that still described the (inactive) learned
+  // model, same audited wrong-concept family as the panels above: the
+  // Pipeline panel title claimed a "1 block" that toy fallback truthfully
+  // has none of, and every embedding token glyph hardcoded "8D" although
+  // the real toy token is 4D (STATE_FIELDS). Both are label-only fixes;
+  // the token-dimension label now reads the actual token length instead of
+  // a hardcoded constant.
+  const panelTitle=await page.locator('.pipeline-shell .panel-head strong').innerText().catch(()=>'');
+  if(/1 block/.test(panelTitle)) pushError('model-load-failure fixture: Pipeline panel title still claims "1 block" in toy fallback, got '+JSON.stringify(panelTitle));
+  if(!/fixed attention/i.test(panelTitle)) pushError('model-load-failure fixture: Pipeline panel title does not name the actual fixed-attention toy model, got '+JSON.stringify(panelTitle));
+  const tokenDimLabels=await page.locator('.embedding-overview .dim-label').allInnerTexts();
+  if(tokenDimLabels.length===0 || tokenDimLabels.some(t=>t.trim()!=='4D')) {
+    pushError('model-load-failure fixture: toy embedding token dimension labels are not all "4D" '+JSON.stringify(tokenDimLabels));
+  }
+
   const stageCases=[
     ['.embedding-overview','Embedding'],
     ['.qkv-overview','Q · K · V'],
@@ -1977,6 +1992,17 @@ async function runModelLoadFailureFixture(browser) {
   // valid, and nothing may read as NaN/undefined.
   await page.locator('.attention-overview').click();
   await page.waitForTimeout(150);
+
+  // The upstream QK^T score-matrix heading always said "Dot product ·
+  // QKᵀ/√d" even though the passed `scores` in toy fallback already has the
+  // fixed +1.20*j bias baked in -- same wrong-concept family as the panels
+  // above. It must now explicitly name the bias; the normal learned label
+  // (no bias) is covered separately by the existing runDesktop suite.
+  const scoreCalcTitle=await page.locator('.attention-expansion .calc-title').first().innerText().catch(()=>'');
+  if(!/bias/i.test(scoreCalcTitle) || !/1\.20|×j/.test(scoreCalcTitle)) {
+    pushError('model-load-failure fixture: score-matrix heading does not disclose the fixed bias baked into toy scores, got '+JSON.stringify(scoreCalcTitle));
+  }
+
   const keyButtons=page.locator('.attention-cell-trace .trace-key-button');
   const keyCount=await keyButtons.count();
   const lastIndex=keyCount-1;
