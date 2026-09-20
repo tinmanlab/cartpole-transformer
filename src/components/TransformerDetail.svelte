@@ -66,6 +66,12 @@ Uses visualization primitives adapted from poloclub/transformer-explainer
   $: isLearned = result.modelType === 'learned-tiny-transformer';
   $: hiddenSelected = result.hidden?.[selectedToken] || (isLearned ? residual1Selected : contextSelected);
   $: stageInfo = isLearned ? learnedStageInfo : toyStageInfo;
+  // Action always reads the final/last token (result.hidden?.[last] or
+  // result.context, both hardcoded "· t" in the action-detail markup below)
+  // regardless of which token Key selection last set selectedToken to --
+  // the shared header must label the token it actually consumes, not the
+  // unrelated Key persisted from a prior Calculation-stage selection.
+  $: eyebrowToken = expandedStage === 'action' ? last : selectedToken;
 
   function liveText(values, count=4) {
     return values.slice(0,count).map(v=>Number(v).toFixed(3)).join(' ');
@@ -76,7 +82,7 @@ Uses visualization primitives adapted from poloclub/transformer-explainer
 <section class="transformer-detail-wide">
   <header class="detail-head">
     <div>
-      <div class="eyebrow">{source === 'frozen' ? 'FROZEN TENSOR DETAIL' : 'LIVE TENSOR DETAIL'} · {selectedToken===last?'t':'t−'+(last-selectedToken)}{isLearned ? '' : ' · TOY FALLBACK (model failed to load)'}</div>
+      <div class="eyebrow">{source === 'frozen' ? 'FROZEN TENSOR DETAIL' : 'LIVE TENSOR DETAIL'} · {eyebrowToken===last?'t':'t−'+(last-eyebrowToken)}{isLearned ? '' : ' · TOY FALLBACK (model failed to load)'}</div>
       <h2>{expandedStage === 'embedding' ? 'Embedding' : expandedStage === 'qkv' ? 'Q · K · V' : expandedStage === 'attention' ? 'Self Attention' : expandedStage === 'block' ? (isLearned ? 'Residual + MLP' : 'Context (pass-through)') : 'Action head'}</h2>
       <p>{stageInfo[expandedStage]}</p>
     </div>

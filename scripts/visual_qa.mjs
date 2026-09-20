@@ -1783,6 +1783,38 @@ async function runFollowGuideSelectionRoundtrip(browser, width, label, keyIndex,
   if(dimHighlightFont===null||dimHighlightFont<14) pushError(label+': selected-dim readout is below the 14px essential-text floor, got '+dimHighlightFont);
   await page.screenshot({path:path.join(outDir,label+'-nondefault-detail.jpg'),type:'jpeg',quality:82,fullPage:true});
 
+  // 1b) Provenance: Key now intentionally persists across stages, so with a
+  // non-last Key still selected, opening the Action full detail must label
+  // its header with the last token ("t") -- what Action actually reads
+  // (hidden[last]/context[last]) -- not the persisted Key. The stored Key
+  // itself must be untouched by merely opening Action, and Calculation must
+  // show the exact same selection on return.
+  await page.getByRole('button',{name:'close Transformer detail'}).click();
+  await page.waitForTimeout(60);
+  await page.getByRole('tab',{name:/Action/}).click();
+  await page.waitForTimeout(100);
+  await page.getByRole('button',{name:/open full Action head detail/}).click();
+  await page.waitForTimeout(150);
+  const actionEyebrow=await page.locator('.transformer-detail-wide .detail-head .eyebrow').innerText().catch(()=>'');
+  const actionEyebrowSegments=actionEyebrow.split('·').map(s=>s.trim());
+  if(!actionEyebrowSegments.includes('t')) {
+    pushError(label+': Action full-detail header does not label the last token "t" while a non-last Key is selected, got '+JSON.stringify(actionEyebrow));
+  }
+  const guideKeyAfterActionOpen=await page.evaluate(()=>Number(document.querySelector('.follow-decision-guide .fd-key-select button.active')?.dataset.index));
+  if(guideKeyAfterActionOpen!==chosenKey) pushError(label+': opening Action full detail changed the guide\'s stored Key '+JSON.stringify({expected:chosenKey,got:guideKeyAfterActionOpen}));
+  await page.getByRole('button',{name:'close Transformer detail'}).click();
+  await page.waitForTimeout(60);
+  await page.getByRole('tab',{name:/Calculation/}).click();
+  await page.waitForTimeout(100);
+  await openButton.click();
+  await page.waitForTimeout(120);
+  trace=await readTrace();
+  if(trace.col!==chosenKey||trace.dim!==chosenDim) pushError(label+': selection did not return to the original Key/dim after visiting Action '+JSON.stringify({trace,chosenKey,chosenDim}));
+  await page.getByRole('button',{name:'close Transformer detail'}).click();
+  await page.waitForTimeout(60);
+  await openButton.click();
+  await page.waitForTimeout(120);
+
   // 2) Change Key/dim IN the shared drawer; the guide (same App state) must
   // reflect it immediately -- this is the two-way half of the round trip.
   const altKey=chosenKey===0?lastIndex:0;
