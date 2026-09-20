@@ -30,6 +30,7 @@
   let selectedToken = N - 1;
   let selectedRow = N - 1;
   let selectedCol = N - 1;
+  let selectedDim = 0;
   let expandedStage = null;
 
   let selectedVisionFrame = VISION_SEQUENCE_LENGTH - 1;
@@ -286,6 +287,7 @@
     selectedToken = N - 1;
     selectedRow = N - 1;
     selectedCol = N - 1;
+    selectedDim = 0;
     selectedVisionFrame = VISION_SEQUENCE_LENGTH - 1;
     selectedFusionToken = VISION_SEQUENCE_LENGTH * 2 - 1;
 
@@ -311,6 +313,20 @@
     selectedToken = c;
   }
 
+  // Guide-owned Key/dim selectors: while the guide is open, Query stays
+  // locked to the last token (see lockQuery on TransformerDetail below), so
+  // only Key/dim can move -- both are App state so the guide's own buttons
+  // and the shared full-detail drawer read/write the exact same selection.
+  function selectKey(i) {
+    selectedRow = N - 1;
+    selectedCol = i;
+    selectedToken = i;
+  }
+
+  function selectDim(d) {
+    selectedDim = d;
+  }
+
   function reset() {
     state = resetState((Math.random()-.5)*.09);
     const initial = stateArray(state);
@@ -326,6 +342,7 @@
     selectedToken = N - 1;
     selectedRow = N - 1;
     selectedCol = N - 1;
+    selectedDim = 0;
     selectedVisionFrame = VISION_SEQUENCE_LENGTH - 1;
     selectedFusionToken = VISION_SEQUENCE_LENGTH * 2 - 1;
 
@@ -359,6 +376,13 @@
     followDecisionSeq += 1;
     followDecisionOpen = true;
     expandedStage = null;
+    // A new decision event deliberately resets Query/Key/dim to the guide's
+    // fixed last token -- it never inherits a selection left over from a
+    // previous event or from free browsing outside the guide.
+    selectedToken = N - 1;
+    selectedRow = N - 1;
+    selectedCol = N - 1;
+    selectedDim = 0;
   }
 
   function closeFollowDecision() {
@@ -368,6 +392,7 @@
     selectedToken = N - 1;
     selectedRow = N - 1;
     selectedCol = N - 1;
+    selectedDim = 0;
   }
 
   onMount(() => {
@@ -510,8 +535,10 @@
                 currentTick={syncTick}
                 {lastDecisionTrace}
                 {status}
-                onSelectToken={selectToken}
-                onSelectAttention={selectAttention}
+                selectedKey={selectedCol}
+                {selectedDim}
+                onSelectKey={selectKey}
+                onSelectDim={selectDim}
                 onExpandedStageChange={(stage)=>expandedStage=stage}
                 onApplyStep={stepOnce}
                 onClose={closeFollowDecision}
@@ -617,9 +644,12 @@
       {selectedCol}
       {expandedStage}
       source={followDecisionOpen && followDecisionSnapshot ? 'frozen' : 'live'}
+      lockQuery={followDecisionOpen}
+      highlightDim={selectedDim}
       onClose={()=>expandedStage=null}
       onSelectToken={selectToken}
       onSelectAttention={selectAttention}
+      onSelectDim={selectDim}
     />
   {/if}
 

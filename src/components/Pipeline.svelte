@@ -153,7 +153,7 @@ Detailed calculations live in TransformerDetail.svelte.
     </button>
 
     <button type="button" class:expanded={expandedStage==='block'} class="stage block-overview" on:click={() => onExpandedStageChange(expandedStage==='block'?null:'block')}>
-      <div class="stage-head"><b>4</b><span>Transformer block</span><small>{isLearned ? 'residual + MLP' : 'none in toy — context passes through'}</small></div>
+      <div class="stage-head"><b>4</b><span>{isLearned ? 'Transformer block' : 'Context (pass-through)'}</span><small>{isLearned ? 'residual + MLP' : 'no Wₒ/residual/LN/MLP in toy'}</small></div>
       <div class="block-live">
         <div class="block-op">context</div>
         <span>→</span>

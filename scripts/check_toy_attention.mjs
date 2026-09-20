@@ -6,11 +6,104 @@ const assert = (ok, message) => {
 };
 const close = (a, b, eps = 1e-9) => Math.abs(a - b) <= eps;
 
+// Independent re-implementation of the PRE-FIX toy fallback exactly as it
+// shipped (git 76c0b84, src/lib/attention.js before this branch): a single
+// opaque `scores = dot(Q,K)/sqrt(d) + 1.20*j`, no preBiasScores/scoreBias
+// decomposition existed at all. Kept deliberately separate from
+// src/lib/attention.js (own WQ/WK/normalize copies) so this is a true
+// external baseline, not a reflection of the code under test.
+const NATIVE_WQ = [
+  [0.10, 0.05, 1.00, 0.42],
+  [0.00, 0.12, 0.35, 0.95],
+  [0.10, 0.25, 0.18, 0.35],
+  [0.25, 0.10, 0.08, 0.10],
+];
+const NATIVE_WK = [
+  [0.08, 0.05, 0.95, 0.40],
+  [0.00, 0.10, 0.30, 0.92],
+  [0.08, 0.24, 0.20, 0.32],
+  [0.24, 0.08, 0.05, 0.12],
+];
+const NATIVE_SCALE = [2.4, 3.0, 0.38, 3.5];
+const NATIVE_ACTION_WEIGHTS = [1.50, 0.50, 8.00, 3.00];
+
+function nativeMatVec(M, v) {
+  return M.map(row => row.reduce((sum, w, i) => sum + w * v[i], 0));
+}
+function nativeSoftmaxRow(xs) {
+  const finite = xs.map(x => Number.isFinite(x) ? x : -1e9);
+  const max = Math.max(...finite);
+  const exp = finite.map(x => Math.exp(x - max));
+  const denom = exp.reduce((a, b) => a + b, 0);
+  return exp.map(x => x / denom);
+}
+
+// This function has NO decomposition: it returns only `scores` (already
+// biased) and `weights`/`actionScore`, exactly the shape the pre-fix code
+// exposed to the UI -- there is no separate pre-bias/bias field to read,
+// which is precisely the fabrication bug F2 fixed (AttentionCellTrace had
+// no source of truth for "dot/scale" alone).
+function nativePreFixToyAttention(history) {
+  const tokens = history.map(state => state.map((x, i) => x / NATIVE_SCALE[i]));
+  const q = tokens.map(v => nativeMatVec(NATIVE_WQ, v));
+  const k = tokens.map(v => nativeMatVec(NATIVE_WK, v));
+  const v = tokens.map(t => [...t]);
+  const scores = q.map((qi, i) =>
+    k.map((kj, j) => {
+      const dotSum = qi.reduce((sum, x, d) => sum + x * kj[d], 0);
+      return dotSum / Math.sqrt(qi.length) + 1.20 * j;
+    })
+  );
+  const raw = scores.map((row, i) => row.map((val, j) => (j > i ? -Infinity : val)));
+  const weights = raw.map(nativeSoftmaxRow);
+  const last = weights.length - 1;
+  const context = Array.from({ length: v[0].length }, (_, d) =>
+    weights[last].reduce((sum, w, j) => sum + w * v[j][d], 0)
+  );
+  const actionScore = context.reduce((sum, x, d) => sum + x * NATIVE_ACTION_WEIGHTS[d], 0);
+  return { scores, weights, actionScore, force: forceFromScore(actionScore) };
+}
+
+function assertMatrixClose(a, b, label, eps = 1e-9) {
+  for (let i = 0; i < a.length; i++) {
+    for (let j = 0; j < a[i].length; j++) {
+      assert(close(a[i][j], b[i][j], eps), `${label} mismatch at [${i}][${j}]: ${a[i][j]} vs ${b[i][j]}`);
+    }
+  }
+}
+
+// Compare src/lib/attention.js against the independent pre-fix native
+// baseline across several varied histories (not just one fixture): full
+// scores matrix, full weights matrix, actionScore and force must all match
+// exactly. This is what "byte-identical" actually means -- not one scalar.
+const varietyHistories = [
+  Array.from({ length: 8 }, () => [0, 0, 0.045, 0]),
+  Array.from({ length: 8 }, (_, i) => [0.01 * i, -0.02 + 0.005 * i, 0.03 - 0.003 * i, 0.04 - 0.002 * i]),
+  Array.from({ length: 8 }, (_, i) => [-0.5 + 0.1 * i, 0.2 * Math.sin(i), -0.1 * i * i * 0.01, 0.05 - 0.01 * i]),
+];
+for (const [idx, hist] of varietyHistories.entries()) {
+  const fixed = runAttention(hist);
+  const native = nativePreFixToyAttention(hist);
+  assertMatrixClose(fixed.scores, native.scores, `variety[${idx}].scores`);
+  assertMatrixClose(fixed.weights, native.weights, `variety[${idx}].weights`, 1e-8);
+  assert(close(fixed.actionScore, native.actionScore, 1e-8), `variety[${idx}] actionScore mismatch: ${fixed.actionScore} vs ${native.actionScore}`);
+  assert(close(forceFromScore(fixed.actionScore), native.force, 1e-8), `variety[${idx}] force mismatch`);
+
+  // Demonstrate the actual bug F2 fixed: the pre-fix baseline structurally
+  // has no way to decompose `scores` back into dot/scale vs. the fixed
+  // bias -- there was no preBiasScores/scoreBias field to read, so a UI
+  // built against it (AttentionCellTrace) could only ever display the
+  // already-biased number labeled as if it were the raw dot/scale score.
+  assert(native.preBiasScores === undefined, `variety[${idx}]: native baseline unexpectedly exposes preBiasScores (should not)`);
+  assert(native.scoreBias === undefined, `variety[${idx}]: native baseline unexpectedly exposes scoreBias (should not)`);
+  assert(Array.isArray(fixed.preBiasScores) && Array.isArray(fixed.scoreBias), `variety[${idx}]: current code must expose the decomposition the native baseline never had`);
+}
+
 // Fixture reproduced from the audited native repro: 8 identical tokens
 // [x=0, xDot=0, theta=0.045, thetaDot=0], j=7 gives
 // dot=0.015355782548476452, scale=2, pre-bias=0.007677891274238226,
 // bias=8.4, score=8.407677891274238.
-const history = Array.from({ length: 8 }, () => [0, 0, 0.045, 0]);
+const history = varietyHistories[0];
 const out = runAttention(history);
 
 assert(out.modelType === 'transparent-toy', 'wrong model type');

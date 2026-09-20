@@ -11,9 +11,14 @@ weights/weightedValueContributions/perTokenContext/actionScore) — no model or
 softmax math is reimplemented here. Query is fixed to the latest token; Key
 and value-dimension are selectable, each showing one real number in place
 (score/mask/softmax stay visible; full per-dimension product/contribution/
-context vectors sit behind native <details>, collapsed by default). The full
-Self Attention / Action head drawer stays a single advanced instance opened
-above (not copied into this guide).
+context vectors sit behind native <details>, collapsed by default). Key/dim
+selection lives in App (selectedCol/selectedDim), not locally, so opening the
+full Self Attention / Action head drawer (a single advanced instance opened
+above, not copied into this guide) always shows the exact same cell, and any
+Key/dim change made in that drawer round-trips back here too. While this
+guide is open the drawer's own Query control is locked to the same last
+token (App's lockQuery) -- normal browsing outside the guide keeps free
+Query/mask exploration.
 See docs/learning-suite.md for the four-stage contract this follows.
 -->
 <script>
@@ -28,8 +33,13 @@ See docs/learning-suite.md for the four-stage contract this follows.
   export let controllerForce = 0;
   export let lastDecisionTrace = null;
   export let status = 'balancing';
-  export let onSelectToken = () => {};
-  export let onSelectAttention = () => {};
+  // Key/dim are owned by App (same single source of truth the shared
+  // full-detail drawer reads/writes) so a selection made here or in the
+  // reopened drawer round-trips both ways without a second store.
+  export let selectedKey = 0;
+  export let selectedDim = 0;
+  export let onSelectKey = () => {};
+  export let onSelectDim = () => {};
   export let onExpandedStageChange = () => {};
   export let onApplyStep = () => {};
   export let onClose = () => {};
@@ -59,14 +69,6 @@ See docs/learning-suite.md for the four-stage contract this follows.
   let selectedInputToken = 0;
   let selectedInputTokenInit = false;
   $: if (!selectedInputTokenInit && result) { selectedInputToken = lastIndex; selectedInputTokenInit = true; }
-
-  let selectedKey = 0;
-  let selectedKeyInit = false;
-  $: if (!selectedKeyInit && result) { selectedKey = lastIndex; selectedKeyInit = true; }
-
-  let selectedDim = 0;
-  let selectedDimInit = false;
-  $: if (!selectedDimInit && result) { selectedDim = 0; selectedDimInit = true; }
 
   function label(i) {
     return i === lastIndex ? 't' : 't−' + (lastIndex - i);
@@ -117,24 +119,21 @@ See docs/learning-suite.md for the four-stage contract this follows.
   // used to recreate the exact detached/vertical-overload problem this guide
   // fixes. The drawer only opens when the user explicitly clicks the
   // full-detail button below (Calculation/Action), and closes again on any
-  // stage change so it doesn't linger behind a later stage.
+  // stage change so it doesn't linger behind a later stage. It also never
+  // touches App's selectedKey/selectedDim -- those are App-owned and persist
+  // across stage nav, close/reopen and a physical step; only an explicit new
+  // event resets them (see App's openFollowDecision).
   function goStage(next) {
     stage = next;
-    onSelectToken(lastIndex);
     onExpandedStageChange(null);
   }
 
-  // Opening the shared full-detail drawer must hand it the exact query/key
-  // the guide is currently showing -- otherwise the drawer falls back to
-  // App's own selectedRow/selectedCol (last query token by default) and
-  // silently shows a different cell than the one the guide's Calculation
-  // stage was just displaying.
+  // Opening the shared full-detail drawer: Query is already locked to
+  // lastIndex (App.lockQuery while the guide is open) and Key/dim are
+  // already the same App-owned selectedKey/selectedDim this stage displays,
+  // so the drawer opens on the exact cell the guide was just showing without
+  // a separate sync call here.
   function openFullDetail(kind) {
-    if (kind === 'attention') {
-      onSelectAttention(lastIndex, selectedKey);
-    } else if (kind === 'action') {
-      onSelectToken(lastIndex);
-    }
     onExpandedStageChange(kind);
   }
 
@@ -232,13 +231,13 @@ See docs/learning-suite.md for the four-stage contract this follows.
         <div class="fd-key-select" role="group" aria-label="select key token to inspect">
           <span class="fd-selector-label">Key</span>
           {#each weightsRow as _,i}
-            <button type="button" class:active={i===selectedKey} on:click={()=>selectedKey=i}>{label(i)}</button>
+            <button type="button" class:active={i===selectedKey} on:click={()=>onSelectKey(i)}>{label(i)}</button>
           {/each}
         </div>
         <div class="fd-dim-select" role="group" aria-label="select value dimension">
           <span class="fd-selector-label">dim</span>
           {#each Array(dimCount) as _,d}
-            <button type="button" class:active={d===selectedDim} on:click={()=>selectedDim=d}>d{d}</button>
+            <button type="button" class:active={d===selectedDim} on:click={()=>onSelectDim(d)}>d{d}</button>
           {/each}
         </div>
       </div>

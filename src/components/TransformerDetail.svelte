@@ -17,9 +17,12 @@ Uses visualization primitives adapted from poloclub/transformer-explainer
   export let selectedCol = 7;
   export let expandedStage = null;
   export let source = 'live';
+  export let lockQuery = false;
+  export let highlightDim = -1;
   export let onClose = () => {};
   export let onSelectToken = () => {};
   export let onSelectAttention = () => {};
+  export let onSelectDim = () => {};
 
   const names = ['x','ẋ','θ','θ̇'];
   const learnedStageInfo = {
@@ -74,7 +77,7 @@ Uses visualization primitives adapted from poloclub/transformer-explainer
   <header class="detail-head">
     <div>
       <div class="eyebrow">{source === 'frozen' ? 'FROZEN TENSOR DETAIL' : 'LIVE TENSOR DETAIL'} · {selectedToken===last?'t':'t−'+(last-selectedToken)}{isLearned ? '' : ' · TOY FALLBACK (model failed to load)'}</div>
-      <h2>{expandedStage === 'embedding' ? 'Embedding' : expandedStage === 'qkv' ? 'Q · K · V' : expandedStage === 'attention' ? 'Self Attention' : expandedStage === 'block' ? 'Residual + MLP' : 'Action head'}</h2>
+      <h2>{expandedStage === 'embedding' ? 'Embedding' : expandedStage === 'qkv' ? 'Q · K · V' : expandedStage === 'attention' ? 'Self Attention' : expandedStage === 'block' ? (isLearned ? 'Residual + MLP' : 'Context (pass-through)') : 'Action head'}</h2>
       <p>{stageInfo[expandedStage]}</p>
     </div>
     <button type="button" on:click={onClose} aria-label="close Transformer detail">×</button>
@@ -144,14 +147,17 @@ Uses visualization primitives adapted from poloclub/transformer-explainer
         weights={result.weights}
         {selectedRow}
         {selectedCol}
-        onSelect={(r,c)=>onSelectAttention(r,c)}
+        onSelect={(r,c)=>onSelectAttention(lockQuery ? selectedRow : r, c)}
       />
       <AttentionCellTrace
         {result}
         {selectedRow}
         {selectedCol}
         {source}
-        onSelect={(r,c)=>onSelectAttention(r,c)}
+        {lockQuery}
+        {highlightDim}
+        onSelect={(r,c)=>onSelectAttention(lockQuery ? selectedRow : r, c)}
+        {onSelectDim}
       />
     </div>
   {:else if expandedStage === 'block'}
