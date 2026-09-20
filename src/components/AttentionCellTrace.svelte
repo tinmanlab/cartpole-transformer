@@ -13,6 +13,7 @@ Rendering primitives are adapted from Polo Club Transformer Explainer.
   export let selectedRow = 0;
   export let selectedCol = 0;
   export let onSelect = () => {};
+  export let source = 'live';
 
   let root;
   let lastKey = '';
@@ -76,10 +77,11 @@ Rendering primitives are adapted from Polo Club Transformer Explainer.
   data-weight={weight}
   data-v0={v[0]}
   data-contribution0={contribution[0]}
+  data-source={source}
 >
   <header class="trace-head">
     <div>
-      <div class="eyebrow">SELECTED ATTENTION CELL · ACTUAL LIVE ARITHMETIC</div>
+      <div class="eyebrow">SELECTED ATTENTION CELL · ACTUAL {source === 'frozen' ? 'FROZEN' : 'LIVE'} ARITHMETIC</div>
       <h3>Q {label(selectedRow)} × K {label(selectedCol)}</h3>
       <p>matrix 한 칸이 어떤 계산을 뜻하는지 이 경로만 따라가면 됩니다.</p>
     </div>

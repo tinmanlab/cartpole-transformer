@@ -250,7 +250,9 @@ async function auditLayout(page, name, { minFont=9.75 } = {}) {
     // above that still covers every other compact/eyebrow label in the app.
     const coreFontSelectors='.state-readout span,.action-readout span,.vision-hidden-state,.sim-controls button,'+
       '.steps b,.steps p,.claim,.qkv-key,.panel-head small,.stage-head>span,.stage-head>small,.attention-read,.attention-read strong,.force-value,'+
-      '.fd-badge,.fd-stages button,.fd-content p,.fd-values span,.fd-values b,.fd-result-tick,.fd-ba-label,.fd-details summary,.follow-decision-entry';
+      '.fd-badge,.fd-stages button,.fd-content p,.fd-values span,.fd-values b,.fd-result-tick,.fd-ba-label,.fd-details summary,.follow-decision-entry,'+
+      '.fd-repo-row,.fd-repo-row span,.fd-token-select button,.fd-key-select button,.fd-dim-select button,.fd-selector-label,.fd-weight-bar-label,.fd-weight-bar-value,'+
+      '.fd-calc-step b,.fd-calc-step code,.fd-caveat,.fd-vector-details summary,.fd-open-detail';
     const coreTextTooSmall=[];
     for(const el of [...document.querySelectorAll(coreFontSelectors)]){
       if(!visible(el)) continue;
@@ -410,6 +412,125 @@ async function runResponsiveLayoutAudit(browser, width, label) {
   if(await pause.count()) await pause.click();
   await auditLayout(page,label+'-state-overview');
 
+  // Follow-one-decision guide: exercise the self-contained Calculation trace
+  // (weight bars, key selector, numeric steps) at every audited width so it
+  // never relies on a wide-only layout, and keep a representative screenshot
+  // at each width including the narrowest (320) and widest (1440) targets.
+  const followBtn=page.getByRole('button',{name:'한 판단 따라가기 · Follow one decision'});
+  if(await followBtn.isEnabled().catch(()=>false)){
+    await followBtn.click();
+    await page.waitForTimeout(100);
+    await auditLayout(page,label+'-follow-decision-input');
+    await page.getByRole('tab',{name:/Calculation/}).click();
+    await page.waitForTimeout(120);
+    await auditLayout(page,label+'-follow-decision-calculation');
+    const auditAdvancedOpen=await page.locator('.transformer-detail-wide').count();
+    if(auditAdvancedOpen!==0) pushError(label+': advanced detail drawer auto-opened on Calculation entry (should stay closed until explicitly opened)');
+    const auditVectorDetailsOpen=await page.locator('.follow-decision-guide .fd-vector-details').evaluateAll(els=>els.some(el=>el.open)).catch(()=>false);
+    if(auditVectorDetailsOpen) pushError(label+': full vector details are expanded by default in the Calculation screenshot (should be collapsed)');
+    await page.screenshot({path:path.join(outDir,label+'-follow-decision.jpg'),type:'jpeg',quality:74,fullPage:true});
+    await page.getByRole('tab',{name:/Action/}).click();
+    await page.waitForTimeout(120);
+    await auditLayout(page,label+'-follow-decision-action');
+    const auditActionAdvancedOpen=await page.locator('.transformer-detail-wide').count();
+    if(auditActionAdvancedOpen!==0) pushError(label+': advanced detail drawer auto-opened on Action entry (should stay closed until explicitly opened)');
+    const auditActionVectorDetailsOpen=await page.locator('.follow-decision-guide .fd-vector-details').evaluateAll(els=>els.some(el=>el.open)).catch(()=>false);
+    if(auditActionVectorDetailsOpen) pushError(label+': full action-product details are expanded by default in the Action screenshot (should be collapsed)');
+
+    // Per-tile numeric readout check: each Action tile's actual value text
+    // (not just its presence in the DOM/dataset) must render as one complete,
+    // single-line numeric token inside its own tile, never clipped, never
+    // colliding with its own label, and never bleeding into a neighboring
+    // tile — at whatever precision the component actually displays.
+    const actionTiles=await page.locator('.follow-decision-guide .fd-action-values span').evaluateAll(spans=>spans.map(span=>{
+      const tile=span.getBoundingClientRect();
+      const labelEl=span.querySelector('b');
+      const valueEl=span.querySelector('output');
+      const labelRect=labelEl?labelEl.getBoundingClientRect():null;
+      let valueRects=[];
+      if(valueEl){
+        const range=document.createRange();
+        range.selectNodeContents(valueEl);
+        valueRects=Array.from(range.getClientRects());
+      }
+      const cs=valueEl?getComputedStyle(valueEl):null;
+      const r=rect=>rect&&{left:rect.left,right:rect.right,top:rect.top,bottom:rect.bottom};
+      return {
+        labelText:labelEl?labelEl.textContent.trim():'',
+        valueText:valueEl?valueEl.textContent.trim():'',
+        tile:r(tile),
+        label:r(labelRect),
+        value:valueRects.map(r),
+        fontSize:cs?parseFloat(cs.fontSize):0
+      };
+    }));
+    if(actionTiles.length!==4) pushError(label+': Action stage does not render exactly 4 readout tiles, found '+actionTiles.length);
+    const intersects=(a,b)=>a && b && a.left<b.right-0.5 && a.right>b.left+0.5 && a.top<b.bottom-0.5 && a.bottom>b.top+0.5;
+    for(const t of actionTiles){
+      if(!t.valueText){ pushError(label+': Action tile "'+t.labelText+'" has an empty numeric value'); continue; }
+      if(t.value.length!==1){
+        pushError(label+': Action tile "'+t.labelText+'" numeric value "'+t.valueText+'" does not render as one line (client rects: '+t.value.length+')');
+        continue;
+      }
+      const v=t.value[0];
+      if(t.fontSize<14) pushError(label+': Action tile "'+t.labelText+'" numeric text is smaller than 14px ('+t.fontSize.toFixed(1)+'px)');
+      if(v.left<t.tile.left-0.5 || v.right>t.tile.right+0.5 || v.bottom>t.tile.bottom+0.5){
+        pushError(label+': Action tile "'+t.labelText+'" numeric value escapes its own tile bounds '+JSON.stringify({tile:t.tile,value:v}));
+      }
+      if(intersects(v,t.label)){
+        pushError(label+': Action tile "'+t.labelText+'" numeric value overlaps its own label');
+      }
+      for(const other of actionTiles){
+        if(other===t) continue;
+        const ownTile=other.tile.left>=t.tile.left-0.5 && other.tile.right<=t.tile.right+0.5 && other.tile.top>=t.tile.top-0.5 && other.tile.bottom<=t.tile.bottom+0.5;
+        if(!ownTile && intersects(v,other.tile)){
+          pushError(label+': Action tile "'+t.labelText+'" numeric value overlaps neighboring tile "'+other.labelText+'"');
+        }
+      }
+    }
+    const tileByLabel=text=>actionTiles.find(t=>t.labelText.includes(text));
+    const scoreTile=tileByLabel('action score');
+    const forceTile=tileByLabel('10·tanh(score)');
+    const commandTile=tileByLabel('force command');
+    const tickTile=tileByLabel('captured tick');
+    if(!scoreTile || !forceTile || !commandTile || !tickTile){
+      pushError(label+': Action stage is missing one of the 4 expected readout tiles '+JSON.stringify(actionTiles.map(t=>t.labelText)));
+    } else {
+      // Derive the expected score/force from the full-precision native
+      // arithmetic already exposed on the Action-head detail step
+      // (data-action-score-check = actionProductsSum + actionBias, the same
+      // un-rounded number the component feeds into forceFromScore), rather
+      // than re-deriving force from the tile's own already-rounded 6dp
+      // display text — that would fail near a rounding boundary even when
+      // both displayed values are individually correct.
+      const trueScoreStep=page.locator('.follow-decision-guide .fd-calc-step[data-action-score-check]');
+      const trueScoreAttr=(await trueScoreStep.count())?await trueScoreStep.getAttribute('data-action-score-check'):null;
+      if(trueScoreAttr!==null){
+        const trueScore=Number(trueScoreAttr);
+        const expectedScoreText=trueScore.toFixed(6);
+        const expectedForceText=(10*Math.tanh(trueScore)).toFixed(2);
+        if(scoreTile.valueText!==expectedScoreText){
+          pushError(label+': Action tile "action score" shows '+scoreTile.valueText+' but the true native score is '+expectedScoreText);
+        }
+        if(forceTile.valueText!==expectedForceText){
+          pushError(label+': Action tile "10·tanh(score) [N]" shows '+forceTile.valueText+' but the true native score '+expectedScoreText+' implies '+expectedForceText);
+        }
+        if(commandTile.valueText!==expectedForceText){
+          pushError(label+': Action tile "force command [N]" shows '+commandTile.valueText+' but the true native score '+expectedScoreText+' implies '+expectedForceText);
+        }
+      }
+      if(!Number.isFinite(Number(tickTile.valueText))) pushError(label+': Action tile "captured tick" is not a readable number, got '+tickTile.valueText);
+      if(!Number.isFinite(Number(scoreTile.valueText))) pushError(label+': Action tile "action score" is not a readable number, got '+scoreTile.valueText);
+      if(!Number.isFinite(Number(forceTile.valueText))) pushError(label+': Action tile "10·tanh(score) [N]" is not a readable number, got '+forceTile.valueText);
+      if(!Number.isFinite(Number(commandTile.valueText))) pushError(label+': Action tile "force command [N]" is not a readable number, got '+commandTile.valueText);
+    }
+
+    await page.screenshot({path:path.join(outDir,label+'-follow-decision-action.jpg'),type:'jpeg',quality:74,fullPage:true});
+    const closeGuide=page.getByRole('button',{name:'close follow-one-decision guide'});
+    if(await closeGuide.count()) await closeGuide.click();
+    await page.waitForTimeout(80);
+  }
+
   for(const [name,sel] of [
     ['embedding','.embedding-overview'],
     ['qkv','.qkv-overview'],
@@ -523,6 +644,11 @@ async function runDesktop(browser) {
       if(traceCount!==1) {
         pushError('attention trace missing or duplicated: '+traceCount);
       } else {
+        const liveSource=await trace.getAttribute('data-source');
+        if(liveSource!=='live') pushError('attention trace: default (outside Follow-one-decision) source is not "live", got '+JSON.stringify(liveSource));
+        const liveEyebrow=await trace.locator('.eyebrow').innerText();
+        if(!liveEyebrow.includes('LIVE')) pushError('attention trace: default eyebrow does not say LIVE arithmetic, got '+JSON.stringify(liveEyebrow));
+
         const qButtons=trace.locator('.trace-query-button');
         const kButtons=trace.locator('.trace-key-button');
         const countButtons=await qButtons.count();
@@ -663,19 +789,230 @@ async function runDesktop(browser) {
   const tickAtOpen=Number(await page.locator('main').getAttribute('data-sync-tick'));
   if(!Number.isFinite(capturedTick) || capturedTick!==tickAtOpen) pushError('follow-decision guide: badge captured tick does not match plant tick at open');
 
+  // F4: real tablist keyboard support (ArrowRight/Home/End) with coherent
+  // selected/focus/tabpanel relationships, not just mouse clicks.
+  const fdTabs=page.locator('.follow-decision-guide [role="tab"]');
+  const fdTabCount=await fdTabs.count();
+  await fdTabs.first().focus();
+  await page.keyboard.press('ArrowRight');
+  await page.waitForTimeout(80);
+  const afterArrowSelected=await fdTabs.nth(1).getAttribute('aria-selected');
+  const afterArrowFocused=await fdTabs.nth(1).evaluate(el=>el===document.activeElement);
+  if(afterArrowSelected!=='true' || !afterArrowFocused) {
+    pushError('follow-decision guide: ArrowRight on tablist did not select+focus the next tab '+JSON.stringify({afterArrowSelected,afterArrowFocused}));
+  }
+  const panelLabelledBy=await page.locator('.follow-decision-guide [role="tabpanel"]').getAttribute('aria-labelledby');
+  if(panelLabelledBy!=='fd-tab-calculation') pushError('follow-decision guide: tabpanel aria-labelledby did not follow the ArrowRight-selected tab, got '+JSON.stringify(panelLabelledBy));
+  await page.keyboard.press('End');
+  await page.waitForTimeout(80);
+  const afterEndSelected=await fdTabs.nth(fdTabCount-1).getAttribute('aria-selected');
+  if(afterEndSelected!=='true') pushError('follow-decision guide: End on tablist did not select the last tab');
+  await page.keyboard.press('Home');
+  await page.waitForTimeout(80);
+  const afterHomeSelected=await fdTabs.nth(0).getAttribute('aria-selected');
+  if(afterHomeSelected!=='true') pushError('follow-decision guide: Home on tablist did not select the first (Input) tab');
+
+  // F4: compact repo-purpose row, not a new large header.
+  const repoRowText=await page.locator('.follow-decision-guide .fd-repo-row').innerText().catch(()=>'');
+  if(!/PPO/.test(repoRowText) || !/Transformer/.test(repoRowText) || !/Diffusion/.test(repoRowText)) {
+    pushError('follow-decision guide: missing compact repo-purpose row naming PPO/Transformer/DiffusionPolicy, got '+JSON.stringify(repoRowText));
+  }
+
   const entryInputValues=await readFdValues();
+
+  // F2: Input must expose actual history, not just the latest tick — picking
+  // an earlier history token changes the readout, and returning to the
+  // latest token (the identity used everywhere else) restores it exactly.
+  const inputTokenButtons=page.locator('.fd-token-select button');
+  const inputTokenCount=await inputTokenButtons.count();
+  if(inputTokenCount<2) pushError('follow-decision guide: Input history selector exposes fewer than 2 tokens, got '+inputTokenCount);
+  await inputTokenButtons.nth(0).click();
+  await page.waitForTimeout(80);
+  const earlyInputValues=await readFdValues();
+  if(JSON.stringify(earlyInputValues)===JSON.stringify(entryInputValues)) {
+    pushWarning('follow-decision guide: selecting the earliest history token produced identical values to the latest token');
+  }
+  await inputTokenButtons.nth(inputTokenCount-1).click();
+  await page.waitForTimeout(80);
+  const restoredInputValues=await readFdValues();
+  if(JSON.stringify(restoredInputValues)!==JSON.stringify(entryInputValues)) {
+    pushError('follow-decision guide: Input history identity did not restore after reselecting the latest token '+JSON.stringify({expected:entryInputValues,got:restoredInputValues}));
+  }
 
   await page.getByRole('tab',{name:/Calculation/}).click();
   await page.waitForTimeout(150);
+
+  // Precondition: entering Calculation must NOT auto-open the large advanced
+  // detail drawer — that recreates the exact detached/vertical-overload
+  // problem this guide fixes. The guide's own arithmetic below must already
+  // be fully readable with the drawer closed.
+  const advancedOpenOnCalcEntry=await page.locator('.transformer-detail-wide').count();
+  if(advancedOpenOnCalcEntry!==0) pushError('follow-decision guide: Calculation stage auto-opened the advanced detail drawer on entry (should stay closed until explicitly opened)');
+
+  // F1: the guide itself must show a self-contained, readable numeric trace
+  // for the selected key/dimension (query fixed to the latest/controller
+  // token) — not just prose pointing at the drawer above. Full per-dimension
+  // vectors are collapsed by default (native <details>), so the emptiness/
+  // change checks below read textContent (unaffected by collapse) rather
+  // than innerText (which only reflects rendered/visible text).
+  const calcStepCodeText=async () => page.locator('.follow-decision-guide .fd-calc-step > code').evaluateAll(els=>els.map(el=>el.textContent.trim()));
+  const fdKeyButtons=page.locator('.follow-decision-guide .fd-key-select button');
+  const fdKeyCount=await fdKeyButtons.count();
+  if(fdKeyCount<2) pushError('follow-decision guide: Calculation key selector exposes fewer than 2 keys, got '+fdKeyCount);
+  const fdDimButtons=page.locator('.follow-decision-guide .fd-dim-select button');
+  const fdDimCount=await fdDimButtons.count();
+  if(fdDimCount<2) pushError('follow-decision guide: Calculation value-dimension selector exposes fewer than 2 dimensions, got '+fdDimCount);
+  const fdBarCount=await page.locator('.follow-decision-guide .fd-weight-bar').count();
+  if(fdBarCount!==fdKeyCount) pushError('follow-decision guide: weight-bar count does not match key count '+JSON.stringify({bars:fdBarCount,keys:fdKeyCount}));
+
+  const vectorDetailsOpenByDefault=await page.locator('.follow-decision-guide .fd-vector-details').evaluateAll(els=>els.some(el=>el.open));
+  if(vectorDetailsOpenByDefault) pushError('follow-decision guide: full per-dimension vector/product details are expanded by default (should be collapsed native <details>)');
+
+  const calcStepTextsBefore=await calcStepCodeText();
+  if(calcStepTextsBefore.some(t=>!t)) pushError('follow-decision guide: a Calculation step shows no numeric value');
+  const entryCommandForce=await page.locator('main').getAttribute('data-controller-force');
+
+  await fdKeyButtons.nth(0).click();
+  await page.waitForTimeout(80);
+  const calcStepTextsAfterKey=await calcStepCodeText();
+  if(JSON.stringify(calcStepTextsAfterKey)===JSON.stringify(calcStepTextsBefore) && fdKeyCount>1) {
+    pushError('follow-decision guide: selecting a different key token did not change the Calculation numeric trace');
+  }
+  const badgeAfterKeyChange=await page.locator('.fd-badge').innerText();
+  if(badgeAfterKeyChange!==badgeText0) pushError('follow-decision guide: selecting a different key token changed the captured-event badge (frozen identity violated)');
+
+  await fdDimButtons.nth(fdDimCount-1).click();
+  await page.waitForTimeout(80);
+  const calcStepTextsAfterDim=await calcStepCodeText();
+  if(JSON.stringify(calcStepTextsAfterDim)===JSON.stringify(calcStepTextsAfterKey) && fdDimCount>1) {
+    pushError('follow-decision guide: selecting a different value dimension did not change the Calculation numeric trace');
+  }
+  const badgeAfterDimChange=await page.locator('.fd-badge').innerText();
+  if(badgeAfterDimChange!==badgeText0) pushError('follow-decision guide: selecting a different value dimension changed the captured-event badge (frozen identity violated)');
+  const commandForceAfterSelectors=await page.locator('main').getAttribute('data-controller-force');
+  if(Number(commandForceAfterSelectors)!==Number(entryCommandForce)) {
+    pushError('follow-decision guide: selecting key/dimension changed the commanded force (frozen identity violated) '+JSON.stringify({entryCommandForce,commandForceAfterSelectors}));
+  }
+
+  // Exact-value check: weight * V[key][dim] must equal the displayed
+  // contribution[dim] at display precision, read from data-* attributes
+  // exposed on the same frozen tensors (no recomputation of the model).
+  const contributionStep=page.locator('.follow-decision-guide .fd-calc-step[data-contribution-dim]');
+  const {weightAttr,vDimAttr,contribAttr}=await contributionStep.evaluate(el=>({
+    weightAttr:Number(el.dataset.weight),
+    vDimAttr:Number(el.dataset.vDim),
+    contribAttr:Number(el.dataset.contributionDim)
+  }));
+  if(!Number.isFinite(weightAttr) || !Number.isFinite(vDimAttr) || !Number.isFinite(contribAttr) || Math.abs(weightAttr*vDimAttr-contribAttr)>1e-8) {
+    pushError('follow-decision guide: displayed weight*V[dim] does not equal displayed contribution[dim] '+JSON.stringify({weightAttr,vDimAttr,contribAttr}));
+  }
+
+  await fdKeyButtons.nth(fdKeyCount-1).click();
+  await fdDimButtons.nth(0).click();
+  await page.waitForTimeout(80);
+
+  // Explicit full-detail open (Calculation): the guide's own arithmetic
+  // above was already fully readable without this — this only tests the
+  // advanced-drawer path, which must exist behind one 44px button.
+  const openCalcDetailButton=page.getByRole('button',{name:/open full Self Attention detail/});
+  if(await openCalcDetailButton.count()!==1) pushError('follow-decision guide: Calculation stage is missing the explicit full-detail open button');
+  await openCalcDetailButton.click();
+  await page.waitForTimeout(150);
   const calcDetailHeading=await page.locator('.transformer-detail-wide h2').innerText().catch(()=>'');
-  if(calcDetailHeading!=='Self Attention') pushError('follow-decision guide: Calculation stage did not open the Self Attention detail, got '+JSON.stringify(calcDetailHeading));
+  if(calcDetailHeading!=='Self Attention') pushError('follow-decision guide: explicit full-detail button did not open the Self Attention detail, got '+JSON.stringify(calcDetailHeading));
   const traceBefore=await page.locator('.attention-cell-trace').evaluate(el=>el.dataset.weight).catch(()=>null);
+
+  // F3: the shared drawer must relabel itself FROZEN while it is showing the
+  // guide's captured snapshot, not the always-on LIVE label.
+  const frozenEyebrow=await page.locator('.transformer-detail-wide .detail-head .eyebrow').innerText();
+  if(!frozenEyebrow.includes('FROZEN')) pushError('follow-decision guide: shared detail drawer eyebrow does not say FROZEN while guide is open, got '+JSON.stringify(frozenEyebrow));
+  const frozenTraceSource=await page.locator('.attention-cell-trace').getAttribute('data-source');
+  if(frozenTraceSource!=='frozen') pushError('follow-decision guide: attention trace data-source is not "frozen" while guide is open, got '+JSON.stringify(frozenTraceSource));
+
+  // Order assertion: the guide must appear BEFORE the advanced detail drawer
+  // both in the DOM and on screen, so the guide's arithmetic is never pushed
+  // below this much larger panel.
+  const calcOrder=await page.evaluate(()=>{
+    const guide=document.querySelector('.follow-decision-guide');
+    const detail=document.querySelector('.transformer-detail-wide');
+    if(!guide || !detail) return null;
+    return {
+      domGuideBeforeDetail: !!(guide.compareDocumentPosition(detail) & Node.DOCUMENT_POSITION_FOLLOWING),
+      guideTop: guide.getBoundingClientRect().top,
+      detailTop: detail.getBoundingClientRect().top
+    };
+  });
+  if(!calcOrder || !calcOrder.domGuideBeforeDetail) pushError('follow-decision guide: advanced detail drawer is not positioned after the guide in the DOM');
+  if(!calcOrder || !(calcOrder.guideTop < calcOrder.detailTop)) pushError('follow-decision guide: advanced detail drawer does not render below the guide on screen '+JSON.stringify(calcOrder));
 
   await page.getByRole('tab',{name:/Action/}).click();
   await page.waitForTimeout(150);
-  const actionDetailHeading=await page.locator('.transformer-detail-wide h2').innerText().catch(()=>'');
-  if(actionDetailHeading!=='Action head') pushError('follow-decision guide: Action stage did not open the Action head detail, got '+JSON.stringify(actionDetailHeading));
+
+  // Precondition: entering Action must NOT auto-open the advanced drawer
+  // either (switching stages always closes it; only the explicit button
+  // below reopens it for the new stage).
+  const advancedOpenOnActionEntry=await page.locator('.transformer-detail-wide').count();
+  if(advancedOpenOnActionEntry!==0) pushError('follow-decision guide: Action stage auto-opened the advanced detail drawer on entry (should stay closed until explicitly opened)');
+
   const entryActionValues=await readFdValues();
+
+  // F2: Action must show the real actionScore and the real score->force
+  // relation actually used by the model (10*tanh(score)), not a guess.
+  const actionScoreText=entryActionValues.find(t=>t.includes('action score'));
+  if(!actionScoreText || !/-?\d/.test(actionScoreText.replace('action score',''))) {
+    pushError('follow-decision guide: Action stage does not show a readable action score value');
+  }
+  const forceLine=await page.locator('.follow-decision-guide .fd-values span').filter({hasText:'10·tanh(score)'}).innerText();
+  const forceCommandLine=await page.locator('.follow-decision-guide .fd-values span').filter({hasText:'force command'}).innerText();
+  const forceFromRelation=Number(forceLine.match(/-?\d+\.\d+/)?.[0]);
+  const forceCommand=Number(forceCommandLine.match(/-?\d+\.\d+/)?.[0]);
+  if(!Number.isFinite(forceFromRelation) || !Number.isFinite(forceCommand) || Math.abs(forceFromRelation-forceCommand)>0.01) {
+    pushError('follow-decision guide: 10*tanh(score) relation does not match the displayed force command '+JSON.stringify({forceFromRelation,forceCommand}));
+  }
+
+  // New arithmetic connection: a selected final-hidden component h[j] times
+  // the real action-head weight[0][j], summed over every j plus bias[0],
+  // must reproduce the already-displayed frozen action score -- read from
+  // the same frozen result object, no second inference.
+  const hiddenDimButtons=page.locator('.follow-decision-guide .fd-action-dim-select button');
+  const hiddenDimCount=await hiddenDimButtons.count();
+  if(hiddenDimCount<2) pushError('follow-decision guide: Action stage final-hidden dimension selector exposes fewer than 2 dimensions, got '+hiddenDimCount);
+  const productStep=page.locator('.follow-decision-guide .fd-calc-step[data-action-product]');
+  const productBefore=await productStep.getAttribute('data-action-product');
+  await hiddenDimButtons.nth(1).click();
+  await page.waitForTimeout(80);
+  const productAfter=await productStep.getAttribute('data-action-product');
+  if(productBefore===productAfter) pushError('follow-decision guide: selecting a different final-hidden dimension did not change the product step');
+  const badgeAfterHiddenDimChange=await page.locator('.fd-badge').innerText();
+  if(badgeAfterHiddenDimChange!==badgeText0) pushError('follow-decision guide: selecting a final-hidden dimension changed the captured-event badge (frozen identity violated)');
+
+  const sumStep=page.locator('.follow-decision-guide .fd-calc-step[data-action-sum]');
+  const sumAttr=Number(await sumStep.getAttribute('data-action-sum'));
+  const biasAttr=Number(await sumStep.getAttribute('data-action-bias'));
+  const scoreCheckAttr=Number(await sumStep.getAttribute('data-action-score-check'));
+  if(!Number.isFinite(sumAttr) || !Number.isFinite(biasAttr) || !Number.isFinite(scoreCheckAttr) || Math.abs(sumAttr+biasAttr-scoreCheckAttr)>1e-6) {
+    pushError('follow-decision guide: sum(h*weight)+bias does not equal the frozen action-score check '+JSON.stringify({sumAttr,biasAttr,scoreCheckAttr}));
+  }
+  const actionScoreDisplayed=Number(actionScoreText.replace('action score','').trim());
+  if(!Number.isFinite(actionScoreDisplayed) || Math.abs(actionScoreDisplayed-scoreCheckAttr)>1e-6) {
+    pushError('follow-decision guide: displayed action score does not match the chain-equation score '+JSON.stringify({actionScoreDisplayed,scoreCheckAttr}));
+  }
+  const actionVectorDetailsOpenByDefault=await page.locator('.follow-decision-guide .fd-calc-step[data-action-product] .fd-vector-details').evaluateAll(els=>els.some(el=>el.open));
+  if(actionVectorDetailsOpenByDefault) pushError('follow-decision guide: full per-dimension action-product details are expanded by default (should be collapsed native <details>)');
+  const pipelineStepText=await page.locator('.follow-decision-guide .fd-calc-step b').filter({hasText:'final hidden'}).count();
+  if(pipelineStepText<1) pushError('follow-decision guide: Action stage does not name the context -> output projection/residual -> LayerNorm/MLP -> final hidden pipeline');
+  await page.screenshot({path:path.join(outDir,'desktop-follow-decision-action.jpg'),type:'jpeg',quality:84,fullPage:true});
+
+  // Explicit full-detail open (Action): the guide's own score/force values
+  // above were already fully readable without this.
+  const openActionDetailButton=page.getByRole('button',{name:/open full Action head detail/});
+  if(await openActionDetailButton.count()!==1) pushError('follow-decision guide: Action stage is missing the explicit full-detail open button');
+  await openActionDetailButton.click();
+  await page.waitForTimeout(150);
+  const actionDetailHeading=await page.locator('.transformer-detail-wide h2').innerText().catch(()=>'');
+  if(actionDetailHeading!=='Action head') pushError('follow-decision guide: explicit full-detail button did not open the Action head detail, got '+JSON.stringify(actionDetailHeading));
+  const actionFrozenEyebrow=await page.locator('.transformer-detail-wide .detail-head .eyebrow').innerText();
+  if(!actionFrozenEyebrow.includes('FROZEN')) pushError('follow-decision guide: Action head drawer eyebrow does not say FROZEN while guide is open, got '+JSON.stringify(actionFrozenEyebrow));
 
   await page.getByRole('tab',{name:/Result/}).click();
   await page.waitForTimeout(100);
@@ -727,6 +1064,10 @@ async function runDesktop(browser) {
 
   await page.getByRole('tab',{name:/Calculation/}).click();
   await page.waitForTimeout(150);
+  const advancedOpenOnCalcRevisit=await page.locator('.transformer-detail-wide').count();
+  if(advancedOpenOnCalcRevisit!==0) pushError('follow-decision guide: revisiting Calculation after Apply auto-opened the advanced detail drawer');
+  await page.getByRole('button',{name:/open full Self Attention detail/}).click();
+  await page.waitForTimeout(150);
   const traceAfter=await page.locator('.attention-cell-trace').evaluate(el=>el.dataset.weight).catch(()=>null);
   if(traceAfter!==traceBefore) pushError('follow-decision guide: Calculation attention trace changed after Apply-step (not frozen to the captured event) '+JSON.stringify({before:traceBefore,after:traceAfter}));
 
@@ -754,6 +1095,19 @@ async function runDesktop(browser) {
   const eventId1=badgeText1.match(/event #(\d+)/)?.[1];
   if(!eventId1 || eventId0===eventId1) pushError('follow-decision guide: new-decision capture did not advance the event id');
 
+  // Capture the actual Calculation stage (guide still open, advanced detail
+  // CLOSED, full vectors collapsed by default) BEFORE the guide closes — a
+  // screenshot taken after close would show none of the numeric trace, and
+  // one taken with the advanced drawer open would recreate the detached/
+  // vertical-overload layout this guide fixes.
+  await page.getByRole('tab',{name:/Calculation/}).click();
+  await page.waitForTimeout(120);
+  const advancedOpenAtScreenshot=await page.locator('.transformer-detail-wide').count();
+  if(advancedOpenAtScreenshot!==0) pushError('follow-decision guide: advanced detail drawer is open in the representative Calculation screenshot (should be closed by default)');
+  const vectorDetailsOpenAtCapture=await page.locator('.follow-decision-guide .fd-vector-details').evaluateAll(els=>els.some(el=>el.open));
+  if(vectorDetailsOpenAtCapture) pushWarning('follow-decision guide: full vector details were expanded before the representative screenshot was captured');
+  await page.screenshot({path:path.join(outDir,'desktop-follow-decision.jpg'),type:'jpeg',quality:84,fullPage:true});
+
   // Exit restores public controls without any extra physics.
   const tickBeforeClose=Number(await page.locator('main').getAttribute('data-sync-tick'));
   await page.getByRole('button',{name:'close follow-one-decision guide'}).click();
@@ -773,8 +1127,6 @@ async function runDesktop(browser) {
   await page.getByRole('button',{name:'State'}).click();
   await page.waitForTimeout(150);
   if(await page.locator('.follow-decision-guide').count()!==0) pushError('follow-decision guide: guide leaked across a mode-change round trip');
-
-  await page.screenshot({path:path.join(outDir,'desktop-follow-decision.jpg'),type:'jpeg',quality:84,fullPage:true});
 
   // Optional pixels-only mode becomes mandatory once the trained artifact is present.
   const visionButton=page.getByRole('button',{name:'Vision'});

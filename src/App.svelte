@@ -502,23 +502,7 @@
     <DecisionTrace trace={lastDecisionTrace}/>
   {/if}
 
-  {#if mode === 'state'}
-    <!-- While the guide is open, this shared detail drawer must show the
-         frozen event's tensors (Calculation/Action stages), not the live
-         result — live advances past the captured tick the instant Apply
-         runs one real step. -->
-    <TransformerDetail
-      result={followDecisionOpen && followDecisionSnapshot ? followDecisionSnapshot.result : result}
-      controllerForce={followDecisionOpen && followDecisionSnapshot ? followDecisionSnapshot.controllerForce : controllerForce}
-      {selectedToken}
-      {selectedRow}
-      {selectedCol}
-      {expandedStage}
-      onClose={()=>expandedStage=null}
-      onSelectToken={selectToken}
-      onSelectAttention={selectAttention}
-    />
-  {:else if mode === 'vision' && visionDetailOpen && visionResult}
+  {#if mode === 'vision' && visionDetailOpen && visionResult}
     <VisionDetail
       frames={visionFrames}
       result={visionResult}
@@ -571,6 +555,25 @@
         {/key}
       {/if}
     </section>
+
+    <!-- Placed after the guide (only for State) so the guide's self-contained
+         arithmetic is never pushed below this much larger advanced drawer.
+         While the guide is open, this shared detail drawer must show the
+         frozen event's tensors (Calculation/Action stages), not the live
+         result — live advances past the captured tick the instant Apply
+         runs one real step. -->
+    <TransformerDetail
+      result={followDecisionOpen && followDecisionSnapshot ? followDecisionSnapshot.result : result}
+      controllerForce={followDecisionOpen && followDecisionSnapshot ? followDecisionSnapshot.controllerForce : controllerForce}
+      {selectedToken}
+      {selectedRow}
+      {selectedCol}
+      {expandedStage}
+      source={followDecisionOpen && followDecisionSnapshot ? 'frozen' : 'live'}
+      onClose={()=>expandedStage=null}
+      onSelectToken={selectToken}
+      onSelectAttention={selectAttention}
+    />
   {/if}
 
   <section class="explain">

@@ -16,6 +16,7 @@ Uses visualization primitives adapted from poloclub/transformer-explainer
   export let selectedRow = 7;
   export let selectedCol = 7;
   export let expandedStage = null;
+  export let source = 'live';
   export let onClose = () => {};
   export let onSelectToken = () => {};
   export let onSelectAttention = () => {};
@@ -64,7 +65,7 @@ Uses visualization primitives adapted from poloclub/transformer-explainer
 <section class="transformer-detail-wide">
   <header class="detail-head">
     <div>
-      <div class="eyebrow">LIVE TENSOR DETAIL · {selectedToken===last?'t':'t−'+(last-selectedToken)}</div>
+      <div class="eyebrow">{source === 'frozen' ? 'FROZEN TENSOR DETAIL' : 'LIVE TENSOR DETAIL'} · {selectedToken===last?'t':'t−'+(last-selectedToken)}</div>
       <h2>{expandedStage === 'embedding' ? 'Embedding' : expandedStage === 'qkv' ? 'Q · K · V' : expandedStage === 'attention' ? 'Self Attention' : expandedStage === 'block' ? 'Residual + MLP' : 'Action head'}</h2>
       <p>{stageInfo[expandedStage]}</p>
     </div>
@@ -139,6 +140,7 @@ Uses visualization primitives adapted from poloclub/transformer-explainer
         {result}
         {selectedRow}
         {selectedCol}
+        {source}
         onSelect={(r,c)=>onSelectAttention(r,c)}
       />
     </div>

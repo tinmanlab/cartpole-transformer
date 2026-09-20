@@ -27,9 +27,14 @@ four stages, left-to-right (top-to-bottom on narrow screens):
 4. **Result / 결과**
 
 A view may add its own detail behind any stage, and the concrete meaning of
-each stage differs by algorithm (see below) — but a view must not rename,
-reorder, or skip these four labels, and must not reuse one of them for two
-unrelated things in the same view.
+each stage differs by algorithm (see below). Keep this order and these four
+names as the shared orientation — a reader who knows one repo's tabs should
+recognize the other two — but where a repo's own lesson genuinely needs a
+different split (e.g. a stage that has no honest single value for that
+algorithm), say so explicitly in that repo's own docs rather than forcing a
+mismatched quantity into the shared label. What must not happen is silently
+reusing one label for two unrelated things in the same view, or renaming a
+label without recording why.
 
 ## What each stage actually is, per repo
 
@@ -38,7 +43,7 @@ Showing them side by side must not imply the quantities are equivalent:
 
 |  | Input | Calculation | Action | Result |
 |---|---|---|---|---|
-| **PPO** | a recorded experience (or batch of them) from a rollout buffer | the learning signals/loss computed from that batch | the recorded action that was actually chosen, plus the optimizer update applied from it | the policy's before/after state from that **whole minibatch update** — never presented as if one experience alone caused it |
+| **PPO** | a recorded experience (or batch of them) from a rollout buffer | the learning signals/loss computed from that batch | the recorded action that was actually chosen at rollout time (a physical action, already in the past) — the optimizer update computed from the batch is a *separate* quantity shown alongside it, never itself a physical action | the policy's before/after state from that **whole minibatch update** — never presented as if one experience alone caused it |
 | **Transformer** | the real observation for one live tick | real attention weights over the token history for that tick | the real force command produced for that tick | one real physical transition (the plant's next state) |
 | **DiffusionPolicy** | the real observation conditioning the sample | the model's native planning cycle: a sampled action-plan produced by iterative denoising | one step executed from that plan (not the whole plan) | the executed prefix of the plan, or a re-observed plant state — not a full-plan claim |
 
@@ -100,6 +105,19 @@ styles and only aligns these floors:
 - A four-stage navigator (Input/Calculation/Action/Result) collapses to a
   compact 2×2 grid below the app's existing mobile breakpoint, never to a
   single unreadable row or a hidden overflow list.
+
+## Review guidance
+
+- Each stage must expose at least one actual arithmetic witness in place —
+  real numbers computed from the frozen/live/recorded/replay data the stage
+  is labeled with — not a "see above" pointer to a detached detail panel.
+  An advanced full detail view may still exist alongside it as a single,
+  non-duplicated instance; it supplements the in-place witness, it does not
+  replace it.
+- Tests for a stage must verify the frozen/live/recorded/replay provenance
+  of what's shown, that real (non-placeholder) values are visible, that the
+  displayed source semantics match the data-source label, and keyboard/focus
+  behavior — not just that some fixed number of buttons or panels exist.
 
 ## Explicitly out of scope for this contract
 
