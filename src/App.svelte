@@ -88,6 +88,28 @@
   // after Apply-step advances the live `result`/`controllerForce` below.
   let followDecisionSnapshot = null;
 
+  // Pipeline is the primary/default-visible overview during ordinary State
+  // exploration, but collapses to a closed native <details> overview while
+  // the guide owns the workspace, and reopens (both by this default and by
+  // the user manually re-toggling it) the instant the guide closes again.
+  $: pipelineOpen = !followDecisionOpen;
+
+  // Reopening the Pipeline overview from inside the guided workspace must
+  // show the SAME frozen event the guide/TransformerDetail are showing, not
+  // the live plant (which has already advanced past the captured tick once
+  // Apply runs) — same source convention as TransformerDetail's
+  // followDecisionOpen/followDecisionSnapshot check below.
+  $: pipelineSourceFrozen = followDecisionOpen && !!followDecisionSnapshot;
+  $: pipelineResult = pipelineSourceFrozen ? followDecisionSnapshot.result : result;
+  $: pipelineControllerForce = pipelineSourceFrozen ? followDecisionSnapshot.controllerForce : controllerForce;
+  $: pipelineSourceLabel = pipelineSourceFrozen
+    ? 'FROZEN captured tick ' + followDecisionSnapshot.tick + ' · LIVE current tick ' + syncTick
+    : 'LIVE tick ' + syncTick;
+
+  $: decisionTraceSummary = lastDecisionTrace
+    ? 'tick ' + lastDecisionTrace.tickFrom + ' → ' + lastDecisionTrace.tickTo + ' · ' + status
+    : 'no step recorded yet · ' + status;
+
   $: syncTick = Math.round(elapsed / PHYSICS.tau);
   $: syncStateVector = stateArray(state);
   $: syncStateToken = result?.rawTokens?.[result.rawTokens.length - 1] || [];
@@ -465,17 +487,54 @@
     />
 
     {#if mode === 'state'}
-      <Pipeline
-        {result}
-        {controllerForce}
-        {selectedToken}
-        {selectedRow}
-        {selectedCol}
-        {expandedStage}
-        onSelectToken={selectToken}
-        onSelectAttention={selectAttention}
-        onExpandedStageChange={(stage)=>expandedStage=stage}
-      />
+      <div class="state-column">
+        <section class="follow-decision" aria-label="follow one decision guide">
+          {#if !followDecisionOpen}
+            <button
+              type="button"
+              class="follow-decision-entry"
+              disabled={modelState!=='learned' || status==='fell'}
+              on:click={openFollowDecision}
+            >한 판단 따라가기 · Follow one decision</button>
+          {:else}
+            {#key followDecisionSeq}
+              <FollowDecisionGuide
+                capturedTick={followDecisionSnapshot.tick}
+                eventId={followDecisionSeq}
+                result={followDecisionSnapshot.result}
+                controllerForce={followDecisionSnapshot.controllerForce}
+                currentTick={syncTick}
+                {lastDecisionTrace}
+                {status}
+                onSelectToken={selectToken}
+                onExpandedStageChange={(stage)=>expandedStage=stage}
+                onApplyStep={stepOnce}
+                onClose={closeFollowDecision}
+                onNewDecision={openFollowDecision}
+              />
+            {/key}
+          {/if}
+        </section>
+
+        <!-- Pipeline stays the default-visible overview during ordinary State
+             exploration; it only collapses to a closed overview while the
+             guide is open (pipelineOpen), and is always reopenable by the
+             user via this same native <details> regardless of guide state. -->
+        <details class="disclosure-toggle pipeline-disclosure" bind:open={pipelineOpen} data-source={pipelineSourceFrozen ? 'frozen' : 'live'}>
+          <summary>Pipeline overview · Embedding → Action (5 stages) · {pipelineSourceLabel}</summary>
+          <Pipeline
+            result={pipelineResult}
+            controllerForce={pipelineControllerForce}
+            {selectedToken}
+            {selectedRow}
+            {selectedCol}
+            {expandedStage}
+            onSelectToken={selectToken}
+            onSelectAttention={selectAttention}
+            onExpandedStageChange={(stage)=>expandedStage=stage}
+          />
+        </details>
+      </div>
     {:else if mode === 'vision' && visionResult}
       <VisionPipeline
         frames={visionFrames}
@@ -499,7 +558,18 @@
       />
     {/if}
   </section>
-    <DecisionTrace trace={lastDecisionTrace}/>
+    {#if mode === 'state'}
+      <!-- Secondary detailed physical transition: closed by default so it
+           never buries the primary guide/Pipeline column above it; the
+           summary always shows the real tick range/status so users know
+           what's inside without opening it. -->
+      <details class="disclosure-toggle decision-trace-disclosure">
+        <summary>Plant transition detail · {decisionTraceSummary}</summary>
+        <DecisionTrace trace={lastDecisionTrace}/>
+      </details>
+    {:else}
+      <DecisionTrace trace={lastDecisionTrace}/>
+    {/if}
   {/if}
 
   {#if mode === 'vision' && visionDetailOpen && visionResult}
@@ -528,34 +598,6 @@
   {/if}
 
   {#if mode === 'state'}
-    <section class="follow-decision" aria-label="follow one decision guide">
-      {#if !followDecisionOpen}
-        <button
-          type="button"
-          class="follow-decision-entry"
-          disabled={modelState!=='learned' || status==='fell'}
-          on:click={openFollowDecision}
-        >한 판단 따라가기 · Follow one decision</button>
-      {:else}
-        {#key followDecisionSeq}
-          <FollowDecisionGuide
-            capturedTick={followDecisionSnapshot.tick}
-            eventId={followDecisionSeq}
-            result={followDecisionSnapshot.result}
-            controllerForce={followDecisionSnapshot.controllerForce}
-            currentTick={syncTick}
-            {lastDecisionTrace}
-            {status}
-            onSelectToken={selectToken}
-            onExpandedStageChange={(stage)=>expandedStage=stage}
-            onApplyStep={stepOnce}
-            onClose={closeFollowDecision}
-            onNewDecision={openFollowDecision}
-          />
-        {/key}
-      {/if}
-    </section>
-
     <!-- Placed after the guide (only for State) so the guide's self-contained
          arithmetic is never pushed below this much larger advanced drawer.
          While the guide is open, this shared detail drawer must show the
@@ -576,7 +618,9 @@
     />
   {/if}
 
-  <section class="explain">
+  <details class="disclosure-toggle explain-disclosure">
+    <summary>읽는 순서 참고 · Reading order reference</summary>
+    <section class="explain">
     <div class="explain-head">
       <h2>{mode==='state'?'State 읽는 순서':mode==='vision'?'Vision-only 읽는 순서':mode==='fusion'?'State + Vision 읽는 순서':'Deterministic 비교 replay'}</h2>
 
@@ -628,7 +672,8 @@
         <article><b>6. Raw metrics</b><p>survival, max |θ|, mean |θ|, control effort를 그대로 보여주며 별도 winner를 만들지 않습니다.</p></article>
       </div>
     {/if}
-  </section>
+    </section>
+  </details>
 
   <div class="claim">Cart-Pole에는 Transformer나 multimodal fusion이 필요하지 않습니다. 이 lab은 observation, temporal/multimodal attention, 그리고 동일 조건 replay에서 나타나는 실제 제어 차이를 관찰하기 위한 교육용 모델입니다.</div>
 

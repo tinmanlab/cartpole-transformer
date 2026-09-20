@@ -119,6 +119,18 @@ styles and only aligns these floors:
   displayed source semantics match the data-source label, and keyboard/focus
   behavior — not just that some fixed number of buttons or panels exist.
 
+## Primary guide vs. reference material
+
+A view's primary teaching surface (the plant/simulation and the one guide a
+learner is actively following) stays adjacent and reachable without scrolling
+past secondary material. Everything else — a default overview of the same
+pipeline the guide already explains, a secondary/more-detailed replay of a
+physical transition, static reading-order cards — is reference: reachable
+through one named, keyboard-operable native disclosure (`<details>`), closed
+by default, and never displacing or duplicating the primary guide's own
+in-place arithmetic. Collapsing or reopening a reference must never change
+which model, state, selection, or captured event is being shown.
+
 ## Explicitly out of scope for this contract
 
 This contract governs presentation only. It does not require, and this
