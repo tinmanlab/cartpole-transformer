@@ -285,11 +285,11 @@ See docs/learning-suite.md for the four-stage contract this follows.
       <button type="button" class="fd-open-detail" on:click={()=>openFullDetail('attention')}>전체 Self Attention 상세 열기 · open full Self Attention detail</button>
     {:else if stage === 'action'}
       <p>Action / 행동 — force = 10·tanh(action score). tick {capturedTick}에서 실제로 나온 score와 force입니다.</p>
-      <div class="fd-values">
-        <span><b>captured tick</b>{capturedTick}</span>
-        <span><b>action score</b>{(result?.actionScore ?? 0).toFixed(6)}</span>
-        <span><b>10·tanh(score) [N]</b>{forceFromActionScore.toFixed(2)}</span>
-        <span><b>force command [N]</b>{controllerForce.toFixed(2)}</span>
+      <div class="fd-values fd-action-values">
+        <span><b>captured tick</b><output>{capturedTick}</output></span>
+        <span><b>action score</b><output>{(result?.actionScore ?? 0).toFixed(6)}</output></span>
+        <span><b>10·tanh(score) [N]</b><output>{forceFromActionScore.toFixed(2)}</output></span>
+        <span><b>force command [N]</b><output>{controllerForce.toFixed(2)}</output></span>
       </div>
       {#if hasActionHead}
         <div class="fd-selectors">
@@ -381,6 +381,8 @@ header h3{font-size:15px;margin:5px 0 0}
 .fd-values{display:flex;flex-wrap:wrap;gap:6px}
 .fd-values span{display:flex;justify-content:space-between;gap:6px;flex:1;min-width:110px;border:1px solid #e4e7ec;background:#fafbfc;border-radius:6px;padding:6px 7px;font:14px ui-monospace,SFMono-Regular,Menlo,monospace;color:#596273}
 .fd-values b{font-family:Inter,ui-sans-serif,system-ui;font-size:14px;color:#8b93a1}
+.fd-action-values span output{font:inherit;color:inherit}
+@media(max-width:600px){.fd-action-values span{flex-direction:column;align-items:flex-start;justify-content:flex-start;min-width:0}.fd-action-values span output{white-space:normal;word-break:break-word}}
 .fd-token-select,.fd-key-select,.fd-dim-select,.fd-action-dim-select{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:10px}
 .fd-selectors{display:flex;flex-wrap:wrap;gap:6px 16px}
 .fd-selector-label{font-size:14px;color:#8b93a1;min-width:28px}

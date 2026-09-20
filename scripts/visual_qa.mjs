@@ -436,6 +436,39 @@ async function runResponsiveLayoutAudit(browser, width, label) {
     if(auditActionAdvancedOpen!==0) pushError(label+': advanced detail drawer auto-opened on Action entry (should stay closed until explicitly opened)');
     const auditActionVectorDetailsOpen=await page.locator('.follow-decision-guide .fd-vector-details').evaluateAll(els=>els.some(el=>el.open)).catch(()=>false);
     if(auditActionVectorDetailsOpen) pushError(label+': full action-product details are expanded by default in the Action screenshot (should be collapsed)');
+
+    // Per-tile numeric readout check: each Action tile's actual value text
+    // (not just its presence in the DOM/dataset) must render as one complete,
+    // readable line inside its own tile, never clipped by or bleeding into a
+    // neighboring tile.
+    const actionTileRects=await page.locator('.follow-decision-guide .fd-action-values span').evaluateAll(spans=>spans.map(span=>{
+      const tile=span.getBoundingClientRect();
+      const label=span.querySelector('b')?.getBoundingClientRect();
+      const value=span.querySelector('output')?.getBoundingClientRect();
+      const cs=value?getComputedStyle(span.querySelector('output')):null;
+      return {
+        text:span.textContent.trim(),
+        tile:{left:tile.left,right:tile.right,top:tile.top,bottom:tile.bottom},
+        value:value?{left:value.left,right:value.right,top:value.top,bottom:value.bottom,height:value.height}:null,
+        fontSize:cs?parseFloat(cs.fontSize):0
+      };
+    }));
+    for(const t of actionTileRects){
+      if(!t.value){ pushError(label+': Action tile "'+t.text+'" has no numeric value element'); continue; }
+      if(t.fontSize<14) pushError(label+': Action tile "'+t.text+'" numeric text is smaller than 14px ('+t.fontSize.toFixed(1)+'px)');
+      if(t.value.left<t.tile.left-0.5 || t.value.right>t.tile.right+0.5 || t.value.bottom>t.tile.bottom+0.5){
+        pushError(label+': Action tile "'+t.text+'" numeric value escapes its own tile bounds '+JSON.stringify({tile:t.tile,value:t.value}));
+      }
+      for(const other of actionTileRects){
+        if(other===t) continue;
+        const overlapsX=t.value.left<other.tile.right-0.5 && t.value.right>other.tile.left+0.5;
+        const overlapsY=t.value.top<other.tile.bottom-0.5 && t.value.bottom>other.tile.top+0.5;
+        if(overlapsX && overlapsY && !(other.tile.left>=t.tile.left-0.5 && other.tile.right<=t.tile.right+0.5)){
+          pushError(label+': Action tile "'+t.text+'" numeric value overlaps neighboring tile "'+other.text+'"');
+        }
+      }
+    }
+
     await page.screenshot({path:path.join(outDir,label+'-follow-decision-action.jpg'),type:'jpeg',quality:74,fullPage:true});
     const closeGuide=page.getByRole('button',{name:'close follow-one-decision guide'});
     if(await closeGuide.count()) await closeGuide.click();
