@@ -514,6 +514,7 @@
       {selectedRow}
       {selectedCol}
       {expandedStage}
+      source={followDecisionOpen && followDecisionSnapshot ? 'frozen' : 'live'}
       onClose={()=>expandedStage=null}
       onSelectToken={selectToken}
       onSelectAttention={selectAttention}

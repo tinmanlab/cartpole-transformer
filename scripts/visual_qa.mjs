@@ -250,7 +250,8 @@ async function auditLayout(page, name, { minFont=9.75 } = {}) {
     // above that still covers every other compact/eyebrow label in the app.
     const coreFontSelectors='.state-readout span,.action-readout span,.vision-hidden-state,.sim-controls button,'+
       '.steps b,.steps p,.claim,.qkv-key,.panel-head small,.stage-head>span,.stage-head>small,.attention-read,.attention-read strong,.force-value,'+
-      '.fd-badge,.fd-stages button,.fd-content p,.fd-values span,.fd-values b,.fd-result-tick,.fd-ba-label,.fd-details summary,.follow-decision-entry';
+      '.fd-badge,.fd-stages button,.fd-content p,.fd-values span,.fd-values b,.fd-result-tick,.fd-ba-label,.fd-details summary,.follow-decision-entry,'+
+      '.fd-repo-row,.fd-token-select button,.fd-key-select button,.fd-weight-bar-label,.fd-weight-bar-value,.fd-calc-step b,.fd-calc-step code,.fd-caveat';
     const coreTextTooSmall=[];
     for(const el of [...document.querySelectorAll(coreFontSelectors)]){
       if(!visible(el)) continue;
@@ -410,6 +411,24 @@ async function runResponsiveLayoutAudit(browser, width, label) {
   if(await pause.count()) await pause.click();
   await auditLayout(page,label+'-state-overview');
 
+  // Follow-one-decision guide: exercise the self-contained Calculation trace
+  // (weight bars, key selector, numeric steps) at every audited width so it
+  // never relies on a wide-only layout, and keep a representative screenshot
+  // at each width including the narrowest (320) and widest (1440) targets.
+  const followBtn=page.getByRole('button',{name:'한 판단 따라가기 · Follow one decision'});
+  if(await followBtn.isEnabled().catch(()=>false)){
+    await followBtn.click();
+    await page.waitForTimeout(100);
+    await auditLayout(page,label+'-follow-decision-input');
+    await page.getByRole('tab',{name:/Calculation/}).click();
+    await page.waitForTimeout(120);
+    await auditLayout(page,label+'-follow-decision-calculation');
+    await page.screenshot({path:path.join(outDir,label+'-follow-decision.jpg'),type:'jpeg',quality:74,fullPage:true});
+    const closeGuide=page.getByRole('button',{name:'close follow-one-decision guide'});
+    if(await closeGuide.count()) await closeGuide.click();
+    await page.waitForTimeout(80);
+  }
+
   for(const [name,sel] of [
     ['embedding','.embedding-overview'],
     ['qkv','.qkv-overview'],
@@ -523,6 +542,11 @@ async function runDesktop(browser) {
       if(traceCount!==1) {
         pushError('attention trace missing or duplicated: '+traceCount);
       } else {
+        const liveSource=await trace.getAttribute('data-source');
+        if(liveSource!=='live') pushError('attention trace: default (outside Follow-one-decision) source is not "live", got '+JSON.stringify(liveSource));
+        const liveEyebrow=await trace.locator('.eyebrow').innerText();
+        if(!liveEyebrow.includes('LIVE')) pushError('attention trace: default eyebrow does not say LIVE arithmetic, got '+JSON.stringify(liveEyebrow));
+
         const qButtons=trace.locator('.trace-query-button');
         const kButtons=trace.locator('.trace-key-button');
         const countButtons=await qButtons.count();
@@ -663,7 +687,55 @@ async function runDesktop(browser) {
   const tickAtOpen=Number(await page.locator('main').getAttribute('data-sync-tick'));
   if(!Number.isFinite(capturedTick) || capturedTick!==tickAtOpen) pushError('follow-decision guide: badge captured tick does not match plant tick at open');
 
+  // F4: real tablist keyboard support (ArrowRight/Home/End) with coherent
+  // selected/focus/tabpanel relationships, not just mouse clicks.
+  const fdTabs=page.locator('.follow-decision-guide [role="tab"]');
+  const fdTabCount=await fdTabs.count();
+  await fdTabs.first().focus();
+  await page.keyboard.press('ArrowRight');
+  await page.waitForTimeout(80);
+  const afterArrowSelected=await fdTabs.nth(1).getAttribute('aria-selected');
+  const afterArrowFocused=await fdTabs.nth(1).evaluate(el=>el===document.activeElement);
+  if(afterArrowSelected!=='true' || !afterArrowFocused) {
+    pushError('follow-decision guide: ArrowRight on tablist did not select+focus the next tab '+JSON.stringify({afterArrowSelected,afterArrowFocused}));
+  }
+  const panelLabelledBy=await page.locator('.follow-decision-guide [role="tabpanel"]').getAttribute('aria-labelledby');
+  if(panelLabelledBy!=='fd-tab-calculation') pushError('follow-decision guide: tabpanel aria-labelledby did not follow the ArrowRight-selected tab, got '+JSON.stringify(panelLabelledBy));
+  await page.keyboard.press('End');
+  await page.waitForTimeout(80);
+  const afterEndSelected=await fdTabs.nth(fdTabCount-1).getAttribute('aria-selected');
+  if(afterEndSelected!=='true') pushError('follow-decision guide: End on tablist did not select the last tab');
+  await page.keyboard.press('Home');
+  await page.waitForTimeout(80);
+  const afterHomeSelected=await fdTabs.nth(0).getAttribute('aria-selected');
+  if(afterHomeSelected!=='true') pushError('follow-decision guide: Home on tablist did not select the first (Input) tab');
+
+  // F4: compact repo-purpose row, not a new large header.
+  const repoRowText=await page.locator('.follow-decision-guide .fd-repo-row').innerText().catch(()=>'');
+  if(!/PPO/.test(repoRowText) || !/Transformer/.test(repoRowText) || !/Diffusion/.test(repoRowText)) {
+    pushError('follow-decision guide: missing compact repo-purpose row naming PPO/Transformer/DiffusionPolicy, got '+JSON.stringify(repoRowText));
+  }
+
   const entryInputValues=await readFdValues();
+
+  // F2: Input must expose actual history, not just the latest tick — picking
+  // an earlier history token changes the readout, and returning to the
+  // latest token (the identity used everywhere else) restores it exactly.
+  const inputTokenButtons=page.locator('.fd-token-select button');
+  const inputTokenCount=await inputTokenButtons.count();
+  if(inputTokenCount<2) pushError('follow-decision guide: Input history selector exposes fewer than 2 tokens, got '+inputTokenCount);
+  await inputTokenButtons.nth(0).click();
+  await page.waitForTimeout(80);
+  const earlyInputValues=await readFdValues();
+  if(JSON.stringify(earlyInputValues)===JSON.stringify(entryInputValues)) {
+    pushWarning('follow-decision guide: selecting the earliest history token produced identical values to the latest token');
+  }
+  await inputTokenButtons.nth(inputTokenCount-1).click();
+  await page.waitForTimeout(80);
+  const restoredInputValues=await readFdValues();
+  if(JSON.stringify(restoredInputValues)!==JSON.stringify(entryInputValues)) {
+    pushError('follow-decision guide: Input history identity did not restore after reselecting the latest token '+JSON.stringify({expected:entryInputValues,got:restoredInputValues}));
+  }
 
   await page.getByRole('tab',{name:/Calculation/}).click();
   await page.waitForTimeout(150);
@@ -671,11 +743,53 @@ async function runDesktop(browser) {
   if(calcDetailHeading!=='Self Attention') pushError('follow-decision guide: Calculation stage did not open the Self Attention detail, got '+JSON.stringify(calcDetailHeading));
   const traceBefore=await page.locator('.attention-cell-trace').evaluate(el=>el.dataset.weight).catch(()=>null);
 
+  // F3: the shared drawer must relabel itself FROZEN while it is showing the
+  // guide's captured snapshot, not the always-on LIVE label.
+  const frozenEyebrow=await page.locator('.transformer-detail-wide .detail-head .eyebrow').innerText();
+  if(!frozenEyebrow.includes('FROZEN')) pushError('follow-decision guide: shared detail drawer eyebrow does not say FROZEN while guide is open, got '+JSON.stringify(frozenEyebrow));
+  const frozenTraceSource=await page.locator('.attention-cell-trace').getAttribute('data-source');
+  if(frozenTraceSource!=='frozen') pushError('follow-decision guide: attention trace data-source is not "frozen" while guide is open, got '+JSON.stringify(frozenTraceSource));
+
+  // F1: the guide itself must show a self-contained, readable numeric trace
+  // for the selected key (query fixed to the latest/controller token) —
+  // not just prose pointing at the drawer above.
+  const fdKeyButtons=page.locator('.follow-decision-guide .fd-key-select button');
+  const fdKeyCount=await fdKeyButtons.count();
+  if(fdKeyCount<2) pushError('follow-decision guide: Calculation key selector exposes fewer than 2 keys, got '+fdKeyCount);
+  const fdBarCount=await page.locator('.follow-decision-guide .fd-weight-bar').count();
+  if(fdBarCount!==fdKeyCount) pushError('follow-decision guide: weight-bar count does not match key count '+JSON.stringify({bars:fdBarCount,keys:fdKeyCount}));
+  const calcStepTextsBefore=await page.locator('.follow-decision-guide .fd-calc-step code').allInnerTexts();
+  if(calcStepTextsBefore.some(t=>!t.trim())) pushError('follow-decision guide: a Calculation step shows no numeric value');
+  await fdKeyButtons.nth(0).click();
+  await page.waitForTimeout(80);
+  const calcStepTextsAfter=await page.locator('.follow-decision-guide .fd-calc-step code').allInnerTexts();
+  if(JSON.stringify(calcStepTextsAfter)===JSON.stringify(calcStepTextsBefore) && fdKeyCount>1) {
+    pushError('follow-decision guide: selecting a different key token did not change the Calculation numeric trace');
+  }
+  await fdKeyButtons.nth(fdKeyCount-1).click();
+  await page.waitForTimeout(80);
+
   await page.getByRole('tab',{name:/Action/}).click();
   await page.waitForTimeout(150);
   const actionDetailHeading=await page.locator('.transformer-detail-wide h2').innerText().catch(()=>'');
   if(actionDetailHeading!=='Action head') pushError('follow-decision guide: Action stage did not open the Action head detail, got '+JSON.stringify(actionDetailHeading));
+  const actionFrozenEyebrow=await page.locator('.transformer-detail-wide .detail-head .eyebrow').innerText();
+  if(!actionFrozenEyebrow.includes('FROZEN')) pushError('follow-decision guide: Action head drawer eyebrow does not say FROZEN while guide is open, got '+JSON.stringify(actionFrozenEyebrow));
   const entryActionValues=await readFdValues();
+
+  // F2: Action must show the real actionScore and the real score->force
+  // relation actually used by the model (10*tanh(score)), not a guess.
+  const actionScoreText=entryActionValues.find(t=>t.includes('action score'));
+  if(!actionScoreText || !/-?\d/.test(actionScoreText.replace('action score',''))) {
+    pushError('follow-decision guide: Action stage does not show a readable action score value');
+  }
+  const forceLine=await page.locator('.follow-decision-guide .fd-values span').filter({hasText:'10·tanh(score)'}).innerText();
+  const forceCommandLine=await page.locator('.follow-decision-guide .fd-values span').filter({hasText:'force command'}).innerText();
+  const forceFromRelation=Number(forceLine.match(/-?\d+\.\d+/)?.[0]);
+  const forceCommand=Number(forceCommandLine.match(/-?\d+\.\d+/)?.[0]);
+  if(!Number.isFinite(forceFromRelation) || !Number.isFinite(forceCommand) || Math.abs(forceFromRelation-forceCommand)>0.01) {
+    pushError('follow-decision guide: 10*tanh(score) relation does not match the displayed force command '+JSON.stringify({forceFromRelation,forceCommand}));
+  }
 
   await page.getByRole('tab',{name:/Result/}).click();
   await page.waitForTimeout(100);
