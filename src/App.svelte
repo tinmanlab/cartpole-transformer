@@ -690,6 +690,9 @@
     </div>
 
     {#if mode==='state'}
+      {#if modelState==='toy-fallback'}
+        <div class="claim">LEARNED MODEL REFERENCE — NOT ACTIVE IN TOY FALLBACK. 아래 5단계는 학습된 모델 기준 설명이며, 지금 실제로 동작 중인 toy fallback은 학습되지 않은 고정 recency bias(+1.20×j)와 고정 feedback gain으로 force를 계산합니다.</div>
+      {/if}
       <div class="steps">
         <article><b>1. Embedding</b><p><code>[x,ẋ,θ,θ̇]</code> → normalize → learned 4→8 projection + position.</p></article>
         <article><b>2. Q / K / V</b><p>LayerNorm 뒤 같은 token을 세 learned projection으로 나눕니다.</p></article>

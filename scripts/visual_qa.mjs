@@ -1996,6 +1996,30 @@ async function runModelLoadFailureFixture(browser) {
   }
   await page.screenshot({path:path.join(outDir,'network-fixture-toy-fallback-attention.jpg'),type:'jpeg',quality:82,fullPage:true});
 
+  // The "Reading order reference" <details> is a second, independently
+  // reachable place that used to always describe the learned 5-step
+  // sequence, even in toy fallback -- same false-model bug as the main
+  // panels, just a different door to it. It must now carry an explicit
+  // not-active warning and must not claim the displayed learned steps are
+  // what's actually running.
+  const closeAttentionDetail=page.getByRole('button',{name:'close Transformer detail'});
+  if(await closeAttentionDetail.count()) await closeAttentionDetail.click();
+  await page.waitForTimeout(60);
+  const explainSummary=page.locator('.explain-disclosure summary');
+  await explainSummary.click();
+  await page.waitForTimeout(100);
+  const explainWarning=page.locator('.explain .claim');
+  const explainWarningCount=await explainWarning.count();
+  if(explainWarningCount!==1) pushError('model-load-failure fixture: reading-order reference is missing its toy-fallback not-active warning');
+  const explainWarningText=await explainWarning.innerText().catch(()=>'');
+  if(!/NOT ACTIVE/i.test(explainWarningText)) pushError('model-load-failure fixture: reading-order reference warning does not say the learned steps are not active, got '+JSON.stringify(explainWarningText));
+  if(!/fixed|고정/.test(explainWarningText)) pushError('model-load-failure fixture: reading-order reference warning does not name the actual (fixed bias/gain) toy behavior, got '+JSON.stringify(explainWarningText));
+  const explainWarningFont=await explainWarning.evaluate(el=>parseFloat(getComputedStyle(el).fontSize)).catch(()=>null);
+  if(explainWarningFont===null||explainWarningFont<14) pushError('model-load-failure fixture: reading-order reference warning is below the 14px essential-text floor, got '+explainWarningFont);
+  const explainDoc=await page.evaluate(()=>({w:document.documentElement.scrollWidth,v:innerWidth}));
+  if(explainDoc.w>explainDoc.v+2) pushError('model-load-failure fixture: reading-order reference warning causes page-level horizontal overflow '+JSON.stringify(explainDoc));
+  await page.screenshot({path:path.join(outDir,'network-fixture-toy-fallback-reference.jpg'),type:'jpeg',quality:82,fullPage:true});
+
   // The deliberately-rejected model HTTP response is an expected part of
   // this fixture, not an app error; only a real JS exception should fail
   // the run. Distinguish the two explicitly in the report.
@@ -2020,6 +2044,10 @@ async function runModelLoadFailureFixture(browser) {
   if(recoveredModelState!=='learned') pushError('model-load-failure fixture: normal reload without the fault did not recover to modelState="learned", got '+JSON.stringify(recoveredModelState));
   const recoveredBanner=await recoveryPage.locator('.model-fallback-banner').count();
   if(recoveredBanner!==0) pushError('model-load-failure fixture: fallback banner did not clear after a normal (non-faulty) reload');
+  await recoveryPage.locator('.explain-disclosure summary').click();
+  await recoveryPage.waitForTimeout(100);
+  const recoveredExplainWarning=await recoveryPage.locator('.explain .claim').count();
+  if(recoveredExplainWarning!==0) pushError('model-load-failure fixture: reading-order reference still shows the toy-fallback not-active warning after learned-model recovery');
   if(recoveryErrors.length) pushError('model-load-failure fixture: unexpected page error(s) on normal-reload recovery: '+JSON.stringify(recoveryErrors));
   await recoveryPage.close();
 }
