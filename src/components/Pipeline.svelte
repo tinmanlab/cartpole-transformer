@@ -26,8 +26,8 @@ Detailed calculations live in TransformerDetail.svelte.
   $: kSelected = result.k[selectedToken];
   $: vSelected = result.v[selectedToken];
   $: contextSelected = result.perTokenContext?.[selectedRow] || result.context;
-  $: hiddenSelected = result.hidden?.[selectedToken] || result.tokens[selectedToken];
   $: isLearned = result.modelType === 'learned-tiny-transformer';
+  $: hiddenSelected = result.hidden?.[selectedToken] || (isLearned ? result.tokens[selectedToken] : (result.perTokenContext?.[selectedToken] || result.context));
   $: redrawKey = [selectedToken,selectedRow,selectedCol,expandedStage,result.modelType].join('|');
 
   $: weightColor = d3.scaleSequential(d3.interpolatePurples)
@@ -95,7 +95,7 @@ Detailed calculations live in TransformerDetail.svelte.
     <UpstreamSankeyFlow {pathMap} {redrawKey}/>
 
     <button type="button" class:expanded={expandedStage==='embedding'} class="stage embedding-overview" on:click={() => onExpandedStageChange(expandedStage==='embedding'?null:'embedding')}>
-      <div class="stage-head"><b>1</b><span>Embedding</span><small>state → 8D token</small></div>
+      <div class="stage-head"><b>1</b><span>Embedding</span><small>{isLearned ? 'state → 8D token' : 'state → scale-only normalize'}</small></div>
       <div class="token-column">
         {#each result.tokens as token,i}
           <div class:selected={i===selectedToken} class="embedding-token token-row" on:mouseenter={() => selectToken(i)} on:focus={() => selectToken(i)}>
@@ -108,7 +108,7 @@ Detailed calculations live in TransformerDetail.svelte.
     </button>
 
     <button type="button" class:expanded={expandedStage==='qkv'} class="stage qkv-overview" on:click={() => onExpandedStageChange(expandedStage==='qkv'?null:'qkv')}>
-      <div class="stage-head"><b>2</b><span>Q · K · V</span><small>learned projections</small></div>
+      <div class="stage-head"><b>2</b><span>Q · K · V</span><small>{isLearned ? 'learned projections' : 'fixed, not learned'}</small></div>
       <div class="qkv-labels"><span class="q">Q</span><span class="k">K</span><span class="v">V</span></div>
       <div class="token-column">
         {#each result.q as q,i}
@@ -153,14 +153,16 @@ Detailed calculations live in TransformerDetail.svelte.
     </button>
 
     <button type="button" class:expanded={expandedStage==='block'} class="stage block-overview" on:click={() => onExpandedStageChange(expandedStage==='block'?null:'block')}>
-      <div class="stage-head"><b>4</b><span>Transformer block</span><small>residual + MLP</small></div>
+      <div class="stage-head"><b>4</b><span>Transformer block</span><small>{isLearned ? 'residual + MLP' : 'none in toy — context passes through'}</small></div>
       <div class="block-live">
         <div class="block-op">context</div>
         <span>→</span>
+        {#if isLearned}
         <div class="block-op">Wₒ + residual</div>
         <span>→</span>
         <div class="block-op">LN · GELU MLP</div>
         <span>→</span>
+        {/if}
         <div class="hidden-target vector hidden-vector"><UpstreamVectorCanvas data={hiddenSelected} colorScale="blue" active={true}/></div>
       </div>
       <code>{hiddenSelected.slice(0,3).map(v=>v.toFixed(2)).join(' ')}</code>

@@ -15,6 +15,16 @@ const WK = [
 export const STATE_FIELDS = ['x', 'xDot', 'theta', 'thetaDot'];
 export const NORMALIZATION_SCALE = [2.4, 3.0, 0.38, 3.5];
 
+// This toy fallback has no learned weights: Q/K are fixed 4x4 matrices, V is
+// the identity (the normalized token itself), and this constant recency
+// prior is added to every score so later keys are favored deterministically.
+// It is NOT a learned attention bias -- keep it, don't relabel it as one.
+export const RECENCY_BIAS_PER_STEP = 1.20;
+
+// Fixed (not learned) feedback gains applied to the attention context to
+// produce the action score: [x, xDot, theta, thetaDot].
+export const ACTION_HEAD_WEIGHTS = [1.50, 0.50, 8.00, 3.00];
+
 function normalize(state) {
   return state.map((value, i) => value / NORMALIZATION_SCALE[i]);
 }
@@ -45,8 +55,14 @@ export function runAttention(history) {
   const qkProducts = q.map(qi =>
     k.map(kj => qi.map((x, j) => x * kj[j]))
   );
-  const scores = qkProducts.map(row =>
-    row.map((products, j) => products.reduce((sum, x) => sum + x, 0) / Math.sqrt(q[0].length) + 1.20 * j)
+  const preBiasScores = qkProducts.map(row =>
+    row.map(products => products.reduce((sum, x) => sum + x, 0) / Math.sqrt(q[0].length))
+  );
+  const scoreBias = preBiasScores.map(row =>
+    row.map((_, j) => RECENCY_BIAS_PER_STEP * j)
+  );
+  const scores = preBiasScores.map((row, i) =>
+    row.map((value, j) => value + scoreBias[i][j])
   );
   const raw = scores.map((row, i) =>
     row.map((value, j) => j > i ? -Infinity : value)
@@ -66,15 +82,13 @@ export function runAttention(history) {
 
   // An intentionally small, transparent attention-weighted state-feedback head.
   // Positive means push right; negative means push left.
-  const actionScore =
-    1.50 * context[0] +
-    0.50 * context[1] +
-    8.00 * context[2] +
-    3.00 * context[3];
+  const actionScore = dot(ACTION_HEAD_WEIGHTS, context);
 
   return {
     modelType: 'transparent-toy',
     encoderType: 'scale-only',
+    recencyBiasPerStep: RECENCY_BIAS_PER_STEP,
+    actionHeadWeights: ACTION_HEAD_WEIGHTS,
     rawTokens,
     normalizedTokens,
     tokens,
@@ -82,6 +96,8 @@ export function runAttention(history) {
     k,
     v,
     qkProducts,
+    preBiasScores,
+    scoreBias,
     scores,
     raw,
     softmaxMax: softmaxDetail.map(detail => detail.max),

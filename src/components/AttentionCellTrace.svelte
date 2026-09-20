@@ -27,6 +27,9 @@ Rendering primitives are adapted from Polo Club Transformer Explainer.
   $: dotSum = products.reduce((sum, x) => sum + x, 0);
   $: scale = Math.sqrt(q.length);
   $: score = result.scores[selectedRow][selectedCol];
+  $: hasFixedBias = Array.isArray(result.scoreBias);
+  $: preBiasScore = hasFixedBias ? result.preBiasScores[selectedRow][selectedCol] : score;
+  $: biasValue = hasFixedBias ? result.scoreBias[selectedRow][selectedCol] : 0;
   $: maskedScore = result.raw[selectedRow][selectedCol];
   $: masked = !Number.isFinite(maskedScore);
   $: rowMax = result.softmaxMax[selectedRow];
@@ -78,10 +81,13 @@ Rendering primitives are adapted from Polo Club Transformer Explainer.
   data-v0={v[0]}
   data-contribution0={contribution[0]}
   data-source={source}
+  data-has-fixed-bias={hasFixedBias}
+  data-pre-bias-score={preBiasScore}
+  data-bias-value={biasValue}
 >
   <header class="trace-head">
     <div>
-      <div class="eyebrow">SELECTED ATTENTION CELL · ACTUAL {source === 'frozen' ? 'FROZEN' : 'LIVE'} ARITHMETIC</div>
+      <div class="eyebrow">SELECTED ATTENTION CELL · ACTUAL {source === 'frozen' ? 'FROZEN' : 'LIVE'} ARITHMETIC{hasFixedBias ? ' · TOY FALLBACK (fixed weights, not learned)' : ''}</div>
       <h3>Q {label(selectedRow)} × K {label(selectedCol)}</h3>
       <p>matrix 한 칸이 어떤 계산을 뜻하는지 이 경로만 따라가면 됩니다.</p>
     </div>
@@ -142,16 +148,26 @@ Rendering primitives are adapted from Polo Club Transformer Explainer.
 
     <article class="trace-stage score-stage">
       <div class="step">B</div>
-      <h4>합하고 √d로 나눔</h4>
+      <h4>합하고 √d로 나눔{hasFixedBias ? ' + 고정 recency prior' : ''}</h4>
       <div class="equation">
         <span>Σ(QᵢKᵢ)</span>
         <strong>{dotSum.toFixed(5)}</strong>
         <span>÷ √{q.length}</span>
         <strong>{scale.toFixed(5)}</strong>
-        <span>= score</span>
-        <strong>{score.toFixed(5)}</strong>
+        <span>= {hasFixedBias ? 'pre-bias score' : 'score'}</span>
+        <strong>{preBiasScore.toFixed(5)}</strong>
+        {#if hasFixedBias}
+          <span>+ 고정 bias ({result.recencyBiasPerStep.toFixed(2)} × key index {selectedCol})</span>
+          <strong>{biasValue.toFixed(5)}</strong>
+          <span>= score</span>
+          <strong>{score.toFixed(5)}</strong>
+        {/if}
       </div>
-      <p>이 값이 Q·Kᵀ matrix의 선택한 한 칸입니다.</p>
+      {#if hasFixedBias}
+        <p>이 toy fallback은 학습된 attention이 아닙니다 — dot-product score에 학습되지 않은 고정 recency bias(나중 key일수록 커짐)를 더한 값입니다.</p>
+      {:else}
+        <p>이 값이 Q·Kᵀ matrix의 선택한 한 칸입니다.</p>
+      {/if}
     </article>
 
     <div class="trace-arrow">→</div>

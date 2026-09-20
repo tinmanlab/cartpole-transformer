@@ -29,6 +29,7 @@ See docs/learning-suite.md for the four-stage contract this follows.
   export let lastDecisionTrace = null;
   export let status = 'balancing';
   export let onSelectToken = () => {};
+  export let onSelectAttention = () => {};
   export let onExpandedStageChange = () => {};
   export let onApplyStep = () => {};
   export let onClose = () => {};
@@ -123,7 +124,17 @@ See docs/learning-suite.md for the four-stage contract this follows.
     onExpandedStageChange(null);
   }
 
+  // Opening the shared full-detail drawer must hand it the exact query/key
+  // the guide is currently showing -- otherwise the drawer falls back to
+  // App's own selectedRow/selectedCol (last query token by default) and
+  // silently shows a different cell than the one the guide's Calculation
+  // stage was just displaying.
   function openFullDetail(kind) {
+    if (kind === 'attention') {
+      onSelectAttention(lastIndex, selectedKey);
+    } else if (kind === 'action') {
+      onSelectToken(lastIndex);
+    }
     onExpandedStageChange(kind);
   }
 

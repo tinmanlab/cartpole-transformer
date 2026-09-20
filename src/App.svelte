@@ -444,6 +444,7 @@
   data-vision-sample-state={syncVisionState.join(',')}
   data-active-action-score={activeActionScore ?? ''}
   data-controller-force={controllerForce}
+  data-model-state={modelState}
 >
   <header class="topbar">
     <strong>Cart-Pole Transformer</strong>
@@ -488,6 +489,9 @@
 
     {#if mode === 'state'}
       <div class="state-column">
+        {#if modelState === 'toy-fallback'}
+          <div class="model-fallback-banner" role="status">⚠ learned state model failed to load — showing the transparent toy fallback (fixed weights, not learned)</div>
+        {/if}
         <section class="follow-decision" aria-label="follow one decision guide">
           {#if !followDecisionOpen}
             <button
@@ -507,6 +511,7 @@
                 {lastDecisionTrace}
                 {status}
                 onSelectToken={selectToken}
+                onSelectAttention={selectAttention}
                 onExpandedStageChange={(stage)=>expandedStage=stage}
                 onApplyStep={stepOnce}
                 onClose={closeFollowDecision}
