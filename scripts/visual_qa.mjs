@@ -1800,8 +1800,13 @@ async function runFollowGuideSelectionRoundtrip(browser, width, label, keyIndex,
   if(!actionEyebrowSegments.includes('t')) {
     pushError(label+': Action full-detail header does not label the last token "t" while a non-last Key is selected, got '+JSON.stringify(actionEyebrow));
   }
-  const guideKeyAfterActionOpen=await page.evaluate(()=>Number(document.querySelector('.follow-decision-guide .fd-key-select button.active')?.dataset.index));
-  if(guideKeyAfterActionOpen!==chosenKey) pushError(label+': opening Action full detail changed the guide\'s stored Key '+JSON.stringify({expected:chosenKey,got:guideKeyAfterActionOpen}));
+  // .fd-key-select is intentionally not rendered on the Action stage (it's
+  // a Calculation-stage control), so it cannot be queried here to prove the
+  // stored Key survived -- that would be a null/false-negative read, not
+  // evidence either way. The real proof is the existing invariant below:
+  // returning to Calculation (where the selector actually renders) and
+  // reopening the drawer must show the exact same Key/dim that was chosen
+  // before visiting Action.
   await page.getByRole('button',{name:'close Transformer detail'}).click();
   await page.waitForTimeout(60);
   await page.getByRole('tab',{name:/Calculation/}).click();
