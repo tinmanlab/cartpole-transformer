@@ -16,6 +16,12 @@ MIT License, Copyright (c) 2022 Polo Club of Data Science
   export let selectedRow = 0;
   export let selectedCol = 0;
   export let onSelect = () => {};
+  // Optional: overrides the "1. Dot product" score-matrix label/formula for
+  // callers whose passed `scores` already has something added beyond
+  // QK^T/sqrt(d) (e.g. a fixed bias) baked in -- default matches the
+  // original learned-model text exactly, so normal callers are unchanged.
+  export let scoreLabel = 'Dot product';
+  export let scoreFormula = 'QKᵀ / √d';
 
   let root;
   let qkEl;
@@ -60,7 +66,7 @@ MIT License, Copyright (c) 2022 Polo Club of Data Science
 
 <div class="attention-expansion" bind:this={root}>
   <div class="calc" bind:this={qkEl}>
-    <div class="calc-title"><b>1</b><span>Dot product</span><code>QKᵀ / √d</code></div>
+    <div class="calc-title"><b>1</b><span>{scoreLabel}</span><code>{scoreFormula}</code></div>
     <MatrixSvg
       data={scores}
       cellHeight={18}

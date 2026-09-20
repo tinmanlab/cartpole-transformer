@@ -30,6 +30,7 @@
   let selectedToken = N - 1;
   let selectedRow = N - 1;
   let selectedCol = N - 1;
+  let selectedDim = 0;
   let expandedStage = null;
 
   let selectedVisionFrame = VISION_SEQUENCE_LENGTH - 1;
@@ -286,6 +287,7 @@
     selectedToken = N - 1;
     selectedRow = N - 1;
     selectedCol = N - 1;
+    selectedDim = clampDim(0);
     selectedVisionFrame = VISION_SEQUENCE_LENGTH - 1;
     selectedFusionToken = VISION_SEQUENCE_LENGTH * 2 - 1;
 
@@ -299,16 +301,45 @@
     if (mode === 'fusion') controllerForce = activeForce();
   }
 
+  // Central query lock: while the guide is open, Query (selectedRow) must
+  // stay pinned to the last token no matter which caller tries to move it --
+  // Pipeline's embedding/qkv token hover and its attention-matrix hover both
+  // call selectToken/selectAttention directly, same as the shared drawer, so
+  // the clamp has to live here (the one place both paths funnel through),
+  // not just in TransformerDetail's own forwarding wrapper. Outside the
+  // guide this is a no-op and Query/Key stay fully free.
   function selectToken(i) {
     selectedToken = i;
-    selectedRow = i;
+    selectedRow = followDecisionOpen ? N - 1 : i;
     selectedCol = i;
   }
 
   function selectAttention(r,c) {
-    selectedRow = r;
+    selectedRow = followDecisionOpen ? N - 1 : r;
     selectedCol = c;
     selectedToken = c;
+  }
+
+  // Guide-owned Key/dim selectors: while the guide is open, Query stays
+  // locked to the last token (see lockQuery on TransformerDetail below), so
+  // only Key/dim can move -- both are App state so the guide's own buttons
+  // and the shared full-detail drawer read/write the exact same selection.
+  // Equivalent to selectAttention(N-1, i) now that the lock is central, kept
+  // as its own named function for readability at call sites.
+  function selectKey(i) {
+    selectAttention(N - 1, i);
+  }
+
+  // Clamp to the actual current context/hidden vector width (4D toy, 8D
+  // learned) rather than assuming a fixed dimension count -- used both for
+  // interactive selection and at deliberate lifecycle resets below.
+  function clampDim(d) {
+    const width = result?.perTokenContext?.[0]?.length ?? result?.context?.length;
+    return Number.isFinite(width) && width > 0 ? Math.min(Math.max(0, d), width - 1) : Math.max(0, d);
+  }
+
+  function selectDim(d) {
+    selectedDim = clampDim(d);
   }
 
   function reset() {
@@ -326,6 +357,7 @@
     selectedToken = N - 1;
     selectedRow = N - 1;
     selectedCol = N - 1;
+    selectedDim = clampDim(0);
     selectedVisionFrame = VISION_SEQUENCE_LENGTH - 1;
     selectedFusionToken = VISION_SEQUENCE_LENGTH * 2 - 1;
 
@@ -359,6 +391,13 @@
     followDecisionSeq += 1;
     followDecisionOpen = true;
     expandedStage = null;
+    // A new decision event deliberately resets Query/Key/dim to the guide's
+    // fixed last token -- it never inherits a selection left over from a
+    // previous event or from free browsing outside the guide.
+    selectedToken = N - 1;
+    selectedRow = N - 1;
+    selectedCol = N - 1;
+    selectedDim = clampDim(0);
   }
 
   function closeFollowDecision() {
@@ -368,6 +407,7 @@
     selectedToken = N - 1;
     selectedRow = N - 1;
     selectedCol = N - 1;
+    selectedDim = clampDim(0);
   }
 
   onMount(() => {
@@ -379,6 +419,10 @@
         learnedModel = model;
         modelState = 'learned';
         refreshCurrentInference(mode !== 'compare');
+        // Toy (4D context) -> learned (8D hidden) is a real width change;
+        // widening never needs a clamp, but re-clamp anyway so this stays
+        // correct if a future model ever shipped a narrower width.
+        selectedDim = clampDim(selectedDim);
       })
       .catch(() => {
         if (!cancelled) modelState = 'toy-fallback';
@@ -444,6 +488,7 @@
   data-vision-sample-state={syncVisionState.join(',')}
   data-active-action-score={activeActionScore ?? ''}
   data-controller-force={controllerForce}
+  data-model-state={modelState}
 >
   <header class="topbar">
     <strong>Cart-Pole Transformer</strong>
@@ -488,6 +533,9 @@
 
     {#if mode === 'state'}
       <div class="state-column">
+        {#if modelState === 'toy-fallback'}
+          <div class="model-fallback-banner" role="status">⚠ learned state model failed to load — showing the transparent toy fallback (fixed weights, not learned)</div>
+        {/if}
         <section class="follow-decision" aria-label="follow one decision guide">
           {#if !followDecisionOpen}
             <button
@@ -506,7 +554,10 @@
                 currentTick={syncTick}
                 {lastDecisionTrace}
                 {status}
-                onSelectToken={selectToken}
+                selectedKey={selectedCol}
+                {selectedDim}
+                onSelectKey={selectKey}
+                onSelectDim={selectDim}
                 onExpandedStageChange={(stage)=>expandedStage=stage}
                 onApplyStep={stepOnce}
                 onClose={closeFollowDecision}
@@ -612,9 +663,12 @@
       {selectedCol}
       {expandedStage}
       source={followDecisionOpen && followDecisionSnapshot ? 'frozen' : 'live'}
+      lockQuery={followDecisionOpen}
+      highlightDim={selectedDim}
       onClose={()=>expandedStage=null}
       onSelectToken={selectToken}
       onSelectAttention={selectAttention}
+      onSelectDim={selectDim}
     />
   {/if}
 
@@ -636,6 +690,9 @@
     </div>
 
     {#if mode==='state'}
+      {#if modelState==='toy-fallback'}
+        <div class="claim">LEARNED MODEL REFERENCE — NOT ACTIVE IN TOY FALLBACK. 아래 5단계는 학습된 모델 기준 설명이며, 지금 실제로 동작 중인 toy fallback은 학습되지 않은 고정 recency bias(+1.20×j)와 고정 feedback gain으로 force를 계산합니다.</div>
+      {/if}
       <div class="steps">
         <article><b>1. Embedding</b><p><code>[x,ẋ,θ,θ̇]</code> → normalize → learned 4→8 projection + position.</p></article>
         <article><b>2. Q / K / V</b><p>LayerNorm 뒤 같은 token을 세 learned projection으로 나눕니다.</p></article>

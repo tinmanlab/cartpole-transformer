@@ -8,6 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "check:model": "node scripts/check_learned_model.mjs",
+    "check:toy-attention": "node scripts/check_toy_attention.mjs",
     "check:vision": "node scripts/check_vision_model.mjs",
     "check:fusion": "node scripts/check_fusion_model.mjs",
     "check:comparison": "node scripts/check_comparison_replay.mjs",

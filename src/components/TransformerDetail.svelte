@@ -17,17 +17,27 @@ Uses visualization primitives adapted from poloclub/transformer-explainer
   export let selectedCol = 7;
   export let expandedStage = null;
   export let source = 'live';
+  export let lockQuery = false;
+  export let highlightDim = -1;
   export let onClose = () => {};
   export let onSelectToken = () => {};
   export let onSelectAttention = () => {};
+  export let onSelectDim = () => {};
 
   const names = ['x','ẋ','θ','θ̇'];
-  const stageInfo = {
+  const learnedStageInfo = {
     embedding: '실제 simulator state를 normalize한 뒤 learned 4→8 projection과 position vector를 더합니다.',
     qkv: 'LayerNorm 뒤 동일한 token을 실제 learned WQ, WK, WV에 통과시켜 세 역할로 분리합니다.',
     attention: '실제 Q·K score에 causal mask와 softmax를 적용하고, 그 weight로 실제 V를 섞습니다.',
     block: '실제 attention output projection, residual, LayerNorm, GELU MLP, 두 번째 residual을 순서대로 보여줍니다.',
     action: '실제 final hidden(t)을 learned action head가 읽고 tanh를 거쳐 ±10 N force를 냅니다.'
+  };
+  const toyStageInfo = {
+    embedding: 'TOY FALLBACK · 실제 simulator state를 scale로 normalize만 합니다 — learned projection도 position vector도 없습니다.',
+    qkv: 'TOY FALLBACK · 고정된(학습되지 않은) 4×4 Q/K 행렬을 normalize된 state에 곱합니다. V는 identity — normalize된 state 그대로입니다.',
+    attention: 'TOY FALLBACK · 실제 Q·K score에 고정 recency bias를 더하고 causal mask와 softmax를 적용해 실제 V를 섞습니다.',
+    block: 'TOY FALLBACK · output projection, residual, LayerNorm, MLP가 없습니다 — attention context가 그대로 다음 단계로 전달됩니다.',
+    action: 'TOY FALLBACK · context에 고정 feedback gain을 곱한 합이 action score이며, tanh를 거쳐 ±10 N force를 냅니다.'
   };
 
   const paramColor = d3.scaleDiverging()
@@ -47,14 +57,30 @@ Uses visualization primitives adapted from poloclub/transformer-explainer
   $: qSelected = result.q[selectedToken];
   $: kSelected = result.k[selectedToken];
   $: vSelected = result.v[selectedToken];
-  $: contextSelected = result.perTokenContext?.[selectedToken] || result.context;
-  $: attendedSelected = result.attended?.[selectedToken] || contextSelected;
-  $: residual1Selected = result.residual1?.[selectedToken] || tokenSelected;
-  $: norm2Selected = result.norm2?.[selectedToken] || residual1Selected;
-  $: mlpUpSelected = result.mlpUp?.[selectedToken] || norm2Selected;
-  $: mlpSelected = result.mlp?.[selectedToken] || norm2Selected;
-  $: hiddenSelected = result.hidden?.[selectedToken] || residual1Selected;
   $: isLearned = result.modelType === 'learned-tiny-transformer';
+  // Block is the residual/MLP transform of the attention OUTPUT, which
+  // belongs to the Query row (selectedRow) -- Key (selectedCol, mirrored
+  // into selectedToken by App.selectAttention) only controls which V
+  // contributed to that output. Using selectedToken here would silently mix
+  // Query r's context with Key c's hidden state whenever r != c (now common
+  // since F3 persists Key across stages). Clamped the same way selectedToken
+  // is, since selectedRow isn't otherwise bounds-checked in this component.
+  $: blockToken = Math.min(Math.max(0, selectedRow), last);
+  $: contextSelected = result.perTokenContext?.[blockToken] || result.context;
+  $: attendedSelected = result.attended?.[blockToken] || contextSelected;
+  $: residual1Selected = result.residual1?.[blockToken] || result.tokens[blockToken];
+  $: norm2Selected = result.norm2?.[blockToken] || residual1Selected;
+  $: mlpUpSelected = result.mlpUp?.[blockToken] || norm2Selected;
+  $: mlpSelected = result.mlp?.[blockToken] || norm2Selected;
+  $: hiddenSelected = result.hidden?.[blockToken] || (isLearned ? residual1Selected : contextSelected);
+  $: stageInfo = isLearned ? learnedStageInfo : toyStageInfo;
+  // Action always reads the final/last token (result.hidden?.[last] or
+  // result.context, both hardcoded "· t" in the action-detail markup below)
+  // regardless of which token Key selection last set selectedToken to --
+  // the shared header must label the token it actually consumes, not the
+  // unrelated Key persisted from a prior Calculation-stage selection. Block
+  // likewise consumes the Query row (blockToken above), not the Key.
+  $: eyebrowToken = expandedStage === 'action' ? last : expandedStage === 'block' ? blockToken : selectedToken;
 
   function liveText(values, count=4) {
     return values.slice(0,count).map(v=>Number(v).toFixed(3)).join(' ');
@@ -65,8 +91,8 @@ Uses visualization primitives adapted from poloclub/transformer-explainer
 <section class="transformer-detail-wide">
   <header class="detail-head">
     <div>
-      <div class="eyebrow">{source === 'frozen' ? 'FROZEN TENSOR DETAIL' : 'LIVE TENSOR DETAIL'} · {selectedToken===last?'t':'t−'+(last-selectedToken)}</div>
-      <h2>{expandedStage === 'embedding' ? 'Embedding' : expandedStage === 'qkv' ? 'Q · K · V' : expandedStage === 'attention' ? 'Self Attention' : expandedStage === 'block' ? 'Residual + MLP' : 'Action head'}</h2>
+      <div class="eyebrow">{source === 'frozen' ? 'FROZEN TENSOR DETAIL' : 'LIVE TENSOR DETAIL'} · {eyebrowToken===last?'t':'t−'+(last-eyebrowToken)}{isLearned ? '' : ' · TOY FALLBACK (model failed to load)'}</div>
+      <h2>{expandedStage === 'embedding' ? 'Embedding' : expandedStage === 'qkv' ? 'Q · K · V' : expandedStage === 'attention' ? 'Self Attention' : expandedStage === 'block' ? (isLearned ? 'Residual + MLP' : 'Context (pass-through)') : 'Action head'}</h2>
       <p>{stageInfo[expandedStage]}</p>
     </div>
     <button type="button" on:click={onClose} aria-label="close Transformer detail">×</button>
@@ -83,6 +109,7 @@ Uses visualization primitives adapted from poloclub/transformer-explainer
         <b>Normalized 4D</b>
         <div class="number-vector">{#each normalizedSelected as value}<span>{value.toFixed(3)}</span>{/each}</div>
       </div>
+      {#if isLearned}
       <div class="math-arrow"><span>Linear 4→8</span>→</div>
       <div class="calc-item">
         <b>State embedding</b>
@@ -96,6 +123,7 @@ Uses visualization primitives adapted from poloclub/transformer-explainer
         <code>{liveText(posEmbeddingSelected)}</code>
       </div>
       <div class="math-symbol">=</div>
+      {/if}
       <div class="calc-item">
         <b>Token {tokenSelected.length}D</b>
         <div class="wide-vector final"><UpstreamVectorCanvas data={tokenSelected} colorScale="gray" active={true}/></div>
@@ -108,19 +136,19 @@ Uses visualization primitives adapted from poloclub/transformer-explainer
   {:else if expandedStage === 'qkv'}
     <div class="qkv-detail">
       <div class="calc-item source-token">
-        <b>LayerNorm(token)</b>
+        <b>{isLearned ? 'LayerNorm(token)' : 'Normalized state (no LayerNorm)'}</b>
         <div class="wide-vector"><UpstreamVectorCanvas data={norm1Selected} colorScale="gray" active={true}/></div>
         <code>{liveText(norm1Selected)}</code>
       </div>
       {#each [
-        ['Q','blue',result.modelWeights?.q?.weight,qSelected,'무엇을 찾을까?'],
-        ['K','red',result.modelWeights?.k?.weight,kSelected,'나는 어떤 정보인가?'],
-        ['V','green',result.modelWeights?.v?.weight,vSelected,'실제로 가져갈 내용']
+        ['Q','blue',result.modelWeights?.q?.weight,qSelected,isLearned?'무엇을 찾을까?':'고정 Q 투영 (학습 안 됨)'],
+        ['K','red',result.modelWeights?.k?.weight,kSelected,isLearned?'나는 어떤 정보인가?':'고정 K 투영 (학습 안 됨)'],
+        ['V','green',result.modelWeights?.v?.weight,vSelected,isLearned?'실제로 가져갈 내용':'identity — normalize된 state 그대로']
       ] as item}
         <article class="projection-card">
           <div class="projection-title"><b class={item[1]}>{item[0]}</b><span>{item[4]}</span></div>
           {#if item[2]}<UpstreamMatrixSvg data={item[2]} cellHeight={11} cellWidth={11} rowGap={1.5} colGap={1.5} shape="rect" colorScale={(v)=>paramColor(v)} showTooltip={(e,v)=>v.toFixed(3)}/>{/if}
-          <div class="projection-op">× LN(token) →</div>
+          <div class="projection-op">{isLearned ? '× LN(token) →' : '× fixed matrix →'}</div>
           <div class="projection-vector"><UpstreamVectorCanvas data={item[3]} colorScale={item[1]} active={true}/></div>
           <code>{liveText(item[3])}</code>
         </article>
@@ -134,6 +162,8 @@ Uses visualization primitives adapted from poloclub/transformer-explainer
         weights={result.weights}
         {selectedRow}
         {selectedCol}
+        scoreLabel={isLearned ? 'Dot product' : 'Dot product + fixed bias'}
+        scoreFormula={isLearned ? 'QKᵀ / √d' : 'QKᵀ/√d + ' + (result.recencyBiasPerStep ?? 0).toFixed(2) + '×j'}
         onSelect={(r,c)=>onSelectAttention(r,c)}
       />
       <AttentionCellTrace
@@ -141,11 +171,15 @@ Uses visualization primitives adapted from poloclub/transformer-explainer
         {selectedRow}
         {selectedCol}
         {source}
+        {lockQuery}
+        {highlightDim}
         onSelect={(r,c)=>onSelectAttention(r,c)}
+        {onSelectDim}
       />
     </div>
   {:else if expandedStage === 'block'}
     <div class="block-detail">
+      {#if isLearned}
       <div class="block-step"><b>Context</b><div class="wide-vector"><UpstreamVectorCanvas data={contextSelected} colorScale="purple" active={true}/></div><small>Σ attention·V</small><code>{liveText(contextSelected)}</code></div>
       <span>→ Wₒ →</span>
       <div class="block-step"><b>Attention out</b><div class="wide-vector"><UpstreamVectorCanvas data={attendedSelected} colorScale="purple" active={true}/></div><code>{liveText(attendedSelected)}</code></div>
@@ -157,15 +191,27 @@ Uses visualization primitives adapted from poloclub/transformer-explainer
       <div class="block-step"><b>FFN 16D</b><div class="wide-vector ffn"><UpstreamVectorCanvas data={mlpUpSelected} colorScale="purple" active={true}/></div><code>{liveText(mlpUpSelected)}</code></div>
       <span>→ Linear + residual →</span>
       <div class="block-step"><b>Hidden 8D</b><div class="wide-vector final"><UpstreamVectorCanvas data={hiddenSelected} colorScale="blue" active={true}/></div><code>{liveText(hiddenSelected)}</code></div>
+      {:else}
+      <div class="block-step"><b>Context</b><div class="wide-vector"><UpstreamVectorCanvas data={contextSelected} colorScale="purple" active={true}/></div><small>Σ attention·V</small><code>{liveText(contextSelected)}</code></div>
+      <span>→ no output projection, residual, LayerNorm or MLP in toy fallback →</span>
+      <div class="block-step"><b>Passed through unchanged</b><div class="wide-vector final"><UpstreamVectorCanvas data={hiddenSelected} colorScale="blue" active={true}/></div><code>{liveText(hiddenSelected)}</code></div>
+      {/if}
     </div>
   {:else if expandedStage === 'action'}
     <div class="action-detail">
+      {#if isLearned}
       <div class="block-step"><b>Final hidden · t</b><div class="wide-vector"><UpstreamVectorCanvas data={result.hidden?.[last] || hiddenSelected} colorScale="blue" active={true}/></div><code>{liveText(result.hidden?.[last] || hiddenSelected)}</code></div>
       <span>×</span>
       {#if result.modelWeights?.action}
         <div class="weight-peek"><span>action weight · 1×{result.modelWeights.action.weight[0].length}</span><UpstreamMatrixSvg data={result.modelWeights.action.weight} cellHeight={18} cellWidth={18} rowGap={1} colGap={2} shape="rect" colorScale={(v)=>paramColor(v)} showTooltip={(e,v)=>v.toFixed(3)}/></div>
       {/if}
       <span>→ score <code>{result.actionScore.toFixed(6)}</code> → tanh × 10 →</span>
+      {:else}
+      <div class="block-step"><b>Context · t</b><div class="wide-vector"><UpstreamVectorCanvas data={result.context} colorScale="blue" active={true}/></div><code>{liveText(result.context)}</code></div>
+      <span>×</span>
+      <div class="block-step"><b>Fixed feedback gains</b><code>[{(result.actionHeadWeights || []).map(w=>w.toFixed(2)).join(', ')}]</code></div>
+      <span>→ score <code>{result.actionScore.toFixed(6)}</code> → tanh × 10 →</span>
+      {/if}
       <div class="action-result">{controllerForce>=0?'RIGHT':'LEFT'} <b>{Math.abs(controllerForce).toFixed(2)} N</b></div>
     </div>
   {/if}

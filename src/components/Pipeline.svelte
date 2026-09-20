@@ -26,8 +26,14 @@ Detailed calculations live in TransformerDetail.svelte.
   $: kSelected = result.k[selectedToken];
   $: vSelected = result.v[selectedToken];
   $: contextSelected = result.perTokenContext?.[selectedRow] || result.context;
-  $: hiddenSelected = result.hidden?.[selectedToken] || result.tokens[selectedToken];
   $: isLearned = result.modelType === 'learned-tiny-transformer';
+  // The Block stage is the residual/MLP transform of the attention OUTPUT,
+  // which belongs to the Query row (selectedRow) -- Key (selectedCol,
+  // mirrored into selectedToken by App.selectAttention) only controls which
+  // V contributed to that output. Must match contextSelected's row above,
+  // not the Key-indexed selectedToken, or Block silently shows a different
+  // token's hidden state than the attention context feeding into it.
+  $: hiddenSelected = result.hidden?.[selectedRow] || (isLearned ? result.tokens[selectedRow] : (result.perTokenContext?.[selectedRow] || result.context));
   $: redrawKey = [selectedToken,selectedRow,selectedCol,expandedStage,result.modelType].join('|');
 
   $: weightColor = d3.scaleSequential(d3.interpolatePurples)
@@ -85,7 +91,7 @@ Detailed calculations live in TransformerDetail.svelte.
 <section class="pipeline-shell resize-watch">
   <div class="panel-head">
     <div>
-      <strong>Transformer · 1 block · 1 head</strong>
+      <strong>{isLearned ? 'Transformer · 1 block · 1 head' : 'Transformer · fixed attention + feedback · 1 head'}</strong>
       <small>단계를 클릭하면 아래에서 live tensor 계산을 크게 펼칩니다</small>
     </div>
     <span>{isLearned ? 'LEARNED' : 'TOY'} · {controllerForce >= 0 ? '→' : '←'} {Math.abs(controllerForce).toFixed(2)} N</span>
@@ -95,20 +101,20 @@ Detailed calculations live in TransformerDetail.svelte.
     <UpstreamSankeyFlow {pathMap} {redrawKey}/>
 
     <button type="button" class:expanded={expandedStage==='embedding'} class="stage embedding-overview" on:click={() => onExpandedStageChange(expandedStage==='embedding'?null:'embedding')}>
-      <div class="stage-head"><b>1</b><span>Embedding</span><small>state → 8D token</small></div>
+      <div class="stage-head"><b>1</b><span>Embedding</span><small>{isLearned ? 'state → 8D token' : 'state → scale-only normalize'}</small></div>
       <div class="token-column">
         {#each result.tokens as token,i}
           <div class:selected={i===selectedToken} class="embedding-token token-row" on:mouseenter={() => selectToken(i)} on:focus={() => selectToken(i)}>
             <span class="time-label">{i===last?'t':'t−'+(last-i)}</span>
             <div class="token-vector vector"><UpstreamVectorCanvas data={token} colorScale="gray" active={i===selectedToken}/></div>
-            <span class="dim-label">8D</span>
+            <span class="dim-label">{token.length}D</span>
           </div>
         {/each}
       </div>
     </button>
 
     <button type="button" class:expanded={expandedStage==='qkv'} class="stage qkv-overview" on:click={() => onExpandedStageChange(expandedStage==='qkv'?null:'qkv')}>
-      <div class="stage-head"><b>2</b><span>Q · K · V</span><small>learned projections</small></div>
+      <div class="stage-head"><b>2</b><span>Q · K · V</span><small>{isLearned ? 'learned projections' : 'fixed, not learned'}</small></div>
       <div class="qkv-labels"><span class="q">Q</span><span class="k">K</span><span class="v">V</span></div>
       <div class="token-column">
         {#each result.q as q,i}
@@ -153,14 +159,16 @@ Detailed calculations live in TransformerDetail.svelte.
     </button>
 
     <button type="button" class:expanded={expandedStage==='block'} class="stage block-overview" on:click={() => onExpandedStageChange(expandedStage==='block'?null:'block')}>
-      <div class="stage-head"><b>4</b><span>Transformer block</span><small>residual + MLP</small></div>
+      <div class="stage-head"><b>4</b><span>{isLearned ? 'Transformer block' : 'Context (pass-through)'}</span><small>{isLearned ? 'residual + MLP' : 'no Wₒ/residual/LN/MLP in toy'}</small></div>
       <div class="block-live">
         <div class="block-op">context</div>
         <span>→</span>
+        {#if isLearned}
         <div class="block-op">Wₒ + residual</div>
         <span>→</span>
         <div class="block-op">LN · GELU MLP</div>
         <span>→</span>
+        {/if}
         <div class="hidden-target vector hidden-vector"><UpstreamVectorCanvas data={hiddenSelected} colorScale="blue" active={true}/></div>
       </div>
       <code>{hiddenSelected.slice(0,3).map(v=>v.toFixed(2)).join(' ')}</code>
