@@ -1101,6 +1101,34 @@ async function runDesktop(browser) {
   const guideTickTo=Number(await guideTrace.getAttribute('data-tick-to').catch(()=>NaN));
   if(guideTickFrom!==capturedTick || guideTickTo!==capturedTick+1) pushError('follow-decision guide: displayed Result trace tick range is not t->t+1 for the captured event');
 
+  // Source/provenance: reopening the Pipeline overview from inside the still-
+  // open guide, now that Apply has moved the live plant one tick ahead of the
+  // captured event, must show the SAME frozen snapshot the guide/Result stage
+  // are showing (source=frozen, force matches the captured trace's applied
+  // force) — not the live plant, which has already advanced past it.
+  await page.locator('.pipeline-disclosure summary').click();
+  await page.waitForTimeout(100);
+  const pipelineAfterApply=await page.locator('.pipeline-disclosure').evaluate(el=>({
+    open:el.open,
+    source:el.dataset.source,
+    summaryText:el.querySelector('summary')?.innerText||''
+  }));
+  if(pipelineAfterApply.source!=='frozen') pushError('follow-decision guide: Pipeline overview source is not "frozen" after Apply while the guide is open, got '+JSON.stringify(pipelineAfterApply.source));
+  if(!pipelineAfterApply.summaryText.includes('FROZEN') || !pipelineAfterApply.summaryText.includes(String(capturedTick))) {
+    pushError('follow-decision guide: Pipeline overview summary does not show FROZEN + captured tick '+capturedTick+', got '+JSON.stringify(pipelineAfterApply.summaryText));
+  }
+  if(!pipelineAfterApply.summaryText.includes('LIVE') || !pipelineAfterApply.summaryText.includes(String(tickAfterApply))) {
+    pushError('follow-decision guide: Pipeline overview summary does not show LIVE + current tick '+tickAfterApply+' (one ahead of captured), got '+JSON.stringify(pipelineAfterApply.summaryText));
+  }
+  const pipelineForceAfterApply=await page.locator('.pipeline-shell .panel-head>span').innerText();
+  const capturedForceText=await guideTrace.getAttribute('data-applied-policy-force');
+  const capturedForceAbs=Math.abs(Number(capturedForceText)).toFixed(2);
+  if(!pipelineForceAfterApply.includes(capturedForceAbs)) {
+    pushError('follow-decision guide: Pipeline overview force does not match the captured event after Apply '+JSON.stringify({pipelineForceAfterApply,capturedForceAbs}));
+  }
+  await page.locator('.pipeline-disclosure summary').click();
+  await page.waitForTimeout(80);
+
   // Result stage must lead with a readable (>=14px) summary of the actual
   // captured transition, matching the trace exactly, with the old verbose
   // per-field trace present but collapsed by default.
@@ -1182,8 +1210,15 @@ async function runDesktop(browser) {
   if(tickAfterClose!==tickBeforeClose) pushError('follow-decision guide: closing the guide changed the plant tick');
   const pushReenabled=await page.getByRole('button',{name:'Push →'}).isDisabled().catch(()=>true);
   if(pushReenabled) pushError('follow-decision guide: Push stayed disabled after the guide was closed');
-  const pipelineRestoredOnClose=await page.locator('.pipeline-disclosure').evaluate(el=>el.open).catch(()=>false);
-  if(!pipelineRestoredOnClose) pushError('follow-decision guide: Pipeline overview did not restore to its default-visible state after the guide closed');
+  const pipelineRestoredOnClose=await page.locator('.pipeline-disclosure').evaluate(el=>({open:el.open,source:el.dataset.source})).catch(()=>({open:false,source:null}));
+  if(!pipelineRestoredOnClose.open) pushError('follow-decision guide: Pipeline overview did not restore to its default-visible state after the guide closed');
+  if(pipelineRestoredOnClose.source!=='live') pushError('follow-decision guide: Pipeline overview source is not "live" after the guide closed, got '+JSON.stringify(pipelineRestoredOnClose.source));
+  const pipelineForceAfterClose=await page.locator('.pipeline-shell .panel-head>span').innerText();
+  const liveCommandForceAfterClose=await page.locator('main').getAttribute('data-controller-force');
+  const liveCommandForceAbs=Math.abs(Number(liveCommandForceAfterClose)).toFixed(2);
+  if(!pipelineForceAfterClose.includes(liveCommandForceAbs)) {
+    pushError('follow-decision guide: Pipeline overview force did not revert to the live commanded force after the guide closed '+JSON.stringify({pipelineForceAfterClose,liveCommandForceAbs}));
+  }
 
   // Mode change must invalidate/close a still-open guide cleanly.
   await followEntry.click();
@@ -1659,6 +1694,11 @@ try {
   await runDesktop(browser);
   await runMobile(browser);
   await runResponsiveLayoutAudit(browser,1440,'audit-desktop');
+  // 1280px sits just above the 1220px lab-grid breakpoint (still the
+  // full two-column state-column layout, slightly narrower than 1440) --
+  // added to explicitly cover the new state-column/pipeline-disclosure
+  // nesting at that width, not just the two widths either side of it.
+  await runResponsiveLayoutAudit(browser,1280,'audit-1280');
   await runResponsiveLayoutAudit(browser,1024,'audit-laptop');
   await runResponsiveLayoutAudit(browser,768,'audit-tablet');
   await runResponsiveLayoutAudit(browser,390,'audit-mobile');

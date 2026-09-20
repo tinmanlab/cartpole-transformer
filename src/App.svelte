@@ -94,6 +94,18 @@
   // the user manually re-toggling it) the instant the guide closes again.
   $: pipelineOpen = !followDecisionOpen;
 
+  // Reopening the Pipeline overview from inside the guided workspace must
+  // show the SAME frozen event the guide/TransformerDetail are showing, not
+  // the live plant (which has already advanced past the captured tick once
+  // Apply runs) — same source convention as TransformerDetail's
+  // followDecisionOpen/followDecisionSnapshot check below.
+  $: pipelineSourceFrozen = followDecisionOpen && !!followDecisionSnapshot;
+  $: pipelineResult = pipelineSourceFrozen ? followDecisionSnapshot.result : result;
+  $: pipelineControllerForce = pipelineSourceFrozen ? followDecisionSnapshot.controllerForce : controllerForce;
+  $: pipelineSourceLabel = pipelineSourceFrozen
+    ? 'FROZEN captured tick ' + followDecisionSnapshot.tick + ' · LIVE current tick ' + syncTick
+    : 'LIVE tick ' + syncTick;
+
   $: decisionTraceSummary = lastDecisionTrace
     ? 'tick ' + lastDecisionTrace.tickFrom + ' → ' + lastDecisionTrace.tickTo + ' · ' + status
     : 'no step recorded yet · ' + status;
@@ -508,11 +520,11 @@
              exploration; it only collapses to a closed overview while the
              guide is open (pipelineOpen), and is always reopenable by the
              user via this same native <details> regardless of guide state. -->
-        <details class="disclosure-toggle pipeline-disclosure" bind:open={pipelineOpen}>
-          <summary>Pipeline overview · Embedding → Action (5 stages)</summary>
+        <details class="disclosure-toggle pipeline-disclosure" bind:open={pipelineOpen} data-source={pipelineSourceFrozen ? 'frozen' : 'live'}>
+          <summary>Pipeline overview · Embedding → Action (5 stages) · {pipelineSourceLabel}</summary>
           <Pipeline
-            {result}
-            {controllerForce}
+            result={pipelineResult}
+            controllerForce={pipelineControllerForce}
             {selectedToken}
             {selectedRow}
             {selectedCol}
