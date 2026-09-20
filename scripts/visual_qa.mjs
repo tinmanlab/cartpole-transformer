@@ -496,13 +496,33 @@ async function runResponsiveLayoutAudit(browser, width, label) {
     if(!scoreTile || !forceTile || !commandTile || !tickTile){
       pushError(label+': Action stage is missing one of the 4 expected readout tiles '+JSON.stringify(actionTiles.map(t=>t.labelText)));
     } else {
-      const scoreVal=Number(scoreTile.valueText);
-      const expectedForceText=(10*Math.tanh(scoreVal)).toFixed(2);
-      if(forceTile.valueText!==expectedForceText){
-        pushError(label+': Action tile "10·tanh(score) [N]" shows '+forceTile.valueText+' but action score '+scoreTile.valueText+' implies '+expectedForceText);
+      // Derive the expected score/force from the full-precision native
+      // arithmetic already exposed on the Action-head detail step
+      // (data-action-score-check = actionProductsSum + actionBias, the same
+      // un-rounded number the component feeds into forceFromScore), rather
+      // than re-deriving force from the tile's own already-rounded 6dp
+      // display text — that would fail near a rounding boundary even when
+      // both displayed values are individually correct.
+      const trueScoreStep=page.locator('.follow-decision-guide .fd-calc-step[data-action-score-check]');
+      const trueScoreAttr=(await trueScoreStep.count())?await trueScoreStep.getAttribute('data-action-score-check'):null;
+      if(trueScoreAttr!==null){
+        const trueScore=Number(trueScoreAttr);
+        const expectedScoreText=trueScore.toFixed(6);
+        const expectedForceText=(10*Math.tanh(trueScore)).toFixed(2);
+        if(scoreTile.valueText!==expectedScoreText){
+          pushError(label+': Action tile "action score" shows '+scoreTile.valueText+' but the true native score is '+expectedScoreText);
+        }
+        if(forceTile.valueText!==expectedForceText){
+          pushError(label+': Action tile "10·tanh(score) [N]" shows '+forceTile.valueText+' but the true native score '+expectedScoreText+' implies '+expectedForceText);
+        }
+        if(commandTile.valueText!==expectedForceText){
+          pushError(label+': Action tile "force command [N]" shows '+commandTile.valueText+' but the true native score '+expectedScoreText+' implies '+expectedForceText);
+        }
       }
-      if(String(Number(tickTile.valueText))===''||Number.isNaN(Number(tickTile.valueText))) pushError(label+': Action tile "captured tick" is not a readable number, got '+tickTile.valueText);
-      if(Number.isNaN(Number(commandTile.valueText))) pushError(label+': Action tile "force command [N]" is not a readable number, got '+commandTile.valueText);
+      if(!Number.isFinite(Number(tickTile.valueText))) pushError(label+': Action tile "captured tick" is not a readable number, got '+tickTile.valueText);
+      if(!Number.isFinite(Number(scoreTile.valueText))) pushError(label+': Action tile "action score" is not a readable number, got '+scoreTile.valueText);
+      if(!Number.isFinite(Number(forceTile.valueText))) pushError(label+': Action tile "10·tanh(score) [N]" is not a readable number, got '+forceTile.valueText);
+      if(!Number.isFinite(Number(commandTile.valueText))) pushError(label+': Action tile "force command [N]" is not a readable number, got '+commandTile.valueText);
     }
 
     await page.screenshot({path:path.join(outDir,label+'-follow-decision-action.jpg'),type:'jpeg',quality:74,fullPage:true});
