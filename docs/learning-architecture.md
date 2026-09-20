@@ -10,17 +10,16 @@ Input sequence:
 `s_0, s_1, ..., s_t`, where each `s` contains `x, x_dot, theta, theta_dot`.
 
 Expose:
-1. normalization
-2. state embedding
-3. Wq / Wk / Wv projections
-4. query-key dot products
-5. scale by sqrt(d_k)
-6. softmax
-7. weighted values
-8. context
-9. two-action head
+1. normalization (scale-only, per-field, no learned embedding)
+2. fixed 4×4 Wq / Wk projections; V is the identity (the normalized token itself)
+3. query-key dot products, scaled by sqrt(4)
+4. a fixed (not learned) recency bias of `+1.20 × keyIndex` added to every score, before the causal mask
+5. causal mask, then softmax
+6. weighted values
+7. context (per Query row)
+8. a fixed feedback-gain dot product (`[1.50, 0.50, 8.00, 3.00] · context`) reduced to a scalar action score, then `10 · tanh(score)` as a single continuous force command — not a two-action categorical head
 
-This stage may use intentionally tiny hand-authored weights. It must be labelled as an explainer, not a trained policy.
+This stage (the toy/unlearned fallback) uses no trained weights at all; it is an intentionally transparent, hand-authored explainer, not a trained policy, and must stay clearly labelled as such wherever it is shown. It has no relation to Stage B's own head: Stage B projects tokens 4→8, adds learned positional embeddings, and runs LayerNorm + MLP blocks before a learned scalar action head — none of Stage A's fixed recency-bias/feedback-gain prior applies there.
 
 ## Stage B — learned causal Transformer policy
 

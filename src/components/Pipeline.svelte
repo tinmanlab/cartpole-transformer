@@ -27,7 +27,13 @@ Detailed calculations live in TransformerDetail.svelte.
   $: vSelected = result.v[selectedToken];
   $: contextSelected = result.perTokenContext?.[selectedRow] || result.context;
   $: isLearned = result.modelType === 'learned-tiny-transformer';
-  $: hiddenSelected = result.hidden?.[selectedToken] || (isLearned ? result.tokens[selectedToken] : (result.perTokenContext?.[selectedToken] || result.context));
+  // The Block stage is the residual/MLP transform of the attention OUTPUT,
+  // which belongs to the Query row (selectedRow) -- Key (selectedCol,
+  // mirrored into selectedToken by App.selectAttention) only controls which
+  // V contributed to that output. Must match contextSelected's row above,
+  // not the Key-indexed selectedToken, or Block silently shows a different
+  // token's hidden state than the attention context feeding into it.
+  $: hiddenSelected = result.hidden?.[selectedRow] || (isLearned ? result.tokens[selectedRow] : (result.perTokenContext?.[selectedRow] || result.context));
   $: redrawKey = [selectedToken,selectedRow,selectedCol,expandedStage,result.modelType].join('|');
 
   $: weightColor = d3.scaleSequential(d3.interpolatePurples)

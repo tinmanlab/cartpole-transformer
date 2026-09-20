@@ -57,21 +57,30 @@ Uses visualization primitives adapted from poloclub/transformer-explainer
   $: qSelected = result.q[selectedToken];
   $: kSelected = result.k[selectedToken];
   $: vSelected = result.v[selectedToken];
-  $: contextSelected = result.perTokenContext?.[selectedToken] || result.context;
-  $: attendedSelected = result.attended?.[selectedToken] || contextSelected;
-  $: residual1Selected = result.residual1?.[selectedToken] || tokenSelected;
-  $: norm2Selected = result.norm2?.[selectedToken] || residual1Selected;
-  $: mlpUpSelected = result.mlpUp?.[selectedToken] || norm2Selected;
-  $: mlpSelected = result.mlp?.[selectedToken] || norm2Selected;
   $: isLearned = result.modelType === 'learned-tiny-transformer';
-  $: hiddenSelected = result.hidden?.[selectedToken] || (isLearned ? residual1Selected : contextSelected);
+  // Block is the residual/MLP transform of the attention OUTPUT, which
+  // belongs to the Query row (selectedRow) -- Key (selectedCol, mirrored
+  // into selectedToken by App.selectAttention) only controls which V
+  // contributed to that output. Using selectedToken here would silently mix
+  // Query r's context with Key c's hidden state whenever r != c (now common
+  // since F3 persists Key across stages). Clamped the same way selectedToken
+  // is, since selectedRow isn't otherwise bounds-checked in this component.
+  $: blockToken = Math.min(Math.max(0, selectedRow), last);
+  $: contextSelected = result.perTokenContext?.[blockToken] || result.context;
+  $: attendedSelected = result.attended?.[blockToken] || contextSelected;
+  $: residual1Selected = result.residual1?.[blockToken] || result.tokens[blockToken];
+  $: norm2Selected = result.norm2?.[blockToken] || residual1Selected;
+  $: mlpUpSelected = result.mlpUp?.[blockToken] || norm2Selected;
+  $: mlpSelected = result.mlp?.[blockToken] || norm2Selected;
+  $: hiddenSelected = result.hidden?.[blockToken] || (isLearned ? residual1Selected : contextSelected);
   $: stageInfo = isLearned ? learnedStageInfo : toyStageInfo;
   // Action always reads the final/last token (result.hidden?.[last] or
   // result.context, both hardcoded "· t" in the action-detail markup below)
   // regardless of which token Key selection last set selectedToken to --
   // the shared header must label the token it actually consumes, not the
-  // unrelated Key persisted from a prior Calculation-stage selection.
-  $: eyebrowToken = expandedStage === 'action' ? last : selectedToken;
+  // unrelated Key persisted from a prior Calculation-stage selection. Block
+  // likewise consumes the Query row (blockToken above), not the Key.
+  $: eyebrowToken = expandedStage === 'action' ? last : expandedStage === 'block' ? blockToken : selectedToken;
 
   function liveText(values, count=4) {
     return values.slice(0,count).map(v=>Number(v).toFixed(3)).join(' ');

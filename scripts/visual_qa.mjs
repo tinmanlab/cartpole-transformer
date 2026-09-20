@@ -729,6 +729,66 @@ async function runDesktop(browser) {
         await qButtons.nth(allowedRow).click();
         await kButtons.nth(allowedCol).click();
         await page.waitForTimeout(80);
+
+        // Block/context provenance regression (r != c, already true here:
+        // allowedRow=last, allowedCol=last-2): attention output and the
+        // following Block transform belong to the Query row -- Key only
+        // controls which V contributed. Pipeline's Block-overview vector and
+        // the attention-overview context vector must NOT change when only
+        // Key changes with Query held fixed; the displayed attention weight
+        // MUST change, proving the Key change actually took effect.
+        // Sim must be frozen for this: the tick advancing between the
+        // "before" and "after" reads would move context/hidden on its own
+        // and make the equality assertions meaningless.
+        const provenancePause=page.getByRole('button',{name:'Pause'});
+        const pausedForProvenance=await provenancePause.count();
+        if(pausedForProvenance) await provenancePause.click();
+        await page.waitForTimeout(80);
+        const blockTextBefore=await page.locator('.block-overview code').innerText();
+        const contextCanvasBefore=await page.locator('.attention-overview .context-vector canvas').evaluate(el=>el.toDataURL());
+        const weightBefore=await page.locator('.attention-overview .attention-read strong').innerText();
+        const altKeyIndex=allowedCol===0?1:0;
+        await kButtons.nth(altKeyIndex).click();
+        await page.waitForTimeout(120);
+        const weightAfter=await page.locator('.attention-overview .attention-read strong').innerText();
+        if(weightAfter===weightBefore) pushError('block/context provenance: changing Key alone did not change the displayed attention weight -- test precondition invalid');
+        const blockTextAfter=await page.locator('.block-overview code').innerText();
+        if(blockTextAfter!==blockTextBefore) {
+          pushError('block/context provenance: Pipeline Block-overview vector changed when only Key changed (Query fixed) -- Block must read the Query row, not Key '+JSON.stringify({blockTextBefore,blockTextAfter}));
+        }
+        const contextCanvasAfter=await page.locator('.attention-overview .context-vector canvas').evaluate(el=>el.toDataURL());
+        if(contextCanvasAfter!==contextCanvasBefore) {
+          pushError('block/context provenance: attention-overview context vector changed when only Key changed (Query fixed)');
+        }
+
+        // Full Block detail header/source must also label the Query row,
+        // not Key. Dispatched (not Playwright .click()) so the realistic
+        // mouse-travel path from the Key button up to this stage button
+        // doesn't cross Pipeline's other hover-to-select elements
+        // (embedding/qkv token rows, attention matrix cells) and silently
+        // reselect Query/Key as a side effect before we read the header --
+        // a real test-precondition hazard, not a source defect: confirmed
+        // by isolating the same sequence with only the click method varied.
+        await page.evaluate(()=>document.querySelector('.block-overview').click());
+        await page.waitForTimeout(150);
+        const blockEyebrow=await page.locator('.transformer-detail-wide .detail-head .eyebrow').innerText().catch(()=>'');
+        if(!blockEyebrow.split('·').map(s=>s.trim()).includes('t')) {
+          pushError('block/context provenance: full Block detail header does not label the Query row ("t"), got '+JSON.stringify(blockEyebrow));
+        }
+        await page.evaluate(()=>document.querySelector('.attention-overview').click());
+        await page.waitForTimeout(150);
+
+        // Restore the pre-check running state so later push/progression
+        // tests still see the sim advancing as they expect.
+        if(pausedForProvenance) await page.getByRole('button',{name:'Run'}).click();
+        await page.waitForTimeout(80);
+
+        // Returning to attention must preserve the original r/c/dim --
+        // restore the Key the pre-existing code below expects, exactly like
+        // the reset it already performs.
+        await qButtons.nth(allowedRow).click();
+        await kButtons.nth(allowedCol).click();
+        await page.waitForTimeout(80);
         await trace.screenshot({path:path.join(outDir,'desktop-attention-trace.jpg'),type:'jpeg',quality:86});
       }
     }
@@ -2056,6 +2116,32 @@ async function runModelLoadFailureFixture(browser) {
     if(Math.abs(cell.bias-1.20*keyIndex)>1e-6) pushError('model-load-failure fixture: fixed recency bias at key='+keyIndex+' is not 1.20*j, got '+cell.bias);
     if(Math.abs(cell.preBias+cell.bias-cell.score)>1e-6) pushError('model-load-failure fixture: dot/scale + fixed bias does not equal score at key='+keyIndex+' '+JSON.stringify(cell));
     if(cell.weight<0||cell.weight>1) pushError('model-load-failure fixture: attention weight out of [0,1] at key='+keyIndex+' '+JSON.stringify(cell));
+  }
+  // Same-row Block check as the learned-model fixture above: toy fallback's
+  // Block stage is an explicit pass-through of context[r] (Query row), so
+  // changing Key alone (Query fixed, r!=c) must not change it.
+  const queryButtons=page.locator('.attention-cell-trace .trace-query-button');
+  if(lastIndex>0){
+    await queryButtons.nth(lastIndex).click();
+    await keyButtons.nth(middleIndex).click();
+    await page.waitForTimeout(60);
+    const toyBlockBefore=await page.locator('.block-overview code').innerText();
+    const altKey=middleIndex===0?lastIndex:0;
+    await keyButtons.nth(altKey).click();
+    await page.waitForTimeout(60);
+    const toyBlockAfter=await page.locator('.block-overview code').innerText();
+    if(toyBlockAfter!==toyBlockBefore) pushError('model-load-failure fixture: toy Block (pass-through) context changed when only Key changed (Query fixed) '+JSON.stringify({toyBlockBefore,toyBlockAfter}));
+
+    // Full Block detail must also label the Query row, and returning to
+    // attention must preserve r/c.
+    await page.evaluate(()=>document.querySelector('.block-overview').click());
+    await page.waitForTimeout(100);
+    const toyBlockEyebrow=await page.locator('.transformer-detail-wide .detail-head .eyebrow').innerText().catch(()=>'');
+    if(!toyBlockEyebrow.split('·').map(s=>s.trim()).includes('t')) pushError('model-load-failure fixture: full Block detail header does not label the Query row ("t"), got '+JSON.stringify(toyBlockEyebrow));
+    await page.evaluate(()=>document.querySelector('.attention-overview').click());
+    await page.waitForTimeout(100);
+    const toyTraceRC=await page.locator('.attention-cell-trace').evaluate(el=>({row:Number(el.dataset.row),col:Number(el.dataset.col)}));
+    if(toyTraceRC.row!==lastIndex || toyTraceRC.col!==altKey) pushError('model-load-failure fixture: returning to attention did not preserve r/c '+JSON.stringify(toyTraceRC));
   }
   await page.screenshot({path:path.join(outDir,'network-fixture-toy-fallback-attention.jpg'),type:'jpeg',quality:82,fullPage:true});
 
