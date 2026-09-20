@@ -231,13 +231,13 @@ See docs/learning-suite.md for the four-stage contract this follows.
         <div class="fd-key-select" role="group" aria-label="select key token to inspect">
           <span class="fd-selector-label">Key</span>
           {#each weightsRow as _,i}
-            <button type="button" class:active={i===selectedKey} on:click={()=>onSelectKey(i)}>{label(i)}</button>
+            <button type="button" data-index={i} class:active={i===selectedKey} on:click={()=>onSelectKey(i)}>{label(i)}</button>
           {/each}
         </div>
         <div class="fd-dim-select" role="group" aria-label="select value dimension">
           <span class="fd-selector-label">dim</span>
           {#each Array(dimCount) as _,d}
-            <button type="button" class:active={d===selectedDim} on:click={()=>onSelectDim(d)}>d{d}</button>
+            <button type="button" data-index={d} class:active={d===selectedDim} on:click={()=>onSelectDim(d)}>d{d}</button>
           {/each}
         </div>
       </div>

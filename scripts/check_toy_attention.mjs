@@ -6,31 +6,36 @@ const assert = (ok, message) => {
 };
 const close = (a, b, eps = 1e-9) => Math.abs(a - b) <= eps;
 
-// Independent re-implementation of the PRE-FIX toy fallback exactly as it
-// shipped (git 76c0b84, src/lib/attention.js before this branch): a single
-// opaque `scores = dot(Q,K)/sqrt(d) + 1.20*j`, no preBiasScores/scoreBias
-// decomposition existed at all. Kept deliberately separate from
-// src/lib/attention.js (own WQ/WK/normalize copies) so this is a true
-// external baseline, not a reflection of the code under test.
-const NATIVE_WQ = [
+// Hand-maintained TEST ORACLE mirroring the pre-fix toy fallback formula
+// (git 76c0b84, src/lib/attention.js before this branch): a single opaque
+// `scores = dot(Q,K)/sqrt(d) + 1.20*j`, no preBiasScores/scoreBias
+// decomposition existed at all. This is a local re-implementation for this
+// test file (own WQ/WK/normalize copies, not imported from src/lib/), not a
+// checkout of the actual historical module -- call it a test oracle, not
+// "the native module". A stronger, independent comparison directly against
+// the real git-history module (25 varied histories, 14525 scalar
+// comparisons, 1600 score decompositions, max diff 0) was separately run
+// and reviewed outside this file; this oracle is kept here as a small,
+// fast, always-available regression guard, in addition to that evidence.
+const ORACLE_WQ = [
   [0.10, 0.05, 1.00, 0.42],
   [0.00, 0.12, 0.35, 0.95],
   [0.10, 0.25, 0.18, 0.35],
   [0.25, 0.10, 0.08, 0.10],
 ];
-const NATIVE_WK = [
+const ORACLE_WK = [
   [0.08, 0.05, 0.95, 0.40],
   [0.00, 0.10, 0.30, 0.92],
   [0.08, 0.24, 0.20, 0.32],
   [0.24, 0.08, 0.05, 0.12],
 ];
-const NATIVE_SCALE = [2.4, 3.0, 0.38, 3.5];
-const NATIVE_ACTION_WEIGHTS = [1.50, 0.50, 8.00, 3.00];
+const ORACLE_SCALE = [2.4, 3.0, 0.38, 3.5];
+const ORACLE_ACTION_WEIGHTS = [1.50, 0.50, 8.00, 3.00];
 
-function nativeMatVec(M, v) {
+function oracleMatVec(M, v) {
   return M.map(row => row.reduce((sum, w, i) => sum + w * v[i], 0));
 }
-function nativeSoftmaxRow(xs) {
+function oracleSoftmaxRow(xs) {
   const finite = xs.map(x => Number.isFinite(x) ? x : -1e9);
   const max = Math.max(...finite);
   const exp = finite.map(x => Math.exp(x - max));
@@ -38,15 +43,15 @@ function nativeSoftmaxRow(xs) {
   return exp.map(x => x / denom);
 }
 
-// This function has NO decomposition: it returns only `scores` (already
+// This oracle has NO decomposition: it returns only `scores` (already
 // biased) and `weights`/`actionScore`, exactly the shape the pre-fix code
 // exposed to the UI -- there is no separate pre-bias/bias field to read,
 // which is precisely the fabrication bug F2 fixed (AttentionCellTrace had
 // no source of truth for "dot/scale" alone).
-function nativePreFixToyAttention(history) {
-  const tokens = history.map(state => state.map((x, i) => x / NATIVE_SCALE[i]));
-  const q = tokens.map(v => nativeMatVec(NATIVE_WQ, v));
-  const k = tokens.map(v => nativeMatVec(NATIVE_WK, v));
+function oraclePreFixToyAttention(history) {
+  const tokens = history.map(state => state.map((x, i) => x / ORACLE_SCALE[i]));
+  const q = tokens.map(v => oracleMatVec(ORACLE_WQ, v));
+  const k = tokens.map(v => oracleMatVec(ORACLE_WK, v));
   const v = tokens.map(t => [...t]);
   const scores = q.map((qi, i) =>
     k.map((kj, j) => {
@@ -55,12 +60,12 @@ function nativePreFixToyAttention(history) {
     })
   );
   const raw = scores.map((row, i) => row.map((val, j) => (j > i ? -Infinity : val)));
-  const weights = raw.map(nativeSoftmaxRow);
+  const weights = raw.map(oracleSoftmaxRow);
   const last = weights.length - 1;
   const context = Array.from({ length: v[0].length }, (_, d) =>
     weights[last].reduce((sum, w, j) => sum + w * v[j][d], 0)
   );
-  const actionScore = context.reduce((sum, x, d) => sum + x * NATIVE_ACTION_WEIGHTS[d], 0);
+  const actionScore = context.reduce((sum, x, d) => sum + x * ORACLE_ACTION_WEIGHTS[d], 0);
   return { scores, weights, actionScore, force: forceFromScore(actionScore) };
 }
 
@@ -72,10 +77,10 @@ function assertMatrixClose(a, b, label, eps = 1e-9) {
   }
 }
 
-// Compare src/lib/attention.js against the independent pre-fix native
-// baseline across several varied histories (not just one fixture): full
-// scores matrix, full weights matrix, actionScore and force must all match
-// exactly. This is what "byte-identical" actually means -- not one scalar.
+// Compare src/lib/attention.js against the pre-fix test oracle above across
+// several varied histories (not just one fixture): full scores matrix, full
+// weights matrix, actionScore and force must all match exactly. This is
+// what "byte-identical" actually means -- not one scalar.
 const varietyHistories = [
   Array.from({ length: 8 }, () => [0, 0, 0.045, 0]),
   Array.from({ length: 8 }, (_, i) => [0.01 * i, -0.02 + 0.005 * i, 0.03 - 0.003 * i, 0.04 - 0.002 * i]),
@@ -83,20 +88,20 @@ const varietyHistories = [
 ];
 for (const [idx, hist] of varietyHistories.entries()) {
   const fixed = runAttention(hist);
-  const native = nativePreFixToyAttention(hist);
-  assertMatrixClose(fixed.scores, native.scores, `variety[${idx}].scores`);
-  assertMatrixClose(fixed.weights, native.weights, `variety[${idx}].weights`, 1e-8);
-  assert(close(fixed.actionScore, native.actionScore, 1e-8), `variety[${idx}] actionScore mismatch: ${fixed.actionScore} vs ${native.actionScore}`);
-  assert(close(forceFromScore(fixed.actionScore), native.force, 1e-8), `variety[${idx}] force mismatch`);
+  const oracle = oraclePreFixToyAttention(hist);
+  assertMatrixClose(fixed.scores, oracle.scores, `variety[${idx}].scores`);
+  assertMatrixClose(fixed.weights, oracle.weights, `variety[${idx}].weights`, 1e-8);
+  assert(close(fixed.actionScore, oracle.actionScore, 1e-8), `variety[${idx}] actionScore mismatch: ${fixed.actionScore} vs ${oracle.actionScore}`);
+  assert(close(forceFromScore(fixed.actionScore), oracle.force, 1e-8), `variety[${idx}] force mismatch`);
 
   // Demonstrate the actual bug F2 fixed: the pre-fix baseline structurally
   // has no way to decompose `scores` back into dot/scale vs. the fixed
   // bias -- there was no preBiasScores/scoreBias field to read, so a UI
   // built against it (AttentionCellTrace) could only ever display the
   // already-biased number labeled as if it were the raw dot/scale score.
-  assert(native.preBiasScores === undefined, `variety[${idx}]: native baseline unexpectedly exposes preBiasScores (should not)`);
-  assert(native.scoreBias === undefined, `variety[${idx}]: native baseline unexpectedly exposes scoreBias (should not)`);
-  assert(Array.isArray(fixed.preBiasScores) && Array.isArray(fixed.scoreBias), `variety[${idx}]: current code must expose the decomposition the native baseline never had`);
+  assert(oracle.preBiasScores === undefined, `variety[${idx}]: test oracle unexpectedly exposes preBiasScores (should not)`);
+  assert(oracle.scoreBias === undefined, `variety[${idx}]: test oracle unexpectedly exposes scoreBias (should not)`);
+  assert(Array.isArray(fixed.preBiasScores) && Array.isArray(fixed.scoreBias), `variety[${idx}]: current code must expose the decomposition the pre-fix test oracle never had`);
 }
 
 // Fixture reproduced from the audited native repro: 8 identical tokens

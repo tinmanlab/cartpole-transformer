@@ -147,7 +147,7 @@ Uses visualization primitives adapted from poloclub/transformer-explainer
         weights={result.weights}
         {selectedRow}
         {selectedCol}
-        onSelect={(r,c)=>onSelectAttention(lockQuery ? selectedRow : r, c)}
+        onSelect={(r,c)=>onSelectAttention(r,c)}
       />
       <AttentionCellTrace
         {result}
@@ -156,7 +156,7 @@ Uses visualization primitives adapted from poloclub/transformer-explainer
         {source}
         {lockQuery}
         {highlightDim}
-        onSelect={(r,c)=>onSelectAttention(lockQuery ? selectedRow : r, c)}
+        onSelect={(r,c)=>onSelectAttention(r,c)}
         {onSelectDim}
       />
     </div>

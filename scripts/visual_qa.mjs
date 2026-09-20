@@ -1688,6 +1688,305 @@ async function runMobile(browser) {
   await page.close();
 }
 
+// F3 regression: guide-owned Key/dim selection must round-trip exactly with
+// the shared full-detail drawer (identity on open, either surface's changes
+// visible in both, persisted across close/reopen/stage-nav/one physical
+// step), Query must stay centrally locked to the guide's last token even
+// when the hover paths on the (reopened) Pipeline overview try to move it,
+// and a new decision event must deliberately reset the selection. Runs in
+// its own page/context so it never shares state with runDesktop/runMobile.
+async function runFollowGuideSelectionRoundtrip(browser, width, label, keyIndex, dimIndex) {
+  const page = await browser.newPage({ viewport:{width,height:Math.max(900,width<500?1500:1000)}, deviceScaleFactor:1 });
+  const pageErrors=[];
+  page.on('pageerror', err=>pageErrors.push(String(err)));
+
+  await page.goto(baseURL, { waitUntil:'networkidle', timeout:30000 });
+  await waitLearned(page);
+  await page.getByRole('button',{name:'Reset'}).click();
+  await page.waitForTimeout(250);
+
+  await page.getByRole('button',{name:'한 판단 따라가기 · Follow one decision'}).click();
+  await page.waitForTimeout(150);
+  if (await page.locator('.follow-decision-guide').count()!==1) pushError(label+': guide did not open exactly once');
+
+  await page.getByRole('tab',{name:/Calculation/}).click();
+  await page.waitForTimeout(120);
+
+  const keyButtons=page.locator('.follow-decision-guide .fd-key-select button');
+  const dimButtons=page.locator('.follow-decision-guide .fd-dim-select button');
+  const keyCount=await keyButtons.count();
+  const dimCount=await dimButtons.count();
+  const lastIndex=keyCount-1;
+  const chosenKey=Math.min(keyIndex,lastIndex);
+  const chosenDim=Math.min(dimIndex,Math.max(0,dimCount-1));
+  await keyButtons.nth(chosenKey).click();
+  await dimButtons.nth(chosenDim).click();
+  await page.waitForTimeout(80);
+
+  const readTrace=()=>page.locator('.attention-cell-trace').evaluate(el=>({
+    row:Number(el.dataset.row), col:Number(el.dataset.col), dim:Number(el.dataset.highlightDim),
+    lockQuery:el.dataset.lockQuery, score:Number(el.dataset.score),
+    preBias:Number(el.dataset.preBiasScore), bias:Number(el.dataset.biasValue)
+  }));
+
+  // 1) Identity on open: the shared drawer must show exactly the guide's
+  // current Query (locked to last)/Key/dim -- no separate sync call needed,
+  // both surfaces read the same App state.
+  const openButton=page.getByRole('button',{name:/open full Self Attention detail/});
+  await openButton.click();
+  await page.waitForTimeout(150);
+  let trace=await readTrace();
+  if(trace.row!==lastIndex) pushError(label+': drawer Query does not match guide fixed last token on open, row='+trace.row);
+  if(trace.col!==chosenKey) pushError(label+': drawer Key does not match guide selection on open '+JSON.stringify({expected:chosenKey,got:trace.col}));
+  if(trace.dim!==chosenDim) pushError(label+': drawer highlighted dim does not match guide selection on open '+JSON.stringify({expected:chosenDim,got:trace.dim}));
+  if(trace.lockQuery!=='true') pushError(label+': drawer Query is not locked while guide is open');
+  const queryButtonsDisabled=await page.locator('.attention-cell-trace .trace-query-button').evaluateAll(els=>els.every(el=>el.disabled));
+  if(!queryButtonsDisabled) pushError(label+': Query selector buttons are not all disabled while guide is open');
+
+  // Bounds/typography: the new interactive per-dim tiles must meet the 44px
+  // touch target floor, and the selected-dim readout must meet the 14px
+  // essential-text floor -- neither shrunk nor hidden to fit.
+  const productDimBoxes=await page.locator('.attention-cell-trace .product-dim').evaluateAll(els=>els.map(el=>{const r=el.getBoundingClientRect();return {w:r.width,h:r.height};}));
+  if(productDimBoxes.some(b=>b.w<44||b.h<44)) pushError(label+': a product-dim tile is below the 44px touch-target floor '+JSON.stringify(productDimBoxes));
+  const dimHighlightFont=await page.locator('.attention-cell-trace .dim-highlight code').evaluate(el=>parseFloat(getComputedStyle(el).fontSize)).catch(()=>null);
+  if(dimHighlightFont===null||dimHighlightFont<14) pushError(label+': selected-dim readout is below the 14px essential-text floor, got '+dimHighlightFont);
+  await page.screenshot({path:path.join(outDir,label+'-nondefault-detail.jpg'),type:'jpeg',quality:82,fullPage:true});
+
+  // 2) Change Key/dim IN the shared drawer; the guide (same App state) must
+  // reflect it immediately -- this is the two-way half of the round trip.
+  const altKey=chosenKey===0?lastIndex:0;
+  const altDim=chosenDim===0?Math.max(0,Math.min(1,dimCount-1)):0;
+  await page.locator('.attention-cell-trace .trace-key-button[data-index="'+altKey+'"]').click();
+  await page.locator('.attention-cell-trace .product-dim[data-dim="'+altDim+'"]').click();
+  await page.waitForTimeout(100);
+  const guideAfterDrawerChange=await page.evaluate(()=>({
+    key:Number(document.querySelector('.follow-decision-guide .fd-key-select button.active')?.dataset.index),
+    dim:Number(document.querySelector('.follow-decision-guide .fd-dim-select button.active')?.dataset.index)
+  }));
+  if(guideAfterDrawerChange.key!==altKey) pushError(label+': guide Key selector did not follow a Key change made in the shared drawer '+JSON.stringify({expected:altKey,got:guideAfterDrawerChange.key}));
+  if(guideAfterDrawerChange.dim!==altDim) pushError(label+': guide dim selector did not follow a dim change made in the shared drawer '+JSON.stringify({expected:altDim,got:guideAfterDrawerChange.dim}));
+
+  // 3) Close/reopen the drawer: selection must persist (not reset to guide
+  // defaults) since no new event has started.
+  await page.getByRole('button',{name:'close Transformer detail'}).click();
+  await page.waitForTimeout(80);
+  await openButton.click();
+  await page.waitForTimeout(120);
+  trace=await readTrace();
+  if(trace.col!==altKey||trace.dim!==altDim) pushError(label+': selection did not persist across close/reopen of the shared drawer '+JSON.stringify({trace,altKey,altDim}));
+
+  // 4) Traverse Input -> Action -> Result -> Calculation (each stage change
+  // auto-closes the drawer, never auto-opens it); Key/dim must still persist
+  // and the drawer must not have appeared uninvited on any of these stages.
+  for (const tabName of [/^Input/,/Action/,/Result/,/Calculation/]) {
+    await page.getByRole('tab',{name:tabName}).click();
+    await page.waitForTimeout(100);
+    if (await page.locator('.transformer-detail-wide').count()!==0) pushError(label+': stage navigation to '+tabName+' auto-opened the shared drawer');
+  }
+  await openButton.click();
+  await page.waitForTimeout(120);
+  trace=await readTrace();
+  if(trace.col!==altKey||trace.dim!==altDim) pushError(label+': selection did not persist across stage navigation '+JSON.stringify({trace,altKey,altDim}));
+  await page.getByRole('button',{name:'close Transformer detail'}).click();
+  await page.waitForTimeout(80);
+
+  // 5) Hover the Pipeline overview (embedding token row + attention matrix
+  // cell at an earlier row) while the guide is open: Query must stay locked
+  // to the last token centrally (App.selectToken/selectAttention), no matter
+  // which caller tries to move it -- not just the drawer's own controls.
+  await page.locator('.pipeline-disclosure summary').click();
+  await page.waitForTimeout(100);
+  await page.locator('.embedding-overview .embedding-token').first().hover();
+  await page.waitForTimeout(60);
+  await page.locator('.attention-overview .row-0.col-0').hover();
+  await page.waitForTimeout(60);
+  await page.locator('.pipeline-disclosure summary').click();
+  await page.waitForTimeout(80);
+  await openButton.click();
+  await page.waitForTimeout(120);
+  trace=await readTrace();
+  if(trace.row!==lastIndex) pushError(label+': Pipeline hover (embedding token / attention matrix) unlocked Query while guide is open, row='+trace.row);
+  const colAfterHover=trace.col;
+  await page.getByRole('button',{name:'close Transformer detail'}).click();
+  await page.waitForTimeout(80);
+
+  // 6) Apply exactly once: the live plant advances by exactly one tick, but
+  // the guide's own selected Calculation cell must remain exactly what it
+  // was -- no hidden extra step, no selection drift from Apply itself.
+  await page.getByRole('tab',{name:/Result/}).click();
+  await page.waitForTimeout(100);
+  const tickBeforeApply=Number(await page.locator('main').getAttribute('data-sync-tick'));
+  await page.getByRole('button',{name:/Apply one 20ms step/}).click();
+  await page.waitForTimeout(200);
+  const tickAfterApply=Number(await page.locator('main').getAttribute('data-sync-tick'));
+  if(tickAfterApply!==tickBeforeApply+1) pushError(label+': Apply did not advance the live plant by exactly one tick, got delta '+(tickAfterApply-tickBeforeApply));
+
+  await page.getByRole('tab',{name:/Calculation/}).click();
+  await page.waitForTimeout(100);
+  await openButton.click();
+  await page.waitForTimeout(120);
+  trace=await readTrace();
+  if(trace.col!==colAfterHover||trace.dim!==altDim) pushError(label+': selected Calculation cell changed after Apply advanced the live plant '+JSON.stringify({trace,colAfterHover,altDim}));
+  const preBiasCheck=Number.isFinite(trace.preBias)&&Number.isFinite(trace.bias)&&Number.isFinite(trace.score);
+  if(!preBiasCheck) pushError(label+': attention trace has a non-finite score/preBias/bias value after Apply '+JSON.stringify(trace));
+  await page.getByRole('button',{name:'close Transformer detail'}).click();
+  await page.waitForTimeout(60);
+
+  // 7) A new event deliberately resets Query/Key/dim to defaults.
+  await page.getByRole('button',{name:/Follow next decision/}).click();
+  await page.waitForTimeout(150);
+  await page.getByRole('tab',{name:/Calculation/}).click();
+  await page.waitForTimeout(100);
+  await openButton.click();
+  await page.waitForTimeout(120);
+  trace=await readTrace();
+  if(trace.row!==lastIndex||trace.col!==lastIndex||trace.dim!==0) {
+    pushError(label+': new decision event did not reset Query/Key/dim to defaults '+JSON.stringify(trace));
+  }
+  await page.getByRole('button',{name:'close Transformer detail'}).click();
+  await page.waitForTimeout(60);
+
+  // 8) Outside the guide, Query/Key must be fully free again, including
+  // reaching a causally-masked cell (query=0, key=lastIndex).
+  await page.locator('.fd-close').click();
+  await page.waitForTimeout(120);
+  if (await page.locator('.follow-decision-guide').count()!==0) pushError(label+': guide did not close');
+  await page.locator('.attention-overview').click();
+  await page.waitForTimeout(150);
+  const outsideQueryButtonsDisabled=await page.locator('.attention-cell-trace .trace-query-button').evaluateAll(els=>els.some(el=>el.disabled));
+  if(outsideQueryButtonsDisabled) pushError(label+': Query selector buttons are disabled outside the guide (should be fully free)');
+  await page.locator('.attention-cell-trace .trace-query-button[data-index="0"]').click();
+  await page.waitForTimeout(60);
+  await page.locator('.attention-cell-trace .trace-key-button[data-index="'+lastIndex+'"]').click();
+  await page.waitForTimeout(60);
+  const outsideState=await page.locator('.attention-cell-trace').evaluate(el=>({row:Number(el.dataset.row),col:Number(el.dataset.col),masked:el.dataset.masked,weight:Number(el.dataset.weight)}));
+  if(outsideState.row!==0||outsideState.col!==lastIndex) pushError(label+': free Query/Key selection outside the guide did not reach query=0/key='+lastIndex+' '+JSON.stringify(outsideState));
+  if(outsideState.masked!=='true'||outsideState.weight!==0) pushError(label+': query=0/key='+lastIndex+' is not causally masked outside the guide '+JSON.stringify(outsideState));
+  const futureKeyButtonHasClass=await page.locator('.attention-cell-trace .trace-key-button[data-index="'+lastIndex+'"]').evaluate(el=>el.classList.contains('future'));
+  if(!futureKeyButtonHasClass) pushError(label+': future key button is not visually marked outside the guide');
+
+  if(pageErrors.length) pushError(label+': unexpected page error(s) during guide selection roundtrip: '+JSON.stringify(pageErrors));
+  report.interactions[label]={keyIndex:chosenKey,dimIndex:chosenDim,altKey,altDim,pageErrors:pageErrors.length};
+  await page.close();
+}
+
+// F2 regression: a real (local test-only) model-load failure -- a Playwright
+// route that fails ONLY the tiny-transformer.json request with a 503, every
+// other request (including the other trained models) stays real -- must
+// drive the app into the transparent toy fallback, keep it permanently
+// identifiable, and show truthful (non-fabricated) content on every toy
+// stage. This is a deliberate local network-failure fixture for this test
+// only, not a claim about any real/production outage.
+async function runModelLoadFailureFixture(browser) {
+  const context=await browser.newContext({ viewport:{width:1440,height:1000}, deviceScaleFactor:1 });
+  const page=await context.newPage();
+  const pageErrors=[];
+  page.on('pageerror', err=>pageErrors.push(String(err)));
+
+  await page.route('**/model/tiny-transformer.json', route => route.fulfill({ status:503, contentType:'text/plain', body:'deliberate local test fixture: simulated model-fetch failure' }));
+
+  await page.goto(baseURL, { waitUntil:'networkidle', timeout:30000 });
+  await page.waitForFunction(() => (document.querySelector('.topbar span')?.textContent||'').includes('fallback'), null, { timeout:15000 });
+  await page.waitForTimeout(300);
+
+  const modelState=await page.locator('main').getAttribute('data-model-state');
+  if(modelState!=='toy-fallback') pushError('model-load-failure fixture: data-model-state is not "toy-fallback", got '+JSON.stringify(modelState));
+
+  // Persistent, not momentary: the banner is part of the normal document
+  // flow (not just a topbar span that can scroll offscreen).
+  const bannerCount=await page.locator('.model-fallback-banner').count();
+  if(bannerCount!==1) pushError('model-load-failure fixture: persistent fallback banner is missing');
+  const bannerText=await page.locator('.model-fallback-banner').innerText().catch(()=>'');
+  if(!/failed to load|fallback/i.test(bannerText)) pushError('model-load-failure fixture: fallback banner text does not explain the failure, got '+JSON.stringify(bannerText));
+
+  // Physics should not be silently racing ahead while the user reads a
+  // fallback they didn't expect -- guide entry (learned-only) must be
+  // disabled, which is the existing gate; explicitly assert it here.
+  const guideEntryDisabled=await page.locator('.follow-decision-entry').isDisabled().catch(()=>false);
+  if(!guideEntryDisabled) pushError('model-load-failure fixture: Follow-one-decision entry is not disabled in toy fallback');
+  await page.getByRole('button',{name:/^(Pause|Run)$/}).click().catch(()=>{});
+  await page.waitForTimeout(50);
+
+  await page.screenshot({path:path.join(outDir,'network-fixture-toy-fallback-overview.jpg'),type:'jpeg',quality:82,fullPage:true});
+
+  const stageCases=[
+    ['.embedding-overview','Embedding'],
+    ['.qkv-overview','Q · K · V'],
+    ['.attention-overview','Self Attention'],
+    ['.block-overview','Context (pass-through)'],
+    ['.action-overview','Action head'],
+  ];
+  for (const [sel,expectedHeading] of stageCases) {
+    await page.locator(sel).click();
+    await page.waitForTimeout(150);
+    const heading=await page.locator('.transformer-detail-wide h2').innerText().catch(()=>'');
+    if(heading!==expectedHeading) pushError('model-load-failure fixture: '+sel+' heading is '+JSON.stringify(heading)+', expected '+JSON.stringify(expectedHeading));
+    const eyebrow=await page.locator('.transformer-detail-wide .detail-head .eyebrow').innerText().catch(()=>'');
+    if(!eyebrow.includes('TOY FALLBACK')) pushError('model-load-failure fixture: '+sel+' eyebrow does not persistently label TOY FALLBACK, got '+JSON.stringify(eyebrow));
+    const bodyText=await page.locator('.transformer-detail-wide').innerText().catch(()=>'');
+    if(/Linear 4→8|LayerNorm\(token\)|Wₒ →|Linear \+ GELU|learned embedding weight|action weight ·/.test(bodyText)) {
+      pushError('model-load-failure fixture: '+sel+' shows fabricated learned-only content in toy fallback: '+JSON.stringify(bodyText.slice(0,400)));
+    }
+    if(sel==='.qkv-overview' && !bodyText.includes('identity')) pushError('model-load-failure fixture: Q/K/V stage does not truthfully label V as identity');
+    if(sel==='.action-overview' && !bodyText.includes('1.50')) pushError('model-load-failure fixture: Action stage does not show the fixed feedback gain head');
+    const closeBtn=page.getByRole('button',{name:'close Transformer detail'});
+    if(await closeBtn.count()) await closeBtn.click();
+    await page.waitForTimeout(80);
+  }
+
+  // Attention arithmetic: dot/scale (preBias) + fixed bias must equal score
+  // exactly for first/middle/last keys, the bias must be exactly
+  // 1.20*keyIndex (the audited initial recency prior), masks/weights must be
+  // valid, and nothing may read as NaN/undefined.
+  await page.locator('.attention-overview').click();
+  await page.waitForTimeout(150);
+  const keyButtons=page.locator('.attention-cell-trace .trace-key-button');
+  const keyCount=await keyButtons.count();
+  const lastIndex=keyCount-1;
+  const middleIndex=Math.floor(lastIndex/2);
+  for (const keyIndex of [0,middleIndex,lastIndex]) {
+    await keyButtons.nth(keyIndex).click();
+    await page.waitForTimeout(60);
+    const cell=await page.locator('.attention-cell-trace').evaluate(el=>({
+      preBias:Number(el.dataset.preBiasScore), bias:Number(el.dataset.biasValue), score:Number(el.dataset.score),
+      weight:Number(el.dataset.weight), hasFixedBias:el.dataset.hasFixedBias
+    }));
+    if(cell.hasFixedBias!=='true') pushError('model-load-failure fixture: toy attention trace does not expose the fixed-bias decomposition at key='+keyIndex);
+    if(![cell.preBias,cell.bias,cell.score,cell.weight].every(Number.isFinite)) pushError('model-load-failure fixture: undefined/NaN attention value at key='+keyIndex+' '+JSON.stringify(cell));
+    if(Math.abs(cell.bias-1.20*keyIndex)>1e-6) pushError('model-load-failure fixture: fixed recency bias at key='+keyIndex+' is not 1.20*j, got '+cell.bias);
+    if(Math.abs(cell.preBias+cell.bias-cell.score)>1e-6) pushError('model-load-failure fixture: dot/scale + fixed bias does not equal score at key='+keyIndex+' '+JSON.stringify(cell));
+    if(cell.weight<0||cell.weight>1) pushError('model-load-failure fixture: attention weight out of [0,1] at key='+keyIndex+' '+JSON.stringify(cell));
+  }
+  await page.screenshot({path:path.join(outDir,'network-fixture-toy-fallback-attention.jpg'),type:'jpeg',quality:82,fullPage:true});
+
+  // The deliberately-rejected model HTTP response is an expected part of
+  // this fixture, not an app error; only a real JS exception should fail
+  // the run. Distinguish the two explicitly in the report.
+  report.interactions.modelLoadFailureFixture={
+    label:'DELIBERATE LOCAL TEST FIXTURE (page.route 503 on tiny-transformer.json only) -- not a real/production outage',
+    modelState, bannerPresent:bannerCount===1, unexpectedPageErrors:pageErrors
+  };
+  if(pageErrors.length) pushError('model-load-failure fixture: unexpected JS page error(s) (network 503 itself is expected/deliberate): '+JSON.stringify(pageErrors));
+
+  await context.close();
+
+  // Reload WITHOUT the route: the same app/model code must recover to the
+  // real learned model -- this is not a fake/production mode, just a normal
+  // reload once the (test-only) network condition is gone.
+  const recoveryPage=await browser.newPage({ viewport:{width:1440,height:1000}, deviceScaleFactor:1 });
+  const recoveryErrors=[];
+  recoveryPage.on('pageerror', err=>recoveryErrors.push(String(err)));
+  await recoveryPage.goto(baseURL, { waitUntil:'networkidle', timeout:30000 });
+  await waitLearned(recoveryPage);
+  await recoveryPage.waitForTimeout(300);
+  const recoveredModelState=await recoveryPage.locator('main').getAttribute('data-model-state');
+  if(recoveredModelState!=='learned') pushError('model-load-failure fixture: normal reload without the fault did not recover to modelState="learned", got '+JSON.stringify(recoveredModelState));
+  const recoveredBanner=await recoveryPage.locator('.model-fallback-banner').count();
+  if(recoveredBanner!==0) pushError('model-load-failure fixture: fallback banner did not clear after a normal (non-faulty) reload');
+  if(recoveryErrors.length) pushError('model-load-failure fixture: unexpected page error(s) on normal-reload recovery: '+JSON.stringify(recoveryErrors));
+  await recoveryPage.close();
+}
+
 let browser;
 try {
   browser = await chromium.launch({ headless:true });
@@ -1703,6 +2002,13 @@ try {
   await runResponsiveLayoutAudit(browser,768,'audit-tablet');
   await runResponsiveLayoutAudit(browser,390,'audit-mobile');
   await runResponsiveLayoutAudit(browser,320,'audit-mobile-small');
+  // F3: guide<->shared-drawer Key/dim/Query round trip at first/middle/last
+  // key and dims 0/3/5, across desktop/mobile/small-mobile widths.
+  await runFollowGuideSelectionRoundtrip(browser,1440,'roundtrip-1440-first-key',0,0);
+  await runFollowGuideSelectionRoundtrip(browser,390,'roundtrip-390-middle-key',3,3);
+  await runFollowGuideSelectionRoundtrip(browser,320,'roundtrip-320-last-key',7,5);
+  // F2: deliberate local model-load-failure fixture, isolated context.
+  await runModelLoadFailureFixture(browser);
 } catch (error) {
   pushError('unhandled visual QA exception: ' + (error?.stack || String(error)));
 } finally {
