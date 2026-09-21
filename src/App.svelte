@@ -602,7 +602,7 @@
             <div class="decision-summary-head">Actual 8-token history → final-query mixture weights → score → force</div>
             <div class="decision-summary-weights">
               {#each summaryTopWeights as t}
-                <button type="button" class="decision-summary-weight" on:click={() => openSummaryWeight(t.i)}>
+                <button type="button" class="decision-summary-weight" data-index={t.i} on:click={() => openSummaryWeight(t.i)}>
                   <span class="dsw-label">{t.i===summaryLast?'t':'t−'+(summaryLast-t.i)}</span>
                   <span class="dsw-value">{(t.w*100).toFixed(1)}%</span>
                 </button>

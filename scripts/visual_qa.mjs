@@ -673,13 +673,29 @@ async function runDesktop(browser) {
   const summaryCaveat=await page.locator('.decision-summary-caveat').innerText();
   if(summaryTop.length<1 || summaryTop.length>3) pushError('decision summary: expected 1-3 top-weight cells, found '+summaryTop.length);
   if(!/action probability/i.test(summaryCaveat) || !/causal/i.test(summaryCaveat)) pushError('decision summary: caveat does not disclaim action-probability/causal-importance, got '+JSON.stringify(summaryCaveat));
-  const firstWeightLabel=(await page.locator('.decision-summary-weight').first().locator('.dsw-label').innerText()).trim();
-  await page.locator('.decision-summary-weight').first().click();
+  const firstWeightButton=page.locator('.decision-summary-weight').first();
+  const firstWeightLabel=(await firstWeightButton.locator('.dsw-label').innerText()).trim();
+  const firstWeightIndex=Number(await firstWeightButton.getAttribute('data-index'));
+  await firstWeightButton.click();
   await page.waitForTimeout(120);
   const detailAfterSummary=await page.locator('.transformer-detail-wide').count();
   if(detailAfterSummary!==1) pushError('decision summary: clicking a top weight did not open the shared full Self Attention inspector');
-  const detailEyebrow=await page.locator('.transformer-detail-wide .eyebrow').innerText();
+  // .transformer-detail-wide .eyebrow also matches the nested
+  // AttentionCellTrace eyebrow further down the same drawer (root-cause of
+  // CI run 35622817403); scope to the header eyebrow only.
+  const detailEyebrow=await page.locator('.transformer-detail-wide .detail-head .eyebrow').innerText();
   if(!detailEyebrow.includes(firstWeightLabel)) pushError('decision summary: opened inspector shows the wrong Key token, expected '+JSON.stringify(firstWeightLabel)+' in '+JSON.stringify(detailEyebrow));
+  // Real dataset cross-check, not just header text: the opened cell must be
+  // the exact same Query (final token, N-1) / Key (clicked summary index)
+  // the summary button represented -- same event, no drift through a
+  // relabeled/stale selection.
+  const traceCell=page.locator('.attention-cell-trace');
+  const traceKeyCount=await traceCell.locator('.trace-key-button').count();
+  const traceLastIndex=traceKeyCount-1;
+  const traceRow=Number(await traceCell.getAttribute('data-row'));
+  const traceCol=Number(await traceCell.getAttribute('data-col'));
+  if(traceRow!==traceLastIndex) pushError('decision summary: opened inspector Query row is not the final token, expected '+traceLastIndex+' got '+traceRow);
+  if(traceCol!==firstWeightIndex) pushError('decision summary: opened inspector Key column does not match the clicked summary weight, expected '+firstWeightIndex+' got '+traceCol);
   await page.getByRole('button',{name:'close Transformer detail'}).click();
   await page.waitForTimeout(80);
 
