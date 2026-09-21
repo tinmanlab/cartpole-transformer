@@ -89,11 +89,14 @@
   // after Apply-step advances the live `result`/`controllerForce` below.
   let followDecisionSnapshot = null;
 
-  // Pipeline is the primary/default-visible overview during ordinary State
-  // exploration, but collapses to a closed native <details> overview while
-  // the guide owns the workspace, and reopens (both by this default and by
-  // the user manually re-toggling it) the instant the guide closes again.
-  $: pipelineOpen = !followDecisionOpen;
+  // The compact token-weight summary below is now the primary default-entry
+  // reading; the full Pipeline/advanced graph stays a closed native
+  // <details> overview on ordinary entry (never auto-opened), is force-
+  // closed while the guide owns the workspace, and is reopenable at any
+  // time by the user's own toggle — but no longer auto-reopens itself when
+  // the guide closes, since that used to bury the summary again.
+  let pipelineOpen = false;
+  $: if (followDecisionOpen) pipelineOpen = false;
 
   // Reopening the Pipeline overview from inside the guided workspace must
   // show the SAME frozen event the guide/TransformerDetail are showing, not
@@ -106,6 +109,27 @@
   $: pipelineSourceLabel = pipelineSourceFrozen
     ? 'FROZEN captured tick ' + followDecisionSnapshot.tick + ' · LIVE current tick ' + syncTick
     : 'LIVE tick ' + syncTick;
+
+  // Compact ACTUAL 8-token weighting summary (primary default-entry reading,
+  // ahead of the collapsed Pipeline disclosure): the real final-query row of
+  // result.weights, top-3 by value + remaining mass. Not an action
+  // probability or causal-importance ranking (see docs/learning-suite.md).
+  // Only rendered while the guide is closed, so there is exactly one
+  // instance of this reading at a time (App.svelte:selectKey below is the
+  // same App-owned SSOT the shared full inspector and the guide both use).
+  $: summaryLast = N - 1;
+  $: summaryFinalRow = result?.weights?.[summaryLast] || [];
+  $: summaryTopWeights = summaryFinalRow
+    .map((w,i) => ({i,w}))
+    .sort((a,b) => b.w - a.w)
+    .slice(0,3);
+  $: summaryTopMass = summaryTopWeights.reduce((sum,t) => sum + t.w, 0);
+  $: summaryRemainingMass = Math.max(0, 1 - summaryTopMass);
+
+  function openSummaryWeight(i) {
+    selectKey(i);
+    expandedStage = 'attention';
+  }
 
   $: decisionTraceSummary = lastDecisionTrace
     ? 'tick ' + lastDecisionTrace.tickFrom + ' → ' + lastDecisionTrace.tickTo + ' · ' + status
@@ -569,10 +593,31 @@
           {/if}
         </section>
 
-        <!-- Pipeline stays the default-visible overview during ordinary State
-             exploration; it only collapses to a closed overview while the
-             guide is open (pipelineOpen), and is always reopenable by the
-             user via this same native <details> regardless of guide state. -->
+        <!-- Compact 8-token weighting summary: the primary default-entry
+             reading, ahead of the collapsed Pipeline disclosure below. The
+             guide above replaces this while open, so there is exactly one
+             live summary instance at a time. -->
+        {#if !followDecisionOpen}
+          <section class="decision-summary" data-decision-summary aria-label="actual eight-token attention weighting summary">
+            <div class="decision-summary-head">Actual 8-token history → final-query mixture weights → score → force</div>
+            <div class="decision-summary-weights">
+              {#each summaryTopWeights as t}
+                <button type="button" class="decision-summary-weight" on:click={() => openSummaryWeight(t.i)}>
+                  <span class="dsw-label">{t.i===summaryLast?'t':'t−'+(summaryLast-t.i)}</span>
+                  <span class="dsw-value">{(t.w*100).toFixed(1)}%</span>
+                </button>
+              {/each}
+              <span class="decision-summary-remaining">remaining mass {(summaryRemainingMass*100).toFixed(1)}%</span>
+            </div>
+            <p class="decision-summary-caveat">Mixture weights over the token history, not an action probability or a causal-importance ranking. <button type="button" class="decision-summary-open" on:click={() => openSummaryWeight(summaryTopWeights[0]?.i ?? summaryLast)}>open full Self Attention inspector</button></p>
+            <div class="decision-summary-force"><b>score</b>{(result?.actionScore ?? 0).toFixed(4)}<b>→ 10·tanh →</b>{controllerForce>=0?'+':''}{controllerForce.toFixed(2)} N</div>
+          </section>
+        {/if}
+
+        <!-- Full Pipeline/advanced graph: closed by default on ordinary
+             entry now that the summary above is the primary reading; force-
+             closed while the guide owns the workspace; always reopenable by
+             the user via this same native <details>. -->
         <details class="disclosure-toggle pipeline-disclosure" bind:open={pipelineOpen} data-source={pipelineSourceFrozen ? 'frozen' : 'live'}>
           <summary>Pipeline overview · Embedding → Action (5 stages) · {pipelineSourceLabel}</summary>
           <Pipeline
