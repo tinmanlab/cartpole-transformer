@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-20T13:51:04.632Z",
+  "generatedAt": "2026-09-21T16:44:45.186Z",
   "baseURL": "http://127.0.0.1:4173/cartpole-transformer/",
   "errors": [],
   "warnings": [],
@@ -11,81 +11,81 @@
       },
       "document": {
         "scrollWidth": 1440,
-        "scrollHeight": 1000
+        "scrollHeight": 1127
       },
       "lab": {
         "x": 16,
-        "y": 58,
+        "y": 73,
         "width": 1408,
-        "height": 606,
+        "height": 808,
         "right": 1424,
-        "bottom": 664
+        "bottom": 881
       },
       "sim": {
         "x": 16,
-        "y": 58,
+        "y": 73,
         "width": 503,
-        "height": 500,
+        "height": 611,
         "right": 519,
-        "bottom": 558
+        "bottom": 684
       },
       "pipeline": {
         "x": 529,
-        "y": 164,
+        "y": 381,
         "width": 895,
         "height": 500,
         "right": 1424,
-        "bottom": 664
+        "bottom": 881
       },
       "overview": {
         "x": 542,
-        "y": 222,
+        "y": 439,
         "width": 869,
         "height": 429,
         "right": 1411,
-        "bottom": 651
+        "bottom": 868
       },
       "detail": null,
       "stages": {
         ".embedding-overview": {
           "x": 548,
-          "y": 276,
+          "y": 493,
           "width": 132,
           "height": 334,
           "right": 680,
-          "bottom": 610
+          "bottom": 827
         },
         ".qkv-overview": {
           "x": 698,
-          "y": 268,
+          "y": 485,
           "width": 147,
           "height": 350,
           "right": 845,
-          "bottom": 618
+          "bottom": 835
         },
         ".attention-overview": {
           "x": 863,
-          "y": 325,
+          "y": 542,
           "width": 227,
           "height": 235,
           "right": 1090,
-          "bottom": 560
+          "bottom": 777
         },
         ".block-overview": {
           "x": 1108,
-          "y": 362,
+          "y": 579,
           "width": 183,
           "height": 161,
           "right": 1292,
-          "bottom": 523
+          "bottom": 740
         },
         ".action-overview": {
           "x": 1310,
-          "y": 363,
+          "y": 580,
           "width": 95,
           "height": 160,
           "right": 1405,
-          "bottom": 522
+          "bottom": 739
         }
       },
       "overlaps": [],
@@ -95,11 +95,11 @@
           "length": 124.66533660888672,
           "rect": {
             "x": 631.734375,
-            "y": 593.5,
+            "y": 810.5,
             "width": 124.375,
             "height": 8,
             "right": 756.109375,
-            "bottom": 601.5
+            "bottom": 818.5
           }
         },
         {
@@ -107,11 +107,11 @@
           "length": 161.67755126953125,
           "rect": {
             "x": 819.109375,
-            "y": 451,
+            "y": 668,
             "width": 46.015625,
             "height": 150.5,
             "right": 865.125,
-            "bottom": 601.5
+            "bottom": 818.5
           }
         },
         {
@@ -119,11 +119,11 @@
           "length": 123.29681396484375,
           "rect": {
             "x": 1120.125,
-            "y": 451,
+            "y": 668,
             "width": 121.78125,
             "height": 18,
             "right": 1241.90625,
-            "bottom": 469
+            "bottom": 686
           }
         },
         {
@@ -131,17 +131,17 @@
           "length": 55.304466247558594,
           "rect": {
             "x": 1264.90625,
-            "y": 439.9921875,
+            "y": 656.9921875,
             "width": 44.75,
             "height": 29.0078125,
             "right": 1309.65625,
-            "bottom": 469
+            "bottom": 686
           }
         }
       ],
       "detailMinFont": null,
       "learnedText": "learned state · 1 head · 8D",
-      "bodyText": "Cart-Pole Transformer\nState\nVision\nFusion\nCompare\nlearned state · 1 head · 8D\nPHYSICS · 50 Hz · TICK 92\nCart-Pole + 8-frame history\n1.8 s\n−2.4 m\n0\n+2.4 m\nforce\n0.05 N\npush\n0.00 N\nx\n0.04 m\nẋ\n-0.01 m/s\nθ\n-0.1°\nθ̇\n0.1°/s\nselected\nt\nPause\nStep\nReset\n← Push\nPush →\n한 판단 따라가기 · Follow one decision\nPipeline overview · Embedding → Action (5 stages) · LIVE tick 92\nTransformer · 1 block · 1 head\n단계를 클릭하면 아래에서 live tensor 계산을 크게 펼칩니다\nLEARNED · → 0.05 N\n1\nEmbedding\nstate → 8D token\nt−7\n8D\nt−6\n8D\nt−5\n8D\nt−4\n8D\nt−3\n8D\nt−2\n8D\nt−1\n8D\nt\n8D\n2\nQ · K · V\nlearned projections\nQ\nK\nV\n−7\n−6\n−5\n−4\n−3\n−2\n−1\nt\n3\nSelf Attention\nweights × V → context\n×\n→\nQ t → K t\n72.3%\n4\nTransformer block\nresidual + MLP\ncontext\n→\nWₒ + residual\n→\nLN · GELU MLP\n→\n-0.26 -0.19 0.96\n5\nAction\nfinal t only\n→\n0.05 N\ntanh(score) × 10\nPlant transition detail · tick 91 → 92 · balancing\n읽는 순서 참고 · Reading order reference\nCart-Pole에는 Transformer나 multimodal fusion이 필요하지 않습니다. 이 lab은 observation, temporal/multimodal attention, 그리고 동일 조건 replay에서 나타나는 실제 제어 차이를 관찰하기 위한 교육용 모델입니다.\nPolo Club Transformer Explainer의 MIT-licensed VectorCanvas, MatrixSvg, Sankey, attention expansion/animation 패턴을 vendoring·adaptation하여 사용합니다."
+      "bodyText": "Cart-Pole Transformer\nState\nVision\nFusion\nCompare\nlearned state · 1 head · 8D\nLIVE · tick 166\nCart-Pole\n3.3 s\nx unit m · θ unit deg · terminal |x|>2.4m or |θ|>21.8°\n−2.4 m\n0\n+2.4 m\nHistory poses (t−1…t−7) · explicit inspection\nnext command\n-0.00 N\nexternal disturbance\n+0.00 N\nx [m]\n0.01\nẋ [m/s]\n-0.03\nθ [deg]\n-0.0\nθ̇ [deg/s]\n0.0\nselected\nt\nPause\nStep\nReset\n← Push\nPush →\n한 판단 따라가기 · Follow one decision\nActual 8-token history → final-query mixture weights → score → force\nt\n72.3%\nt−1\n14.6%\nt−2\n4.4%\nremaining mass 8.8%\n\nMixture weights over the token history, not an action probability or a causal-importance ranking. open full Self Attention inspector\n\nscore\n-0.0004\n→ 10·tanh →\n-0.00 N\nPipeline overview · Embedding → Action (5 stages) · LIVE tick 166\nTransformer · 1 block · 1 head\n단계를 클릭하면 아래에서 live tensor 계산을 크게 펼칩니다\nLEARNED · ← 0.00 N\n1\nEmbedding\nstate → 8D token\nt−7\n8D\nt−6\n8D\nt−5\n8D\nt−4\n8D\nt−3\n8D\nt−2\n8D\nt−1\n8D\nt\n8D\n2\nQ · K · V\nlearned projections\nQ\nK\nV\n−7\n−6\n−5\n−4\n−3\n−2\n−1\nt\n3\nSelf Attention\nweights × V → context\n×\n→\nQ t → K t\n72.3%\n4\nTransformer block\nresidual + MLP\ncontext\n→\nWₒ + residual\n→\nLN · GELU MLP\n→\n-0.26 -0.20 0.96\n5\nAction\nfinal t only\n←\n0.00 N\ntanh(score) × 10\nPlant transition detail · tick 165 → 166 · balancing\n읽는 순서 참고 · Reading order reference\nCart-Pole에는 Transformer나 multimodal fusion이 필요하지 않습니다. 이 lab은 observation, temporal/multimodal attention, 그리고 동일 조건 replay에서 나타나는 실제 제어 차이를 관찰하기 위한 교육용 모델입니다.\nPolo Club Transformer Explainer의 MIT-licensed VectorCanvas, MatrixSvg, Sankey, attention expansion/animation 패턴을 vendoring·adaptation하여 사용합니다."
     },
     "desktop-attention": {
       "viewport": {
@@ -150,88 +150,88 @@
       },
       "document": {
         "scrollWidth": 1440,
-        "scrollHeight": 1802
+        "scrollHeight": 2020
       },
       "lab": {
         "x": 16,
-        "y": 58,
+        "y": 73,
         "width": 1408,
-        "height": 606,
+        "height": 808,
         "right": 1424,
-        "bottom": 664
+        "bottom": 881
       },
       "sim": {
         "x": 16,
-        "y": 58,
+        "y": 73,
         "width": 503,
-        "height": 500,
+        "height": 611,
         "right": 519,
-        "bottom": 558
+        "bottom": 684
       },
       "pipeline": {
         "x": 529,
-        "y": 164,
+        "y": 381,
         "width": 895,
         "height": 500,
         "right": 1424,
-        "bottom": 664
+        "bottom": 881
       },
       "overview": {
         "x": 542,
-        "y": 222,
+        "y": 439,
         "width": 869,
         "height": 429,
         "right": 1411,
-        "bottom": 651
+        "bottom": 868
       },
       "detail": {
         "x": 16,
-        "y": 728,
+        "y": 945,
         "width": 1408,
         "height": 883,
         "right": 1424,
-        "bottom": 1611
+        "bottom": 1828
       },
       "stages": {
         ".embedding-overview": {
           "x": 548,
-          "y": 276,
+          "y": 493,
           "width": 132,
           "height": 334,
           "right": 680,
-          "bottom": 610
+          "bottom": 827
         },
         ".qkv-overview": {
           "x": 698,
-          "y": 268,
+          "y": 485,
           "width": 147,
           "height": 350,
           "right": 845,
-          "bottom": 618
+          "bottom": 835
         },
         ".attention-overview": {
           "x": 863,
-          "y": 323,
+          "y": 540,
           "width": 227,
           "height": 235,
           "right": 1090,
-          "bottom": 558
+          "bottom": 775
         },
         ".block-overview": {
           "x": 1108,
-          "y": 362,
+          "y": 579,
           "width": 183,
           "height": 161,
           "right": 1292,
-          "bottom": 523
+          "bottom": 740
         },
         ".action-overview": {
           "x": 1310,
-          "y": 363,
+          "y": 580,
           "width": 95,
           "height": 160,
           "right": 1405,
-          "bottom": 522
+          "bottom": 739
         }
       },
       "overlaps": [],
@@ -241,11 +241,11 @@
           "length": 124.53843688964844,
           "rect": {
             "x": 631.734375,
-            "y": 523.5,
+            "y": 740.5,
             "width": 124.375,
             "height": 6,
             "right": 756.109375,
-            "bottom": 529.5
+            "bottom": 746.5
           }
         },
         {
@@ -253,11 +253,11 @@
           "length": 95.18073272705078,
           "rect": {
             "x": 819.109375,
-            "y": 451,
+            "y": 668,
             "width": 46.015625,
             "height": 78.5,
             "right": 865.125,
-            "bottom": 529.5
+            "bottom": 746.5
           }
         },
         {
@@ -265,11 +265,11 @@
           "length": 123.29681396484375,
           "rect": {
             "x": 1120.125,
-            "y": 451,
+            "y": 668,
             "width": 121.78125,
             "height": 18,
             "right": 1241.90625,
-            "bottom": 469
+            "bottom": 686
           }
         },
         {
@@ -277,17 +277,17 @@
           "length": 55.304466247558594,
           "rect": {
             "x": 1264.90625,
-            "y": 439.9921875,
+            "y": 656.9921875,
             "width": 44.75,
             "height": 29.0078125,
             "right": 1309.65625,
-            "bottom": 469
+            "bottom": 686
           }
         }
       ],
       "detailMinFont": 10,
       "learnedText": "learned state · 1 head · 8D",
-      "bodyText": "Cart-Pole Transformer\nState\nVision\nFusion\nCompare\nlearned state · 1 head · 8D\nPHYSICS · 50 Hz · TICK 254\nCart-Pole + 8-frame history\n5.1 s\n−2.4 m\n0\n+2.4 m\nt−2 · θ 0.1°\nẋ\nforce\n0.01 N\npush\n0.00 N\nx\n-0.03 m\nẋ\n-0.02 m/s\nθ\n0.1°\nθ̇\n0.0°/s\nselected\nt−2\nPause\nStep\nReset\n← Push\nPush →\n한 판단 따라가기 · Follow one decision\nPipeline overview · Embedding → Action (5 stages) · LIVE tick 254\nTransformer · 1 block · 1 head\n단계를 클릭하면 아래에서 live tensor 계산을 크게 펼칩니다\nLEARNED · → 0.01 N\n1\nEmbedding\nstate → 8D token\nt−7\n8D\nt−6\n8D\nt−5\n8D\nt−4\n8D\nt−3\n8D\nt−2\n8D\nt−1\n8D\nt\n8D\n2\nQ · K · V\nlearned projections\nQ\nK\nV\n−7\n−6\n−5\n−4\n−3\n−2\n−1\nt\n3\nSelf Attention\nweights × V → context\n0.0%\n×\n→\nQ t−4 → K t−2\n0.0%\n4\nTransformer block\nresidual + MLP\ncontext\n→\nWₒ + residual\n→\nLN · GELU MLP\n→\n0.70 -0.11 0.26\n5\nAction\nfinal t only\n→\n0.01 N\ntanh(score) × 10\nPlant transition detail · tick 253 → 254 · balancing\nLIVE TENSOR DETAIL · t−2\nSelf Attention\n\n실제 Q·K score에 causal mask와 softmax를 적용하고, 그 weight로 실제 V를 섞습니다.\n\n×\n1\nDot product\nQKᵀ / √d\n\nQuery와 Key가 얼마나 비슷한지 모든 시간쌍을 비교합니다.\n\n2\nCausal mask\nfuture → −∞\n\n현재 시점은 미래 token을 볼 수 없습니다. 위쪽 삼각형이 차단됩니다.\n\n3\nSoftmax\nΣ a = 1\n\n점수를 양수 비율로 바꿉니다. 마지막 row가 지금 force를 만드는 attention입니다.\n\nSELECTED ATTENTION CELL · ACTUAL LIVE ARITHMETIC\nQ t−4 × K t−2\n\nmatrix 한 칸이 어떤 계산을 뜻하는지 이 경로만 따라가면 됩니다.\n\nCAUSALLY MASKED\n0%\nQuery\nt−7\nt−6\nt−5\nt−4\nt−3\nt−2\nt−1\nt\nKey\nt−7\nt−6\nt−5\nt−4\nt−3\nt−2\nt−1\nt\nA\nQ와 K 원소별 곱\nQ t−4\n×\nK t−2\nd0\n-2.913 × 0.337\n-0.981\nd1\n1.095 × -0.479\n-0.525\nd2\n-1.361 × 0.732\n-0.997\nd3\n-2.219 × -0.724\n1.607\nd4\n-0.595 × 0.553\n-0.329\nd5\n-2.981 × 1.287\n-3.835\nd6\n0.769 × 1.011\n0.777\nd7\n-0.488 × 0.513\n-0.250\n→\nB\n합하고 √d로 나눔\nΣ(QᵢKᵢ)\n-4.53284\n÷ √8\n2.82843\n= score\n-1.60260\n\n이 값이 Q·Kᵀ matrix의 선택한 한 칸입니다.\n\n→\nC\nCausal mask\nt−2 is future of t−4\n-1.60260 → −∞\n따라서 softmax weight = 0\n→\nD\nStable softmax\nrow max\n-2.11416\nscore − max\n-999999997.88584\nexp(·)\n0.000e+0\nΣ exp\n1.91945\nweight\n0.000%\nt−7\n20.7%\nt−6\n7.9%\nt−5\n19.4%\nt−4\n52.1%\nt−3\n0.0%\nt−2\n0.0%\nt−1\n0.0%\nt\n0.0%\n→\nE\nweight × V\nV t−2\n× 0.00%\n이 Key의 기여량\nΣ all keys →\nContext · Q t−4\nV = [-0.69, 0.24, -0.82, 0.44, -0.76, -0.87, -0.85, 0.51]\ncontribution = [0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000]\ncontext = [-0.539, -0.113, -0.584, 0.266, -0.787, -1.063, -0.650, 0.707]\nselected dim d0 → V[d0]=-0.690 · contribution[d0]=0.000 · context[d0]=-0.539\n읽는 순서 참고 · Reading order reference\nCart-Pole에는 Transformer나 multimodal fusion이 필요하지 않습니다. 이 lab은 observation, temporal/multimodal attention, 그리고 동일 조건 replay에서 나타나는 실제 제어 차이를 관찰하기 위한 교육용 모델입니다.\nPolo Club Transformer Explainer의 MIT-licensed VectorCanvas, MatrixSvg, Sankey, attention expansion/animation 패턴을 vendoring·adaptation하여 사용합니다."
+      "bodyText": "Cart-Pole Transformer\nState\nVision\nFusion\nCompare\nlearned state · 1 head · 8D\nLIVE · tick 389\nCart-Pole\n7.8 s\nx unit m · θ unit deg · terminal |x|>2.4m or |θ|>21.8°\n−2.4 m\n0\n+2.4 m\nHistory poses (t−1…t−7) · explicit inspection\nnext command\n+0.01 N\nexternal disturbance\n+0.00 N\nx [m]\n-0.05\nẋ [m/s]\n0.01\nθ [deg]\n0.1\nθ̇ [deg/s]\n-0.0\nselected\nt−2\nPause\nStep\nReset\n← Push\nPush →\n한 판단 따라가기 · Follow one decision\nActual 8-token history → final-query mixture weights → score → force\nt\n72.3%\nt−1\n14.6%\nt−2\n4.4%\nremaining mass 8.8%\n\nMixture weights over the token history, not an action probability or a causal-importance ranking. open full Self Attention inspector\n\nscore\n0.0012\n→ 10·tanh →\n+0.01 N\nPipeline overview · Embedding → Action (5 stages) · LIVE tick 389\nTransformer · 1 block · 1 head\n단계를 클릭하면 아래에서 live tensor 계산을 크게 펼칩니다\nLEARNED · → 0.01 N\n1\nEmbedding\nstate → 8D token\nt−7\n8D\nt−6\n8D\nt−5\n8D\nt−4\n8D\nt−3\n8D\nt−2\n8D\nt−1\n8D\nt\n8D\n2\nQ · K · V\nlearned projections\nQ\nK\nV\n−7\n−6\n−5\n−4\n−3\n−2\n−1\nt\n3\nSelf Attention\nweights × V → context\n0.0%\n×\n→\nQ t−4 → K t−2\n0.0%\n4\nTransformer block\nresidual + MLP\ncontext\n→\nWₒ + residual\n→\nLN · GELU MLP\n→\n0.69 -0.10 0.26\n5\nAction\nfinal t only\n→\n0.01 N\ntanh(score) × 10\nPlant transition detail · tick 388 → 389 · balancing\nLIVE TENSOR DETAIL · t−2\nSelf Attention\n\n실제 Q·K score에 causal mask와 softmax를 적용하고, 그 weight로 실제 V를 섞습니다.\n\n×\n1\nDot product\nQKᵀ / √d\n\nQuery와 Key가 얼마나 비슷한지 모든 시간쌍을 비교합니다.\n\n2\nCausal mask\nfuture → −∞\n\n현재 시점은 미래 token을 볼 수 없습니다. 위쪽 삼각형이 차단됩니다.\n\n3\nSoftmax\nΣ a = 1\n\n점수를 양수 비율로 바꿉니다. 마지막 row가 지금 force를 만드는 attention입니다.\n\nSELECTED ATTENTION CELL · ACTUAL LIVE ARITHMETIC\nQ t−4 × K t−2\n\nmatrix 한 칸이 어떤 계산을 뜻하는지 이 경로만 따라가면 됩니다.\n\nCAUSALLY MASKED\n0%\nQuery\nt−7\nt−6\nt−5\nt−4\nt−3\nt−2\nt−1\nt\nKey\nt−7\nt−6\nt−5\nt−4\nt−3\nt−2\nt−1\nt\nA\nQ와 K 원소별 곱\nQ t−4\n×\nK t−2\nd0\n-2.911 × 0.330\n-0.960\nd1\n1.095 × -0.473\n-0.518\nd2\n-1.361 × 0.733\n-0.998\nd3\n-2.221 × -0.727\n1.613\nd4\n-0.594 × 0.553\n-0.328\nd5\n-2.975 × 1.282\n-3.813\nd6\n0.776 × 1.020\n0.792\nd7\n-0.486 × 0.509\n-0.247\n→\nB\n합하고 √d로 나눔\nΣ(QᵢKᵢ)\n-4.45995\n÷ √8\n2.82843\n= score\n-1.57683\n\n이 값이 Q·Kᵀ matrix의 선택한 한 칸입니다.\n\n→\nC\nCausal mask\nt−2 is future of t−4\n-1.57683 → −∞\n따라서 softmax weight = 0\n→\nD\nStable softmax\nrow max\n-2.08818\nscore − max\n-999999997.91182\nexp(·)\n0.000e+0\nΣ exp\n1.91581\nweight\n0.000%\nt−7\n20.5%\nt−6\n7.9%\nt−5\n19.4%\nt−4\n52.2%\nt−3\n0.0%\nt−2\n0.0%\nt−1\n0.0%\nt\n0.0%\n→\nE\nweight × V\nV t−2\n× 0.00%\n이 Key의 기여량\nΣ all keys →\nContext · Q t−4\nV = [-0.69, 0.25, -0.82, 0.45, -0.77, -0.87, -0.86, 0.51]\ncontribution = [0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000]\ncontext = [-0.539, -0.106, -0.577, 0.272, -0.792, -1.062, -0.650, 0.709]\nselected dim d0 → V[d0]=-0.689 · contribution[d0]=0.000 · context[d0]=-0.539\n읽는 순서 참고 · Reading order reference\nCart-Pole에는 Transformer나 multimodal fusion이 필요하지 않습니다. 이 lab은 observation, temporal/multimodal attention, 그리고 동일 조건 replay에서 나타나는 실제 제어 차이를 관찰하기 위한 교육용 모델입니다.\nPolo Club Transformer Explainer의 MIT-licensed VectorCanvas, MatrixSvg, Sankey, attention expansion/animation 패턴을 vendoring·adaptation하여 사용합니다."
     },
     "mobile-overview": {
       "viewport": {
@@ -296,88 +296,88 @@
       },
       "document": {
         "scrollWidth": 390,
-        "scrollHeight": 2185
+        "scrollHeight": 1443
       },
       "lab": {
         "x": 10,
-        "y": 82,
+        "y": 98,
         "width": 370,
-        "height": 1765,
+        "height": 1007,
         "right": 380,
-        "bottom": 1847
+        "bottom": 1105
       },
       "sim": {
         "x": 10,
-        "y": 82,
+        "y": 98,
         "width": 370,
-        "height": 500,
+        "height": 632,
         "right": 380,
-        "bottom": 582
+        "bottom": 730
       },
       "pipeline": {
         "x": 10,
-        "y": 708,
+        "y": 1113,
         "width": 370,
         "height": 1139,
         "right": 380,
-        "bottom": 1847
+        "bottom": 2252
       },
       "overview": {
         "x": 23,
-        "y": 807,
+        "y": 1212,
         "width": 344,
         "height": 1027,
         "right": 367,
-        "bottom": 1834
+        "bottom": 2239
       },
       "detail": null,
       "stages": {
         ".embedding-overview": {
           "x": 31,
-          "y": 827,
+          "y": 1232,
           "width": 328,
           "height": 144,
           "right": 359,
-          "bottom": 971
+          "bottom": 1376
         },
         ".qkv-overview": {
           "x": 31,
-          "y": 993,
+          "y": 1398,
           "width": 328,
           "height": 160,
           "right": 359,
-          "bottom": 1153
+          "bottom": 1558
         },
         ".attention-overview": {
           "x": 31,
-          "y": 1175,
+          "y": 1580,
           "width": 328,
           "height": 266,
           "right": 359,
-          "bottom": 1441
+          "bottom": 1846
         },
         ".block-overview": {
           "x": 31,
-          "y": 1463,
+          "y": 1868,
           "width": 328,
           "height": 194,
           "right": 359,
-          "bottom": 1657
+          "bottom": 2062
         },
         ".action-overview": {
           "x": 31,
-          "y": 1679,
+          "y": 2084,
           "width": 328,
           "height": 143,
           "right": 359,
-          "bottom": 1822
+          "bottom": 2227
         }
       },
       "overlaps": [],
       "paths": [
         {
           "i": 0,
-          "length": 186.95713806152344,
+          "length": 186.95706176757812,
           "rect": {
             "x": 0,
             "y": 0,
@@ -389,7 +389,7 @@
         },
         {
           "i": 1,
-          "length": 330.2908630371094,
+          "length": 330.29083251953125,
           "rect": {
             "x": 0,
             "y": 0,
@@ -401,7 +401,7 @@
         },
         {
           "i": 2,
-          "length": 311.77618408203125,
+          "length": 311.7762451171875,
           "rect": {
             "x": 0,
             "y": 0,
@@ -413,7 +413,7 @@
         },
         {
           "i": 3,
-          "length": 234.6856689453125,
+          "length": 234.6858673095703,
           "rect": {
             "x": 0,
             "y": 0,
@@ -426,7 +426,7 @@
       ],
       "detailMinFont": null,
       "learnedText": "learned state · 1 head · 8D",
-      "bodyText": "Cart-Pole Transformer\nState\nVision\nFusion\nCompare\nPHYSICS · 50 Hz · TICK 55\nCart-Pole + 8-frame history\n1.1 s\n−2.4 m\n0\n+2.4 m\nforce\n0.49 N\npush\n0.00 N\nx\n0.04 m\nẋ\n-0.01 m/s\nθ\n0.0°\nθ̇\n0.9°/s\nselected\nt\nPause\nStep\nReset\n← Push\nPush →\n한 판단 따라가기 · Follow one decision\nPipeline overview · Embedding → Action (5 stages) · LIVE tick 55\nTransformer · 1 block · 1 head\n단계를 클릭하면 아래에서 live tensor 계산을 크게 펼칩니다\nLEARNED · → 0.49 N\n1\nEmbedding\nstate → 8D token\nt−7\n8D\nt−6\n8D\nt−5\n8D\nt−4\n8D\nt−3\n8D\nt−2\n8D\nt−1\n8D\nt\n8D\n2\nQ · K · V\nlearned projections\nQ\nK\nV\n−7\n−6\n−5\n−4\n−3\n−2\n−1\nt\n3\nSelf Attention\nweights × V → context\n×\n→\nQ t → K t\n72.9%\n4\nTransformer block\nresidual + MLP\ncontext\n→\nWₒ + residual\n→\nLN · GELU MLP\n→\n-0.28 -0.19 0.99\n5\nAction\nfinal t only\n→\n0.49 N\ntanh(score) × 10\nPlant transition detail · tick 54 → 55 · balancing\n읽는 순서 참고 · Reading order reference\nCart-Pole에는 Transformer나 multimodal fusion이 필요하지 않습니다. 이 lab은 observation, temporal/multimodal attention, 그리고 동일 조건 replay에서 나타나는 실제 제어 차이를 관찰하기 위한 교육용 모델입니다.\nPolo Club Transformer Explainer의 MIT-licensed VectorCanvas, MatrixSvg, Sankey, attention expansion/animation 패턴을 vendoring·adaptation하여 사용합니다."
+      "bodyText": "Cart-Pole Transformer\nState\nVision\nFusion\nCompare\nLIVE · tick 52\nCart-Pole\n1.0 s\nx unit m · θ unit deg · terminal |x|>2.4m or |θ|>21.8°\n−2.4 m\n0\n+2.4 m\nHistory poses (t−1…t−7) · explicit inspection\nnext command\n+0.25 N\nexternal disturbance\n+0.00 N\nx [m]\n0.04\nẋ [m/s]\n-0.03\nθ [deg]\n-0.1\nθ̇ [deg/s]\n2.9\nselected\nt\nPause\nStep\nReset\n← Push\nPush →\n한 판단 따라가기 · Follow one decision\nActual 8-token history → final-query mixture weights → score → force\nt\n72.6%\nt−1\n14.5%\nt−2\n4.3%\nremaining mass 8.6%\n\nMixture weights over the token history, not an action probability or a causal-importance ranking. open full Self Attention inspector\n\nscore\n0.0247\n→ 10·tanh →\n+0.25 N\nPipeline overview · Embedding → Action (5 stages) · LIVE tick 52\nPlant transition detail · tick 51 → 52 · balancing\n읽는 순서 참고 · Reading order reference\nCart-Pole에는 Transformer나 multimodal fusion이 필요하지 않습니다. 이 lab은 observation, temporal/multimodal attention, 그리고 동일 조건 replay에서 나타나는 실제 제어 차이를 관찰하기 위한 교육용 모델입니다.\nPolo Club Transformer Explainer의 MIT-licensed VectorCanvas, MatrixSvg, Sankey, attention expansion/animation 패턴을 vendoring·adaptation하여 사용합니다."
     },
     "mobile-attention": {
       "viewport": {
@@ -435,23 +435,23 @@
       },
       "document": {
         "scrollWidth": 390,
-        "scrollHeight": 4716
+        "scrollHeight": 5121
       },
       "lab": {
         "x": 10,
-        "y": -804,
+        "y": -1193,
         "width": 370,
-        "height": 1765,
+        "height": 2154,
         "right": 380,
         "bottom": 961
       },
       "sim": {
         "x": 10,
-        "y": -804,
+        "y": -1193,
         "width": 370,
-        "height": 500,
+        "height": 632,
         "right": 380,
-        "bottom": -304
+        "bottom": -561
       },
       "pipeline": {
         "x": 10,
@@ -572,13 +572,67 @@
       ],
       "detailMinFont": 10,
       "learnedText": "learned state · 1 head · 8D",
-      "bodyText": "Cart-Pole Transformer\nState\nVision\nFusion\nCompare\nPHYSICS · 50 Hz · TICK 79\nCart-Pole + 8-frame history\n1.6 s\n−2.4 m\n0\n+2.4 m\nt−2 · θ -0.1°\nforce\n-0.05 N\npush\n0.00 N\nx\n0.04 m\nẋ\n0.00 m/s\nθ\n-0.1°\nθ̇\n-0.6°/s\nselected\nt−2\nPause\nStep\nReset\n← Push\nPush →\n한 판단 따라가기 · Follow one decision\nPipeline overview · Embedding → Action (5 stages) · LIVE tick 79\nTransformer · 1 block · 1 head\n단계를 클릭하면 아래에서 live tensor 계산을 크게 펼칩니다\nLEARNED · ← 0.05 N\n1\nEmbedding\nstate → 8D token\nt−7\n8D\nt−6\n8D\nt−5\n8D\nt−4\n8D\nt−3\n8D\nt−2\n8D\nt−1\n8D\nt\n8D\n2\nQ · K · V\nlearned projections\nQ\nK\nV\n−7\n−6\n−5\n−4\n−3\n−2\n−1\nt\n3\nSelf Attention\nweights × V → context\n×\n→\nQ t−4 → K t−2\n0.0%\n4\nTransformer block\nresidual + MLP\ncontext\n→\nWₒ + residual\n→\nLN · GELU MLP\n→\n0.70 -0.10 0.27\n5\nAction\nfinal t only\n←\n0.05 N\ntanh(score) × 10\nPlant transition detail · tick 78 → 79 · balancing\nLIVE TENSOR DETAIL · t−2\nSelf Attention\n\n실제 Q·K score에 causal mask와 softmax를 적용하고, 그 weight로 실제 V를 섞습니다.\n\n×\n1\nDot product\nQKᵀ / √d\n\nQuery와 Key가 얼마나 비슷한지 모든 시간쌍을 비교합니다.\n\n2\nCausal mask\nfuture → −∞\n\n현재 시점은 미래 token을 볼 수 없습니다. 위쪽 삼각형이 차단됩니다.\n\n3\nSoftmax\nΣ a = 1\n\n점수를 양수 비율로 바꿉니다. 마지막 row가 지금 force를 만드는 attention입니다.\n\nSELECTED ATTENTION CELL · ACTUAL LIVE ARITHMETIC\nQ t−4 × K t−2\n\nmatrix 한 칸이 어떤 계산을 뜻하는지 이 경로만 따라가면 됩니다.\n\nCAUSALLY MASKED\n0%\nQuery\nt−7\nt−6\nt−5\nt−4\nt−3\nt−2\nt−1\nt\nKey\nt−7\nt−6\nt−5\nt−4\nt−3\nt−2\nt−1\nt\nA\nQ와 K 원소별 곱\nQ t−4\n×\nK t−2\nd0\n-2.916 × 0.328\n-0.956\nd1\n1.099 × -0.482\n-0.530\nd2\n-1.362 × 0.728\n-0.991\nd3\n-2.222 × -0.732\n1.626\nd4\n-0.594 × 0.546\n-0.324\nd5\n-2.975 × 1.276\n-3.794\nd6\n0.763 × 1.017\n0.776\nd7\n-0.488 × 0.508\n-0.248\n→\nB\n합하고 √d로 나눔\nΣ(QᵢKᵢ)\n-4.44173\n÷ √8\n2.82843\n= score\n-1.57039\n\n이 값이 Q·Kᵀ matrix의 선택한 한 칸입니다.\n\n→\nC\nCausal mask\nt−2 is future of t−4\n-1.57039 → −∞\n따라서 softmax weight = 0\n→\nD\nStable softmax\nrow max\n-2.08310\nscore − max\n-999999997.91690\nexp(·)\n0.000e+0\nΣ exp\n1.91797\nweight\n0.000%\nt−7\n20.6%\nt−6\n7.9%\nt−5\n19.4%\nt−4\n52.1%\nt−3\n0.0%\nt−2\n0.0%\nt−1\n0.0%\nt\n0.0%\n→\nE\nweight × V\nV t−2\n× 0.00%\n이 Key의 기여량\nΣ all keys →\nContext · Q t−4\nV = [-0.69, 0.24, -0.82, 0.44, -0.76, -0.87, -0.85, 0.51]\ncontribution = [0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000]\ncontext = [-0.537, -0.112, -0.582, 0.267, -0.786, -1.063, -0.651, 0.702]\nselected dim d0 → V[d0]=-0.691 · contribution[d0]=0.000 · context[d0]=-0.537\n읽는 순서 참고 · Reading order reference\nCart-Pole에는 Transformer나 multimodal fusion이 필요하지 않습니다. 이 lab은 observation, temporal/multimodal attention, 그리고 동일 조건 replay에서 나타나는 실제 제어 차이를 관찰하기 위한 교육용 모델입니다.\nPolo Club Transformer Explainer의 MIT-licensed VectorCanvas, MatrixSvg, Sankey, attention expansion/animation 패턴을 vendoring·adaptation하여 사용합니다."
+      "bodyText": "Cart-Pole Transformer\nState\nVision\nFusion\nCompare\nLIVE · tick 103\nCart-Pole\n2.1 s\nx unit m · θ unit deg · terminal |x|>2.4m or |θ|>21.8°\n−2.4 m\n0\n+2.4 m\nHistory poses (t−1…t−7) · explicit inspection\nnext command\n-0.04 N\nexternal disturbance\n+0.00 N\nx [m]\n0.04\nẋ [m/s]\n-0.01\nθ [deg]\n-0.1\nθ̇ [deg/s]\n0.1\nselected\nt−2\nPause\nStep\nReset\n← Push\nPush →\n한 판단 따라가기 · Follow one decision\nActual 8-token history → final-query mixture weights → score → force\nt\n72.1%\nt−1\n14.6%\nt−2\n4.4%\nremaining mass 8.8%\n\nMixture weights over the token history, not an action probability or a causal-importance ranking. open full Self Attention inspector\n\nscore\n-0.0044\n→ 10·tanh →\n-0.04 N\nPipeline overview · Embedding → Action (5 stages) · LIVE tick 103\nTransformer · 1 block · 1 head\n단계를 클릭하면 아래에서 live tensor 계산을 크게 펼칩니다\nLEARNED · ← 0.04 N\n1\nEmbedding\nstate → 8D token\nt−7\n8D\nt−6\n8D\nt−5\n8D\nt−4\n8D\nt−3\n8D\nt−2\n8D\nt−1\n8D\nt\n8D\n2\nQ · K · V\nlearned projections\nQ\nK\nV\n−7\n−6\n−5\n−4\n−3\n−2\n−1\nt\n3\nSelf Attention\nweights × V → context\n×\n→\nQ t−4 → K t−2\n0.0%\n4\nTransformer block\nresidual + MLP\ncontext\n→\nWₒ + residual\n→\nLN · GELU MLP\n→\n0.71 -0.10 0.25\n5\nAction\nfinal t only\n←\n0.04 N\ntanh(score) × 10\nPlant transition detail · tick 102 → 103 · balancing\nLIVE TENSOR DETAIL · t−2\nSelf Attention\n\n실제 Q·K score에 causal mask와 softmax를 적용하고, 그 weight로 실제 V를 섞습니다.\n\n×\n1\nDot product\nQKᵀ / √d\n\nQuery와 Key가 얼마나 비슷한지 모든 시간쌍을 비교합니다.\n\n2\nCausal mask\nfuture → −∞\n\n현재 시점은 미래 token을 볼 수 없습니다. 위쪽 삼각형이 차단됩니다.\n\n3\nSoftmax\nΣ a = 1\n\n점수를 양수 비율로 바꿉니다. 마지막 row가 지금 force를 만드는 attention입니다.\n\nSELECTED ATTENTION CELL · ACTUAL LIVE ARITHMETIC\nQ t−4 × K t−2\n\nmatrix 한 칸이 어떤 계산을 뜻하는지 이 경로만 따라가면 됩니다.\n\nCAUSALLY MASKED\n0%\nQuery\nt−7\nt−6\nt−5\nt−4\nt−3\nt−2\nt−1\nt\nKey\nt−7\nt−6\nt−5\nt−4\nt−3\nt−2\nt−1\nt\nA\nQ와 K 원소별 곱\nQ t−4\n×\nK t−2\nd0\n-2.916 × 0.330\n-0.961\nd1\n1.095 × -0.484\n-0.529\nd2\n-1.356 × 0.729\n-0.989\nd3\n-2.219 × -0.729\n1.617\nd4\n-0.599 × 0.544\n-0.326\nd5\n-2.973 × 1.278\n-3.800\nd6\n0.769 × 1.018\n0.783\nd7\n-0.483 × 0.509\n-0.246\n→\nB\n합하고 √d로 나눔\nΣ(QᵢKᵢ)\n-4.45042\n÷ √8\n2.82843\n= score\n-1.57346\n\n이 값이 Q·Kᵀ matrix의 선택한 한 칸입니다.\n\n→\nC\nCausal mask\nt−2 is future of t−4\n-1.57346 → −∞\n따라서 softmax weight = 0\n→\nD\nStable softmax\nrow max\n-2.08182\nscore − max\n-999999997.91818\nexp(·)\n0.000e+0\nΣ exp\n1.91511\nweight\n0.000%\nt−7\n20.5%\nt−6\n7.9%\nt−5\n19.4%\nt−4\n52.2%\nt−3\n0.0%\nt−2\n0.0%\nt−1\n0.0%\nt\n0.0%\n→\nE\nweight × V\nV t−2\n× 0.00%\n이 Key의 기여량\nΣ all keys →\nContext · Q t−4\nV = [-0.69, 0.24, -0.82, 0.44, -0.76, -0.88, -0.85, 0.51]\ncontribution = [0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000]\ncontext = [-0.542, -0.116, -0.576, 0.266, -0.788, -1.070, -0.646, 0.708]\nselected dim d0 → V[d0]=-0.691 · contribution[d0]=0.000 · context[d0]=-0.542\n읽는 순서 참고 · Reading order reference\nCart-Pole에는 Transformer나 multimodal fusion이 필요하지 않습니다. 이 lab은 observation, temporal/multimodal attention, 그리고 동일 조건 replay에서 나타나는 실제 제어 차이를 관찰하기 위한 교육용 모델입니다.\nPolo Club Transformer Explainer의 MIT-licensed VectorCanvas, MatrixSvg, Sankey, attention expansion/animation 패턴을 vendoring·adaptation하여 사용합니다."
     }
   },
   "interactions": {
+    "sceneContract": {
+      "hasRoot": true,
+      "viewBox": "0 0 640 320",
+      "cartFill": "#334155",
+      "poleStroke": "#dc5b60",
+      "wheelFill": "#1e293b",
+      "railStroke": "#cbd5e1",
+      "markerCount": 0
+    },
+    "simCardBounds": {
+      "headText": "LIVE · tick 89",
+      "boundsText": "x unit m · θ unit deg · terminal |x|>2.4m or |θ|>21.8°",
+      "timeSingleLine": true,
+      "headWithinCard": true,
+      "timeWithinCard": true,
+      "boundsWithinCard": true
+    },
+    "readoutBounds": [
+      {
+        "text": "next command+0.03 N",
+        "withinCard": true,
+        "outputSingleLine": true
+      },
+      {
+        "text": "external disturbance+0.00 N",
+        "withinCard": true,
+        "outputSingleLine": true
+      },
+      {
+        "text": "x [m]0.04",
+        "withinCard": true,
+        "outputSingleLine": true
+      },
+      {
+        "text": "ẋ [m/s]-0.01",
+        "withinCard": true,
+        "outputSingleLine": true
+      },
+      {
+        "text": "θ [deg]-0.1",
+        "withinCard": true,
+        "outputSingleLine": true
+      },
+      {
+        "text": "θ̇ [deg/s]0.4",
+        "withinCard": true,
+        "outputSingleLine": true
+      },
+      {
+        "text": "selectedt",
+        "withinCard": true,
+        "outputSingleLine": true
+      }
+    ],
     "live": {
-      "t0": "1.3 s",
-      "t1": "1.8 s",
+      "t0": "2.6 s",
+      "t1": "3.2 s",
       "canvasChanged": true,
       "matrixChanged": true
     },
@@ -607,7 +661,7 @@
       "block": {
         "detailCount": 1,
         "containsExpected": true,
-        "textLength": 424,
+        "textLength": 426,
         "liveChanged": true
       },
       "action": {
@@ -621,15 +675,15 @@
       "allowed": {
         "row": 7,
         "col": 5,
-        "dotSum": -5.5357138706050595,
+        "dotSum": -5.434531159808718,
         "scale": 2.8284271247461903,
-        "score": -1.9571704083066337,
+        "score": -1.9213969178351686,
         "masked": false,
-        "exp": 0.059941797944735774,
-        "denominator": 1.3817950166255288,
-        "weight": 0.04337965995211011,
-        "v0": -0.6895014008981399,
-        "contribution0": -0.02991033630746486
+        "exp": 0.06041798594803367,
+        "denominator": 1.3845391096034403,
+        "weight": 0.04363761596112557,
+        "v0": -0.6885324958930122,
+        "contribution0": -0.030045916632534538
       },
       "masked": {
         "row": 2,
@@ -639,13 +693,14 @@
       }
     },
     "tokenLink": {
+      "ghostBeforeToggle": 0,
       "ghostBefore": 1,
       "ghostAfter": 1,
       "selectedText": "selected\nt−5"
     },
     "push": {
-      "before": "ẋ\n0.02 m/s",
-      "after": "ẋ\n-0.68 m/s",
+      "before": "ẋ [m/s]\n-0.02",
+      "after": "ẋ [m/s]\n-0.72",
       "changed": true
     },
     "inputLifecycle": {
@@ -655,153 +710,153 @@
       "state": {
         "before": {
           "mode": "state",
-          "tick": 16,
+          "tick": 17,
           "sim": [
-            0.01233420745762254,
-            -0.06699746478698913,
-            0.0023615329406334183,
-            0.100210476734897
+            0.026782359532705097,
+            -0.12177203604295639,
+            0.007758450068680899,
+            0.1850199832058314
           ],
           "stateToken": [
-            0.01233420745762254,
-            -0.06699746478698913,
-            0.0023615329406334183,
-            0.100210476734897
+            0.026782359532705097,
+            -0.12177203604295639,
+            0.007758450068680899,
+            0.1850199832058314
           ],
           "visionState": [
-            0.01233420745762254,
-            -0.06699746478698913,
-            0.0023615329406334183,
-            0.100210476734897
+            0.026782359532705097,
+            -0.12177203604295639,
+            0.007758450068680899,
+            0.1850199832058314
           ],
-          "actionScore": 0.13753776004245283,
-          "force": 1.3667702180960681
+          "actionScore": 0.32438121305031314,
+          "force": 3.134630481161598
         },
         "after": {
           "mode": "state",
-          "tick": 17,
+          "tick": 18,
           "sim": [
-            0.010994258161882757,
-            0.07671048990959155,
-            0.004365742475331358,
-            -0.11465656419406273
+            0.02434691881184597,
+            0.05635286780085233,
+            0.011458849732797528,
+            -0.07987836968598955
           ],
           "stateToken": [
-            0.010994258161882757,
-            0.07671048990959155,
-            0.004365742475331358,
-            -0.11465656419406273
+            0.02434691881184597,
+            0.05635286780085233,
+            0.011458849732797528,
+            -0.07987836968598955
           ],
           "visionState": [
-            0.010994258161882757,
-            0.07671048990959155,
-            0.004365742475331358,
-            -0.11465656419406273
+            0.02434691881184597,
+            0.05635286780085233,
+            0.011458849732797528,
+            -0.07987836968598955
           ],
-          "actionScore": 0.02275765360103643,
-          "force": 0.22753725603267397
+          "actionScore": 0.20651542643274762,
+          "force": 2.03628794720572
         },
         "stepDelta": 1
       },
       "vision": {
         "before": {
           "mode": "vision",
-          "tick": 40,
+          "tick": 41,
           "sim": [
-            -0.016413723462149303,
-            0.3250698271232777,
-            -0.035473839976946975,
-            -0.5744789684733412
+            -0.04682498925784931,
+            -0.10272012438196443,
+            -0.03672473998681341,
+            -0.06083103940766893
           ],
           "stateToken": [
-            -0.016413723462149303,
-            0.3250698271232777,
-            -0.035473839976946975,
-            -0.5744789684733412
+            -0.04682498925784931,
+            -0.10272012438196443,
+            -0.03672473998681341,
+            -0.06083103940766893
           ],
           "visionState": [
-            -0.016413723462149303,
-            0.3250698271232777,
-            -0.035473839976946975,
-            -0.5744789684733412
+            -0.04682498925784931,
+            -0.10272012438196443,
+            -0.03672473998681341,
+            -0.06083103940766893
           ],
-          "actionScore": -0.47139966327639166,
-          "force": -4.393295227408947
+          "actionScore": 0.03624763057937997,
+          "force": 0.36231763776380843
         },
         "after": {
           "mode": "vision",
-          "tick": 41,
+          "tick": 42,
           "sim": [
-            -0.009912326919683748,
-            0.23985173753045086,
-            -0.0469634193464138,
-            -0.45715937578515076
+            -0.048879391745488596,
+            -0.09512518058780248,
+            -0.037941360774966786,
+            -0.0830104201554811
           ],
           "stateToken": [
-            -0.009912326919683748,
-            0.23985173753045086,
-            -0.0469634193464138,
-            -0.45715937578515076
+            -0.048879391745488596,
+            -0.09512518058780248,
+            -0.037941360774966786,
+            -0.0830104201554811
           ],
           "visionState": [
-            -0.009912326919683748,
-            0.23985173753045086,
-            -0.0469634193464138,
-            -0.45715937578515076
+            -0.048879391745488596,
+            -0.09512518058780248,
+            -0.037941360774966786,
+            -0.0830104201554811
           ],
-          "actionScore": -1.4775668352876545,
-          "force": -9.010111199195217
+          "actionScore": 0.03624763057937997,
+          "force": 0.36231763776380843
         },
         "stepDelta": 1
       },
       "fusion": {
         "before": {
           "mode": "fusion",
-          "tick": 21,
+          "tick": 22,
           "sim": [
-            -0.023127337446297972,
-            -0.07671198389260495,
-            -0.00971618596433231,
-            0.10751050783432428
+            0.006257347539332569,
+            0.03504027448154729,
+            0.0024580366348653645,
+            -0.038686002684827366
           ],
           "stateToken": [
-            -0.023127337446297972,
-            -0.07671198389260495,
-            -0.00971618596433231,
-            0.10751050783432428
+            0.006257347539332569,
+            0.03504027448154729,
+            0.0024580366348653645,
+            -0.038686002684827366
           ],
           "visionState": [
-            -0.023127337446297972,
-            -0.07671198389260495,
-            -0.00971618596433231,
-            0.10751050783432428
+            0.006257347539332569,
+            0.03504027448154729,
+            0.0024580366348653645,
+            -0.038686002684827366
           ],
-          "actionScore": -0.17328253582441444,
-          "force": -1.715687413177608
+          "actionScore": -0.006921674132536171,
+          "force": -0.06921563596504221
         },
         "after": {
           "mode": "fusion",
-          "tick": 22,
+          "tick": 23,
           "sim": [
-            -0.02466157712415007,
-            -0.11004935519970083,
-            -0.007565975807645824,
-            0.15465769069239022
+            0.006958153028963515,
+            0.03365447798826597,
+            0.0016843165811688172,
+            -0.03588465218164497
           ],
           "stateToken": [
-            -0.02466157712415007,
-            -0.11004935519970083,
-            -0.007565975807645824,
-            0.15465769069239022
+            0.006958153028963515,
+            0.03365447798826597,
+            0.0016843165811688172,
+            -0.03588465218164497
           ],
           "visionState": [
-            -0.02466157712415007,
-            -0.11004935519970083,
-            -0.007565975807645824,
-            0.15465769069239022
+            0.006958153028963515,
+            0.03365447798826597,
+            0.0016843165811688172,
+            -0.03588465218164497
           ],
-          "actionScore": -0.09464391631144173,
-          "force": -0.9436233512861554
+          "actionScore": -0.02004920316168059,
+          "force": -0.20046517197161148
         },
         "stepDelta": 1
       }
@@ -810,86 +865,86 @@
       "state": {
         "hasTrace": true,
         "mode": "state",
-        "tickFrom": 16,
-        "tickTo": 17,
+        "tickFrom": 17,
+        "tickTo": 18,
         "beforeState": [
-          0.01233420745762254,
-          -0.06699746478698913,
-          0.0023615329406334183,
-          0.100210476734897
+          0.026782359532705097,
+          -0.12177203604295639,
+          0.007758450068680899,
+          0.1850199832058314
         ],
-        "appliedActionScore": 0.13753776004245283,
-        "appliedPolicyForce": 1.3667702180960681,
-        "appliedControl": 1.3667702180960681,
+        "appliedActionScore": 0.32438121305031314,
+        "appliedPolicyForce": 3.134630481161598,
+        "appliedControl": 3.134630481161598,
         "disturbance": 6,
-        "totalForce": 7.366770218096068,
-        "xAcc": 7.185397734829033,
-        "thetaAcc": -10.743352046447987,
+        "totalForce": 9.134630481161597,
+        "xAcc": 8.906245192190436,
+        "thetaAcc": -13.244917644591048,
         "dt": 0.02,
         "nextState": [
-          0.010994258161882757,
-          0.07671048990959155,
-          0.004365742475331358,
-          -0.11465656419406273
+          0.02434691881184597,
+          0.05635286780085233,
+          0.011458849732797528,
+          -0.07987836968598955
         ],
-        "nextActionScore": 0.02275765360103643,
-        "nextPolicyForce": 0.22753725603267397
+        "nextActionScore": 0.20651542643274762,
+        "nextPolicyForce": 2.03628794720572
       },
       "vision": {
         "hasTrace": true,
         "mode": "vision",
-        "tickFrom": 40,
-        "tickTo": 41,
+        "tickFrom": 41,
+        "tickTo": 42,
         "beforeState": [
-          -0.016413723462149303,
-          0.3250698271232777,
-          -0.035473839976946975,
-          -0.5744789684733412
+          -0.04682498925784931,
+          -0.10272012438196443,
+          -0.03672473998681341,
+          -0.06083103940766893
         ],
-        "appliedActionScore": -0.47139966327639166,
-        "appliedPolicyForce": -4.393295227408947,
-        "appliedControl": -4.393295227408947,
+        "appliedActionScore": 0.03624763057937997,
+        "appliedPolicyForce": 0.36231763776380843,
+        "appliedControl": 0.36231763776380843,
         "disturbance": 0,
-        "totalForce": -4.393295227408947,
-        "xAcc": -4.260904479641343,
-        "thetaAcc": 5.865979634409523,
+        "totalForce": 0.36231763776380843,
+        "xAcc": 0.37974718970809773,
+        "thetaAcc": -1.108969037390609,
         "dt": 0.02,
         "nextState": [
-          -0.009912326919683748,
-          0.23985173753045086,
-          -0.0469634193464138,
-          -0.45715937578515076
+          -0.048879391745488596,
+          -0.09512518058780248,
+          -0.037941360774966786,
+          -0.0830104201554811
         ],
-        "nextActionScore": -1.4775668352876545,
-        "nextPolicyForce": -9.010111199195217
+        "nextActionScore": 0.03624763057937997,
+        "nextPolicyForce": 0.36231763776380843
       },
       "fusion": {
         "hasTrace": true,
         "mode": "fusion",
-        "tickFrom": 21,
-        "tickTo": 22,
+        "tickFrom": 22,
+        "tickTo": 23,
         "beforeState": [
-          -0.023127337446297972,
-          -0.07671198389260495,
-          -0.00971618596433231,
-          0.10751050783432428
+          0.006257347539332569,
+          0.03504027448154729,
+          0.0024580366348653645,
+          -0.038686002684827366
         ],
-        "appliedActionScore": -0.17328253582441444,
-        "appliedPolicyForce": -1.715687413177608,
-        "appliedControl": -1.715687413177608,
+        "appliedActionScore": -0.006921674132536171,
+        "appliedPolicyForce": -0.06921563596504221,
+        "appliedControl": -0.06921563596504221,
         "disturbance": 0,
-        "totalForce": -1.715687413177608,
-        "xAcc": -1.6668685653547943,
-        "thetaAcc": 2.357359142903297,
+        "totalForce": -0.06921563596504221,
+        "xAcc": -0.06928982466406595,
+        "thetaAcc": 0.14006752515911963,
         "dt": 0.02,
         "nextState": [
-          -0.02466157712415007,
-          -0.11004935519970083,
-          -0.007565975807645824,
-          0.15465769069239022
+          0.006958153028963515,
+          0.03365447798826597,
+          0.0016843165811688172,
+          -0.03588465218164497
         ],
-        "nextActionScore": -0.09464391631144173,
-        "nextPolicyForce": -0.9436233512861554
+        "nextActionScore": -0.02004920316168059,
+        "nextPolicyForce": -0.20046517197161148
       }
     },
     "visionMode": {
@@ -981,38 +1036,38 @@
     "roundtrip-1440-first-key-crossCheck": [
       {
         "point": "first-open",
-        "tick": 16,
+        "tick": 19,
         "guide": {
-          "weight": 0.02963763505680381,
-          "vDim": 0.19134069623233835,
-          "contributionDim": 0.0056708857264488
+          "weight": 0.02449721271415112,
+          "vDim": 0.07262139645904135,
+          "contributionDim": 0.001779021796655837
         },
         "drawer": {
-          "weight": 0.02963763505680381,
+          "weight": 0.02449721271415112,
           "source": "frozen"
         },
         "highlight": {
-          "v": 0.19134069623233835,
-          "contribution": 0.0056708857264488,
-          "context": -0.2634067483218737
+          "v": 0.07262139645904135,
+          "contribution": 0.001779021796655837,
+          "context": -0.10978946090947748
         }
       },
       {
         "point": "post-apply",
-        "tick": 17,
+        "tick": 20,
         "guide": {
-          "weight": 0.02963763505680381,
-          "vDim": 0.09115624030166555,
-          "contributionDim": 0.0027016553832110756
+          "weight": 0.02449721271415112,
+          "vDim": 0.05131255454071275,
+          "contributionDim": 0.0012570145634903211
         },
         "drawer": {
-          "weight": 0.02963763505680381,
+          "weight": 0.02449721271415112,
           "source": "frozen"
         },
         "highlight": {
-          "v": 0.09115624030166555,
-          "contribution": 0.0027016553832110756,
-          "context": 0.34658502021958015
+          "v": 0.05131255454071275,
+          "contribution": 0.0012570145634903211,
+          "context": 0.3997546455431875
         }
       }
     ],
@@ -1026,38 +1081,38 @@
     "roundtrip-390-middle-key-crossCheck": [
       {
         "point": "first-open",
-        "tick": 17,
+        "tick": 18,
         "guide": {
-          "weight": 0.024409219214040823,
-          "vDim": 0.31759930619232585,
-          "contributionDim": 0.007752351087075755
+          "weight": 0.02247327083100573,
+          "vDim": 0.31123361181134035,
+          "contributionDim": 0.0069944372499483555
         },
         "drawer": {
-          "weight": 0.024409219214040823,
+          "weight": 0.02247327083100573,
           "source": "frozen"
         },
         "highlight": {
-          "v": 0.31759930619232585,
-          "contribution": 0.007752351087075755,
-          "context": 0.6124113283087406
+          "v": 0.31123361181134035,
+          "contribution": 0.0069944372499483555,
+          "context": 0.6117240009314975
         }
       },
       {
         "point": "post-apply",
-        "tick": 18,
+        "tick": 19,
         "guide": {
-          "weight": 0.028164152598235716,
-          "vDim": 0.12583323650811107,
-          "contributionDim": 0.0035439864749443255
+          "weight": 0.026603979843783487,
+          "vDim": 0.08776065044329832,
+          "contributionDim": 0.002334782575470837
         },
         "drawer": {
-          "weight": 0.028164152598235716,
+          "weight": 0.026603979843783487,
           "source": "frozen"
         },
         "highlight": {
-          "v": 0.12583323650811107,
-          "contribution": 0.0035439864749443255,
-          "context": -0.22269030948490132
+          "v": 0.08776065044329832,
+          "contribution": 0.002334782575470837,
+          "context": -0.17654769409019264
         }
       }
     ],
@@ -1073,36 +1128,36 @@
         "point": "first-open",
         "tick": 17,
         "guide": {
-          "weight": 0.7014511232479252,
-          "vDim": -0.4607240367417867,
-          "contributionDim": -0.32317539307984466
+          "weight": 0.7063552086440582,
+          "vDim": -0.4456927449605488,
+          "contributionDim": -0.3148173918577515
         },
         "drawer": {
-          "weight": 0.7014511232479252,
+          "weight": 0.7063552086440582,
           "source": "frozen"
         },
         "highlight": {
-          "v": -0.4607240367417867,
-          "contribution": -0.32317539307984466,
-          "context": -0.5791432185332211
+          "v": -0.4456927449605488,
+          "contribution": -0.3148173918577515,
+          "context": -0.564416625937212
         }
       },
       {
         "point": "post-apply",
         "tick": 18,
         "guide": {
-          "weight": 0.027936812395369652,
-          "vDim": 0.12030724245277269,
-          "contributionDim": 0.003361000862207362
+          "weight": 0.02747860392568388,
+          "vDim": 0.10991855906949134,
+          "contributionDim": 0.0030204085487524402
         },
         "drawer": {
-          "weight": 0.027936812395369652,
+          "weight": 0.02747860392568388,
           "source": "frozen"
         },
         "highlight": {
-          "v": 0.12030724245277269,
-          "contribution": 0.003361000862207362,
-          "context": -0.21538965004890417
+          "v": 0.10991855906949134,
+          "contribution": 0.0030204085487524402,
+          "context": -0.20103568486744608
         }
       }
     ],
@@ -1128,7 +1183,7 @@
       },
       "document": {
         "scrollWidth": 1440,
-        "scrollHeight": 1154
+        "scrollHeight": 1175
       },
       "tinyText": [],
       "clippedText": [],
@@ -1147,7 +1202,7 @@
       },
       "document": {
         "scrollWidth": 1440,
-        "scrollHeight": 1048
+        "scrollHeight": 1175
       },
       "tinyText": [],
       "clippedText": [],
@@ -1166,7 +1221,7 @@
       },
       "document": {
         "scrollWidth": 1440,
-        "scrollHeight": 1766
+        "scrollHeight": 1782
       },
       "tinyText": [],
       "clippedText": [],
@@ -1185,7 +1240,7 @@
       },
       "document": {
         "scrollWidth": 1440,
-        "scrollHeight": 1331
+        "scrollHeight": 1347
       },
       "tinyText": [],
       "clippedText": [],
@@ -1204,7 +1259,7 @@
       },
       "document": {
         "scrollWidth": 1440,
-        "scrollHeight": 1586
+        "scrollHeight": 1804
       },
       "tinyText": [],
       "clippedText": [],
@@ -1223,7 +1278,7 @@
       },
       "document": {
         "scrollWidth": 1440,
-        "scrollHeight": 1478
+        "scrollHeight": 1696
       },
       "tinyText": [],
       "clippedText": [],
@@ -1242,7 +1297,7 @@
       },
       "document": {
         "scrollWidth": 1440,
-        "scrollHeight": 2047
+        "scrollHeight": 2265
       },
       "tinyText": [],
       "clippedText": [],
@@ -1261,7 +1316,7 @@
       },
       "document": {
         "scrollWidth": 1440,
-        "scrollHeight": 1492
+        "scrollHeight": 1710
       },
       "tinyText": [],
       "clippedText": [],
@@ -1280,7 +1335,7 @@
       },
       "document": {
         "scrollWidth": 1440,
-        "scrollHeight": 1486
+        "scrollHeight": 1704
       },
       "tinyText": [],
       "clippedText": [],
@@ -1299,7 +1354,7 @@
       },
       "document": {
         "scrollWidth": 1440,
-        "scrollHeight": 1466
+        "scrollHeight": 1684
       },
       "tinyText": [],
       "clippedText": [],
@@ -1318,7 +1373,7 @@
       },
       "document": {
         "scrollWidth": 1440,
-        "scrollHeight": 1120
+        "scrollHeight": 1150
       },
       "tinyText": [],
       "clippedText": [],
@@ -1337,7 +1392,7 @@
       },
       "document": {
         "scrollWidth": 1440,
-        "scrollHeight": 1810
+        "scrollHeight": 1841
       },
       "tinyText": [],
       "clippedText": [],
@@ -1356,7 +1411,7 @@
       },
       "document": {
         "scrollWidth": 1440,
-        "scrollHeight": 1121
+        "scrollHeight": 1248
       },
       "tinyText": [],
       "clippedText": [],
@@ -1375,7 +1430,7 @@
       },
       "document": {
         "scrollWidth": 1440,
-        "scrollHeight": 2017
+        "scrollHeight": 2144
       },
       "tinyText": [],
       "clippedText": [],
@@ -1394,7 +1449,7 @@
       },
       "document": {
         "scrollWidth": 1440,
-        "scrollHeight": 1112
+        "scrollHeight": 1128
       },
       "tinyText": [],
       "clippedText": [],
@@ -1413,7 +1468,7 @@
       },
       "document": {
         "scrollWidth": 1280,
-        "scrollHeight": 1154
+        "scrollHeight": 1146
       },
       "tinyText": [],
       "clippedText": [],
@@ -1432,7 +1487,7 @@
       },
       "document": {
         "scrollWidth": 1280,
-        "scrollHeight": 1048
+        "scrollHeight": 1146
       },
       "tinyText": [],
       "clippedText": [],
@@ -1451,7 +1506,7 @@
       },
       "document": {
         "scrollWidth": 1280,
-        "scrollHeight": 1776
+        "scrollHeight": 1792
       },
       "tinyText": [],
       "clippedText": [],
@@ -1470,7 +1525,7 @@
       },
       "document": {
         "scrollWidth": 1280,
-        "scrollHeight": 1341
+        "scrollHeight": 1357
       },
       "tinyText": [],
       "clippedText": [],
@@ -1489,7 +1544,7 @@
       },
       "document": {
         "scrollWidth": 1280,
-        "scrollHeight": 1586
+        "scrollHeight": 1804
       },
       "tinyText": [],
       "clippedText": [],
@@ -1508,7 +1563,7 @@
       },
       "document": {
         "scrollWidth": 1280,
-        "scrollHeight": 1478
+        "scrollHeight": 1696
       },
       "tinyText": [],
       "clippedText": [],
@@ -1527,7 +1582,7 @@
       },
       "document": {
         "scrollWidth": 1280,
-        "scrollHeight": 2068
+        "scrollHeight": 2286
       },
       "tinyText": [],
       "clippedText": [],
@@ -1546,7 +1601,7 @@
       },
       "document": {
         "scrollWidth": 1280,
-        "scrollHeight": 2425
+        "scrollHeight": 2643
       },
       "tinyText": [],
       "clippedText": [],
@@ -1565,7 +1620,7 @@
       },
       "document": {
         "scrollWidth": 1280,
-        "scrollHeight": 1486
+        "scrollHeight": 1704
       },
       "tinyText": [],
       "clippedText": [],
@@ -1584,7 +1639,7 @@
       },
       "document": {
         "scrollWidth": 1280,
-        "scrollHeight": 1466
+        "scrollHeight": 1684
       },
       "tinyText": [],
       "clippedText": [],
@@ -1603,7 +1658,7 @@
       },
       "document": {
         "scrollWidth": 1280,
-        "scrollHeight": 1120
+        "scrollHeight": 1136
       },
       "tinyText": [],
       "clippedText": [],
@@ -1622,7 +1677,7 @@
       },
       "document": {
         "scrollWidth": 1280,
-        "scrollHeight": 1824
+        "scrollHeight": 1840
       },
       "tinyText": [],
       "clippedText": [],
@@ -1641,7 +1696,7 @@
       },
       "document": {
         "scrollWidth": 1280,
-        "scrollHeight": 1142
+        "scrollHeight": 1240
       },
       "tinyText": [],
       "clippedText": [],
@@ -1660,7 +1715,7 @@
       },
       "document": {
         "scrollWidth": 1280,
-        "scrollHeight": 2049
+        "scrollHeight": 2147
       },
       "tinyText": [],
       "clippedText": [],
@@ -1679,7 +1734,7 @@
       },
       "document": {
         "scrollWidth": 1280,
-        "scrollHeight": 1112
+        "scrollHeight": 1128
       },
       "tinyText": [],
       "clippedText": [],
@@ -1698,7 +1753,7 @@
       },
       "document": {
         "scrollWidth": 1024,
-        "scrollHeight": 1850
+        "scrollHeight": 1681
       },
       "tinyText": [],
       "clippedText": [],
@@ -1717,7 +1772,7 @@
       },
       "document": {
         "scrollWidth": 1024,
-        "scrollHeight": 1604
+        "scrollHeight": 1757
       },
       "tinyText": [],
       "clippedText": [],
@@ -1736,7 +1791,7 @@
       },
       "document": {
         "scrollWidth": 1024,
-        "scrollHeight": 2402
+        "scrollHeight": 2555
       },
       "tinyText": [],
       "clippedText": [],
@@ -1755,7 +1810,7 @@
       },
       "document": {
         "scrollWidth": 1024,
-        "scrollHeight": 2027
+        "scrollHeight": 2180
       },
       "tinyText": [],
       "clippedText": [],
@@ -1774,7 +1829,7 @@
       },
       "document": {
         "scrollWidth": 1024,
-        "scrollHeight": 2909
+        "scrollHeight": 3248
       },
       "tinyText": [],
       "clippedText": [],
@@ -1793,7 +1848,7 @@
       },
       "document": {
         "scrollWidth": 1024,
-        "scrollHeight": 2757
+        "scrollHeight": 3096
       },
       "tinyText": [],
       "clippedText": [],
@@ -1812,7 +1867,7 @@
       },
       "document": {
         "scrollWidth": 1024,
-        "scrollHeight": 3668
+        "scrollHeight": 4007
       },
       "tinyText": [],
       "clippedText": [],
@@ -1831,7 +1886,7 @@
       },
       "document": {
         "scrollWidth": 1024,
-        "scrollHeight": 3107
+        "scrollHeight": 3446
       },
       "tinyText": [],
       "clippedText": [],
@@ -1850,7 +1905,7 @@
       },
       "document": {
         "scrollWidth": 1024,
-        "scrollHeight": 2306
+        "scrollHeight": 2645
       },
       "tinyText": [],
       "clippedText": [],
@@ -1869,7 +1924,7 @@
       },
       "document": {
         "scrollWidth": 1024,
-        "scrollHeight": 2169
+        "scrollHeight": 2508
       },
       "tinyText": [],
       "clippedText": [],
@@ -1888,7 +1943,7 @@
       },
       "document": {
         "scrollWidth": 1024,
-        "scrollHeight": 1843
+        "scrollHeight": 1927
       },
       "tinyText": [],
       "clippedText": [],
@@ -1907,7 +1962,7 @@
       },
       "document": {
         "scrollWidth": 1024,
-        "scrollHeight": 2587
+        "scrollHeight": 2671
       },
       "tinyText": [],
       "clippedText": [],
@@ -1926,7 +1981,7 @@
       },
       "document": {
         "scrollWidth": 1024,
-        "scrollHeight": 1839
+        "scrollHeight": 1992
       },
       "tinyText": [],
       "clippedText": [],
@@ -1945,7 +2000,7 @@
       },
       "document": {
         "scrollWidth": 1024,
-        "scrollHeight": 2764
+        "scrollHeight": 2917
       },
       "tinyText": [],
       "clippedText": [],
@@ -1964,7 +2019,7 @@
       },
       "document": {
         "scrollWidth": 1024,
-        "scrollHeight": 1133
+        "scrollHeight": 1149
       },
       "tinyText": [],
       "clippedText": [],
@@ -1983,7 +2038,7 @@
       },
       "document": {
         "scrollWidth": 768,
-        "scrollHeight": 2451
+        "scrollHeight": 1729
       },
       "tinyText": [],
       "clippedText": [],
@@ -2002,7 +2057,7 @@
       },
       "document": {
         "scrollWidth": 768,
-        "scrollHeight": 1670
+        "scrollHeight": 1820
       },
       "tinyText": [],
       "clippedText": [],
@@ -2021,7 +2076,7 @@
       },
       "document": {
         "scrollWidth": 768,
-        "scrollHeight": 2528
+        "scrollHeight": 2678
       },
       "tinyText": [],
       "clippedText": [],
@@ -2040,7 +2095,7 @@
       },
       "document": {
         "scrollWidth": 768,
-        "scrollHeight": 2072
+        "scrollHeight": 2222
       },
       "tinyText": [],
       "clippedText": [],
@@ -2059,7 +2114,7 @@
       },
       "document": {
         "scrollWidth": 768,
-        "scrollHeight": 3510
+        "scrollHeight": 3862
       },
       "tinyText": [],
       "clippedText": [],
@@ -2078,7 +2133,7 @@
       },
       "document": {
         "scrollWidth": 768,
-        "scrollHeight": 3358
+        "scrollHeight": 3709
       },
       "tinyText": [],
       "clippedText": [],
@@ -2097,7 +2152,7 @@
       },
       "document": {
         "scrollWidth": 768,
-        "scrollHeight": 4839
+        "scrollHeight": 5190
       },
       "tinyText": [],
       "clippedText": [],
@@ -2116,7 +2171,7 @@
       },
       "document": {
         "scrollWidth": 768,
-        "scrollHeight": 3708
+        "scrollHeight": 4060
       },
       "tinyText": [],
       "clippedText": [],
@@ -2135,7 +2190,7 @@
       },
       "document": {
         "scrollWidth": 768,
-        "scrollHeight": 2907
+        "scrollHeight": 3259
       },
       "tinyText": [],
       "clippedText": [],
@@ -2154,7 +2209,7 @@
       },
       "document": {
         "scrollWidth": 768,
-        "scrollHeight": 3509
+        "scrollHeight": 3860
       },
       "tinyText": [],
       "clippedText": [],
@@ -2173,7 +2228,7 @@
       },
       "document": {
         "scrollWidth": 768,
-        "scrollHeight": 2866
+        "scrollHeight": 2946
       },
       "tinyText": [],
       "clippedText": [],
@@ -2192,7 +2247,7 @@
       },
       "document": {
         "scrollWidth": 768,
-        "scrollHeight": 4761
+        "scrollHeight": 4842
       },
       "tinyText": [],
       "clippedText": [],
@@ -2211,7 +2266,7 @@
       },
       "document": {
         "scrollWidth": 768,
-        "scrollHeight": 2553
+        "scrollHeight": 2703
       },
       "tinyText": [],
       "clippedText": [],
@@ -2230,7 +2285,7 @@
       },
       "document": {
         "scrollWidth": 768,
-        "scrollHeight": 4045
+        "scrollHeight": 4195
       },
       "tinyText": [],
       "clippedText": [],
@@ -2249,7 +2304,7 @@
       },
       "document": {
         "scrollWidth": 768,
-        "scrollHeight": 2158
+        "scrollHeight": 2195
       },
       "tinyText": [],
       "clippedText": [],
@@ -2268,7 +2323,7 @@
       },
       "document": {
         "scrollWidth": 390,
-        "scrollHeight": 2855
+        "scrollHeight": 2113
       },
       "tinyText": [],
       "clippedText": [],
@@ -2287,7 +2342,7 @@
       },
       "document": {
         "scrollWidth": 390,
-        "scrollHeight": 2232
+        "scrollHeight": 2380
       },
       "tinyText": [],
       "clippedText": [],
@@ -2306,7 +2361,7 @@
       },
       "document": {
         "scrollWidth": 390,
-        "scrollHeight": 3221
+        "scrollHeight": 3369
       },
       "tinyText": [],
       "clippedText": [],
@@ -2325,7 +2380,7 @@
       },
       "document": {
         "scrollWidth": 390,
-        "scrollHeight": 2847
+        "scrollHeight": 2995
       },
       "tinyText": [],
       "clippedText": [],
@@ -2344,7 +2399,7 @@
       },
       "document": {
         "scrollWidth": 390,
-        "scrollHeight": 3933
+        "scrollHeight": 4338
       },
       "tinyText": [],
       "clippedText": [],
@@ -2363,7 +2418,7 @@
       },
       "document": {
         "scrollWidth": 390,
-        "scrollHeight": 3780
+        "scrollHeight": 4186
       },
       "tinyText": [],
       "clippedText": [],
@@ -2382,7 +2437,7 @@
       },
       "document": {
         "scrollWidth": 390,
-        "scrollHeight": 5386
+        "scrollHeight": 5791
       },
       "tinyText": [],
       "clippedText": [],
@@ -2401,7 +2456,7 @@
       },
       "document": {
         "scrollWidth": 390,
-        "scrollHeight": 4150
+        "scrollHeight": 4555
       },
       "tinyText": [],
       "clippedText": [],
@@ -2420,7 +2475,7 @@
       },
       "document": {
         "scrollWidth": 390,
-        "scrollHeight": 3330
+        "scrollHeight": 3735
       },
       "tinyText": [],
       "clippedText": [],
@@ -2439,7 +2494,7 @@
       },
       "document": {
         "scrollWidth": 390,
-        "scrollHeight": 3972
+        "scrollHeight": 4377
       },
       "tinyText": [],
       "clippedText": [],
@@ -2458,7 +2513,7 @@
       },
       "document": {
         "scrollWidth": 390,
-        "scrollHeight": 3299
+        "scrollHeight": 3351
       },
       "tinyText": [],
       "clippedText": [],
@@ -2477,7 +2532,7 @@
       },
       "document": {
         "scrollWidth": 390,
-        "scrollHeight": 5345
+        "scrollHeight": 5396
       },
       "tinyText": [],
       "clippedText": [],
@@ -2496,7 +2551,7 @@
       },
       "document": {
         "scrollWidth": 390,
-        "scrollHeight": 3056
+        "scrollHeight": 3204
       },
       "tinyText": [],
       "clippedText": [],
@@ -2515,7 +2570,7 @@
       },
       "document": {
         "scrollWidth": 390,
-        "scrollHeight": 4713
+        "scrollHeight": 4861
       },
       "tinyText": [],
       "clippedText": [],
@@ -2534,7 +2589,7 @@
       },
       "document": {
         "scrollWidth": 390,
-        "scrollHeight": 2584
+        "scrollHeight": 2600
       },
       "tinyText": [],
       "clippedText": [],
@@ -2553,7 +2608,7 @@
       },
       "document": {
         "scrollWidth": 320,
-        "scrollHeight": 2955
+        "scrollHeight": 2247
       },
       "tinyText": [],
       "clippedText": [],
@@ -2572,7 +2627,7 @@
       },
       "document": {
         "scrollWidth": 320,
-        "scrollHeight": 2351
+        "scrollHeight": 2517
       },
       "tinyText": [],
       "clippedText": [],
@@ -2591,7 +2646,7 @@
       },
       "document": {
         "scrollWidth": 320,
-        "scrollHeight": 3382
+        "scrollHeight": 3548
       },
       "tinyText": [],
       "clippedText": [],
@@ -2610,7 +2665,7 @@
       },
       "document": {
         "scrollWidth": 320,
-        "scrollHeight": 3082
+        "scrollHeight": 3248
       },
       "tinyText": [],
       "clippedText": [],
@@ -2629,7 +2684,7 @@
       },
       "document": {
         "scrollWidth": 320,
-        "scrollHeight": 4052
+        "scrollHeight": 4491
       },
       "tinyText": [],
       "clippedText": [],
@@ -2648,7 +2703,7 @@
       },
       "document": {
         "scrollWidth": 320,
-        "scrollHeight": 3899
+        "scrollHeight": 4338
       },
       "tinyText": [],
       "clippedText": [],
@@ -2667,7 +2722,7 @@
       },
       "document": {
         "scrollWidth": 320,
-        "scrollHeight": 5647
+        "scrollHeight": 6086
       },
       "tinyText": [],
       "clippedText": [],
@@ -2686,7 +2741,7 @@
       },
       "document": {
         "scrollWidth": 320,
-        "scrollHeight": 4250
+        "scrollHeight": 4689
       },
       "tinyText": [],
       "clippedText": [],
@@ -2705,7 +2760,7 @@
       },
       "document": {
         "scrollWidth": 320,
-        "scrollHeight": 3457
+        "scrollHeight": 3896
       },
       "tinyText": [],
       "clippedText": [],
@@ -2724,7 +2779,7 @@
       },
       "document": {
         "scrollWidth": 320,
-        "scrollHeight": 4072
+        "scrollHeight": 4511
       },
       "tinyText": [],
       "clippedText": [],
@@ -2743,7 +2798,7 @@
       },
       "document": {
         "scrollWidth": 320,
-        "scrollHeight": 3450
+        "scrollHeight": 3486
       },
       "tinyText": [],
       "clippedText": [],
@@ -2762,7 +2817,7 @@
       },
       "document": {
         "scrollWidth": 320,
-        "scrollHeight": 5560
+        "scrollHeight": 5596
       },
       "tinyText": [],
       "clippedText": [],
@@ -2781,7 +2836,7 @@
       },
       "document": {
         "scrollWidth": 320,
-        "scrollHeight": 3250
+        "scrollHeight": 3416
       },
       "tinyText": [],
       "clippedText": [],
@@ -2800,7 +2855,7 @@
       },
       "document": {
         "scrollWidth": 320,
-        "scrollHeight": 5030
+        "scrollHeight": 5196
       },
       "tinyText": [],
       "clippedText": [],
@@ -2819,7 +2874,7 @@
       },
       "document": {
         "scrollWidth": 320,
-        "scrollHeight": 2768
+        "scrollHeight": 2784
       },
       "tinyText": [],
       "clippedText": [],
