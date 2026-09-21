@@ -17,14 +17,23 @@
   export let onPush = () => {};
   export let onPushEnd = () => {};
 
-  const centerX = 360;
-  const pivotY = 224;
-  const poleLength = 150;
-  const worldScale = 122;
-  const viewBoxWidth = 720;
+  // Shared cartpole-v1 scene contract (docs/learning-suite.md): 640x320
+  // schematic, worldScale110, track x56..584 <-> physical x -2.4..+2.4.
+  const centerX = 320;
+  const pivotY = 202;
+  const poleLength = 132;
+  const worldScale = 110;
+  const viewBoxWidth = 640;
+  const viewBoxHeight = 320;
+  const railY = 251;
+  const wheelY = 242;
+  const wheelR = 9;
+  const cartW = 78;
+  const cartH = 28;
 
   let svgEl;
   let labelScale = 1;
+  let showGhosts = false;
 
   onMount(() => {
     // viewBox scaling shrinks SVG <text> below readable size on narrow
@@ -84,58 +93,40 @@
     };
   }
 
-  function arcPath(theta, radius=38) {
-    const sx = centerX;
-    const sy = pivotY - radius;
-    const ex = centerX + Math.sin(theta) * radius;
-    const ey = pivotY - Math.cos(theta) * radius;
-    const sweep = theta >= 0 ? 1 : 0;
-    return 'M '+sx+' '+sy+' A '+radius+' '+radius+' 0 0 '+sweep+' '+ex+' '+ey;
-  }
-
   $: current = pose([state.x,state.xDot,state.theta,state.thetaDot]);
   $: ghosts = history.map(pose);
   $: selectedToken = Math.min(Math.max(0, selectedToken), Math.max(0,history.length-1));
   $: selectedPose = ghosts[selectedToken] || current;
   $: deg = state.theta * 180 / Math.PI;
   $: selectedDeg = selectedPose.theta * 180 / Math.PI;
-  $: velocityLen = Math.min(80, Math.abs(state.xDot) * 42);
-  $: controlLen = Math.min(88, Math.abs(controllerForce) * 7.5);
-  $: disturbanceLen = Math.min(65, Math.abs(disturbance) * 8);
   $: last = Math.max(0,history.length-1);
   $: tick = Math.round(elapsed / 0.02);
 </script>
 
-<div class="sim-card resize-watch">
+<div class="sim-card resize-watch" data-scene-contract="cartpole-v1">
   <div class="sim-head">
-    <div><span>PHYSICS · 50 Hz · TICK {tick}</span><strong>{status === 'fell' ? 'Pole fell' : 'Cart-Pole + 8-frame history'}</strong></div>
+    <div>
+      <span>{status === 'fell' ? 'FROZEN' : running ? 'LIVE' : 'PAUSED'} · tick {tick}</span>
+      <strong>{status === 'fell' ? 'Pole fell' : 'Cart-Pole'}</strong>
+    </div>
     <div class="time">{elapsed.toFixed(1)} s</div>
   </div>
+  <div class="sim-bounds">x unit m · θ unit deg · terminal |x|&gt;2.4m or |θ|&gt;21.8°</div>
 
-  <svg bind:this={svgEl} viewBox="0 0 720 350" class="sim" role="img" aria-label="live Cart-Pole simulation with recent pose history" style="--label-scale: {labelScale}">
-    <defs>
-      <linearGradient id="trackGlow" x1="0" x2="1"><stop offset="0" stop-color="#e5e7eb"/><stop offset=".5" stop-color="#bfc7d4"/><stop offset="1" stop-color="#e5e7eb"/></linearGradient>
-      <marker id="simArrowPurple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#8b5cf6"/></marker>
-      <marker id="simArrowGray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#667085"/></marker>
-      <marker id="simArrowOrange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#d97706"/></marker>
-    </defs>
+  <svg bind:this={svgEl} viewBox="0 0 {viewBoxWidth} {viewBoxHeight}" class="sim" role="img" aria-label="live Cart-Pole simulation" style="--label-scale: {labelScale}">
+    <rect x="0" y="0" width={viewBoxWidth} height={viewBoxHeight} fill="#ffffff"/>
+    <line x1="56" y1={railY} x2="584" y2={railY} stroke="#cbd5e1" stroke-width="6" stroke-linecap="round"/>
+    <text x="56" y={railY+20} text-anchor="middle">−2.4 m</text>
+    <text x={centerX} y={railY+20} text-anchor="middle">0</text>
+    <text x="584" y={railY+20} text-anchor="middle">+2.4 m</text>
 
-    <rect x="52" y="265" width="616" height="38" rx="9" fill="#f7f8fa"/>
-    <line x1="67" y1="282" x2="653" y2="282" stroke="url(#trackGlow)" stroke-width="6" stroke-linecap="round"/>
-    <line x1="67" y1="257" x2="67" y2="309" stroke="#d36a6a" stroke-width="2" stroke-dasharray="4 4"/>
-    <line x1="653" y1="257" x2="653" y2="309" stroke="#d36a6a" stroke-width="2" stroke-dasharray="4 4"/>
-    <text x="67" y="326" text-anchor="middle">−2.4 m</text>
-    <text x="360" y="326" text-anchor="middle">0</text>
-    <text x="653" y="326" text-anchor="middle">+2.4 m</text>
-    <line x1="360" y1="58" x2="360" y2="304" stroke="#e7eaf0" stroke-width="1" stroke-dasharray="3 5"/>
-
-    {#if showStateOverlay}
+    {#if showStateOverlay && showGhosts}
       <g class="history-poses">
         {#each ghosts as g,i}
           {#if i < last}
-            <g class:selected-ghost={i===selectedToken} opacity={i===selectedToken ? .82 : .05 + .035*i}>
-              <rect x={g.cx-42} y="240" width="84" height="24" rx="5" fill="none" stroke={i===selectedToken ? '#6574c9' : '#7d8795'} stroke-width={i===selectedToken ? 2.4 : 1.1}/>
-              <line x1={g.cx} y1="240" x2={g.tipX} y2={g.tipY+16} stroke={i===selectedToken ? '#6574c9' : '#7d8795'} stroke-width={i===selectedToken ? 5 : 3} stroke-linecap="round"/>
+            <g class:selected-ghost={i===selectedToken} opacity={i===selectedToken ? .82 : .08 + .04*i}>
+              <rect x={g.cx-cartW/2} y={pivotY} width={cartW} height={cartH} rx="4" fill="none" stroke={i===selectedToken ? '#6574c9' : '#7d8795'} stroke-width={i===selectedToken ? 2.4 : 1.1}/>
+              <line x1={g.cx} y1={pivotY} x2={g.tipX} y2={g.tipY} stroke={i===selectedToken ? '#6574c9' : '#7d8795'} stroke-width={i===selectedToken ? 4 : 2.4} stroke-linecap="round"/>
             </g>
           {/if}
         {/each}
@@ -143,84 +134,47 @@
 
       {#if selectedToken < last}
         <g class="selected-history-label">
-          <circle cx={selectedPose.tipX} cy={selectedPose.tipY+16} r="5" fill="#6574c9"/>
-          <text x={selectedPose.tipX+9} y={selectedPose.tipY+12}>t−{last-selectedToken} · θ {selectedDeg.toFixed(1)}°</text>
+          <circle cx={selectedPose.tipX} cy={selectedPose.tipY} r="4" fill="#6574c9"/>
+          <text x={selectedPose.tipX+8} y={selectedPose.tipY-4}>t−{last-selectedToken} · θ {selectedDeg.toFixed(1)}°</text>
         </g>
       {/if}
     {/if}
 
-    <g class:current-selected={selectedToken===last} class="current-pose">
-      <rect x={current.cx-56} y="226" width="112" height="42" rx="9" fill="#35445c"/>
-      <rect x={current.cx-46} y="233" width="92" height="11" rx="4" fill="#53637a"/>
-      <circle cx={current.cx-31} cy="281" r="13" fill="#182333"/>
-      <circle cx={current.cx+31} cy="281" r="13" fill="#182333"/>
-      <circle cx={current.cx-31} cy="281" r="5" fill="#7f8996"/>
-      <circle cx={current.cx+31} cy="281" r="5" fill="#7f8996"/>
-      <line x1={current.cx} y1="227" x2={current.tipX} y2={current.tipY} stroke="#db5b5b" stroke-width="13" stroke-linecap="round"/>
-      <line x1={current.cx} y1="227" x2={current.tipX} y2={current.tipY} stroke="#f18a8a" stroke-width="4" stroke-linecap="round"/>
-      <circle cx={current.cx} cy="227" r="10" fill="#182333"/>
-      <circle cx={current.cx} cy="227" r="4" fill="#d7dce3"/>
+    <g class="current-pose">
+      <line x1={current.cx} y1={pivotY} x2={current.tipX} y2={current.tipY} stroke="#dc5b60" stroke-width="7" stroke-linecap="round"/>
+      <rect x={current.cx-cartW/2} y={pivotY} width={cartW} height={cartH} rx="4" fill="#334155"/>
+      <circle cx={current.cx-24} cy={wheelY} r={wheelR} fill="#1e293b"/>
+      <circle cx={current.cx+24} cy={wheelY} r={wheelR} fill="#1e293b"/>
     </g>
-
-    {#if showStateOverlay}
-      <path d={arcPath(state.theta)} fill="none" stroke="#9aa3b1" stroke-width="1.5" stroke-dasharray="3 3"/>
-    {/if}
-
-    {#if showStateOverlay && Math.abs(state.xDot) > .02}
-      <line
-        x1={current.cx}
-        y1="211"
-        x2={current.cx + Math.sign(state.xDot)*velocityLen}
-        y2="211"
-        stroke="#667085"
-        stroke-width="2.5"
-        marker-end="url(#simArrowGray)"
-      />
-      <text x={current.cx + Math.sign(state.xDot)*(velocityLen+12)} y="202" text-anchor={state.xDot>=0?'start':'end'}>ẋ</text>
-    {/if}
-
-    {#if Math.abs(controllerForce) > .05}
-      <line
-        x1={current.cx}
-        y1="306"
-        x2={current.cx + Math.sign(controllerForce)*controlLen}
-        y2="306"
-        stroke="#8b5cf6"
-        stroke-width="4"
-        marker-end="url(#simArrowPurple)"
-      />
-    {/if}
-
-    {#if Math.abs(disturbance) > .05}
-      <line
-        x1={current.cx}
-        y1="336"
-        x2={current.cx + Math.sign(disturbance)*disturbanceLen}
-        y2="336"
-        stroke="#d97706"
-        stroke-width="4"
-        marker-end="url(#simArrowOrange)"
-      />
-    {/if}
   </svg>
 
-  <!-- Force/push get a numeric readout in every mode, always rendered (even
-       at 0) so the layout doesn't shift as they cross the SVG-arrow draw
-       threshold below. They're the controller's output / an applied
-       disturbance, not the hidden state, so this stays visible in Vision
-       mode too. -->
-  <div class="action-readout">
-    <span class="force-readout"><b>force</b>{controllerForce.toFixed(2)} N</span>
-    <span class="disturbance-readout"><b>push</b>{disturbance.toFixed(2)} N</span>
+  {#if showStateOverlay}
+    <label class="ghost-toggle">
+      <input type="checkbox" bind:checked={showGhosts}/>
+      History poses (t−1…t−7) · explicit inspection
+    </label>
+  {/if}
+
+  <!-- Signed physical-force readout lane (cartpole-v1 contract): the pending
+       controller command is green (it is the NEXT force to be applied on
+       the next Step/tick, not yet measured or delivered -- there is no
+       separate actuator model in this repo, so command == delivered once
+       applied), external disturbance is amber. Zero stays a plain signed
+       number, never an arrow, so the lane never shifts layout. Label sits
+       above the value (own nowrap <output>) so a narrow tile never breaks
+       "+0.00 N" across lines. -->
+  <div class="force-lane">
+    <span class="force-tile action-force"><b>next command</b><output>{controllerForce >= 0 ? '+' : ''}{controllerForce.toFixed(2)} N</output></span>
+    <span class="force-tile disturbance-force"><b>external disturbance</b><output>{disturbance >= 0 ? '+' : ''}{disturbance.toFixed(2)} N</output></span>
   </div>
 
   {#if showStateOverlay}
     <div class="state-readout">
-      <span><b>x</b>{state.x.toFixed(2)} m</span>
-      <span><b>ẋ</b>{state.xDot.toFixed(2)} m/s</span>
-      <span><b>θ</b>{deg.toFixed(1)}°</span>
-      <span><b>θ̇</b>{(state.thetaDot*180/Math.PI).toFixed(1)}°/s</span>
-      <span class="selected-time"><b>selected</b>{selectedToken===last?'t':'t−'+(last-selectedToken)}</span>
+      <span><b>x [m]</b><output>{state.x.toFixed(2)}</output></span>
+      <span><b>ẋ [m/s]</b><output>{state.xDot.toFixed(2)}</output></span>
+      <span><b>θ [deg]</b><output>{deg.toFixed(1)}</output></span>
+      <span><b>θ̇ [deg/s]</b><output>{(state.thetaDot*180/Math.PI).toFixed(1)}</output></span>
+      <span class="selected-time"><b>selected</b><output>{selectedToken===last?'t':'t−'+(last-selectedToken)}</output></span>
     </div>
   {:else}
     <div class="vision-hidden-state">VISION-ONLY · state numbers hidden · controller sees rendered frames only</div>
@@ -238,17 +192,33 @@
 
 <style>
 .sim-card{height:auto;min-height:500px;background:#fff;border:1px solid #e2e5ea;border-radius:16px;padding:11px;display:flex;flex-direction:column;min-width:0}
-.sim-head{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:0 2px 8px;border-bottom:1px solid #eef0f3}
-/* eyebrow/tick readout stays a compact micro-label by design (non-essential decoration); the values that matter are duplicated at readable size in .sim-head strong and .state-readout below */
-.sim-head span{display:block;font-size:10px;letter-spacing:.07em;color:#8a93a2}
-.sim-head strong{display:block;font-size:14px;margin-top:1px}
-.time{font:11px ui-monospace,SFMono-Regular,Menlo,monospace;color:#667085}
-.sim{width:100%;height:auto;display:block;margin-top:8px;background:linear-gradient(180deg,#fdfefe,#f7f8fa);border-radius:11px;border:1px solid #edf0f4;flex:1;min-height:0}
+.sim-head{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:0 2px 4px;border-bottom:1px solid #eef0f3;min-width:0}
+.sim-head>div{min-width:0}
+.sim-head span{display:block;font-size:14px;letter-spacing:.02em;color:#596273;white-space:nowrap}
+.sim-head strong{display:block;font-size:16px;margin-top:1px}
+.sim-bounds{font-size:14px;color:#596273;padding:4px 2px 8px;border-bottom:1px solid #eef0f3;line-height:1.4}
+.time{font:14px ui-monospace,SFMono-Regular,Menlo,monospace;color:#667085;white-space:nowrap;flex:none}
+.sim{width:100%;height:auto;display:block;margin-top:8px;background:#ffffff;border-radius:11px;border:1px solid #edf0f4;flex:1;min-height:0}
 /* In-diagram SVG labels stay compact (scale-corrected to ~10px, never smaller); every value they annotate is duplicated in the >=14px HTML readout below, so this is a documented, always-readable exception rather than hidden content */
 .sim text{font:calc(10px * var(--label-scale, 1)) ui-monospace,SFMono-Regular,Menlo,monospace;fill:#697386}
-.current-pose.current-selected{filter:drop-shadow(0 0 3px rgba(101,116,201,.45))}.selected-history-label text{fill:#5968b7;font-weight:700}
-.action-readout{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}.action-readout span{display:flex;justify-content:space-between;gap:5px;flex:1;min-width:110px;border:1px solid #e4e7ec;border-radius:6px;padding:6px 7px;font:14px ui-monospace,SFMono-Regular,Menlo,monospace}.action-readout b{font-family:Inter,ui-sans-serif,system-ui;font-size:11px}.force-readout{background:#f4f0fb;color:#674e9f}.disturbance-readout{background:#fdf5e9;color:#8a5a12}
-.state-readout{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-top:7px}.state-readout span{display:flex;justify-content:space-between;gap:5px;border:1px solid #e4e7ec;background:#fafbfc;border-radius:6px;padding:6px 7px;font:14px ui-monospace,SFMono-Regular,Menlo,monospace;color:#596273}.state-readout b{font-family:Inter,ui-sans-serif,system-ui;font-size:11px;color:#8b93a1}.state-readout .selected-time{background:#f2f0f9;color:#6855a1}.vision-hidden-state{margin-top:7px;padding:7px 9px;border:1px solid #e1e5ea;border-radius:6px;background:#f7f8fa;text-align:center;font-size:14px;line-height:1.4;letter-spacing:.03em;color:#7b8492}
+.selected-history-label text{fill:#5968b7;font-weight:700}
+/* min-height:44px keeps the whole label a real touch target; the native
+   checkbox itself gets an explicit 28x28 visual size (the shared small-
+   control floor) instead of its ~13px browser default, which was tripping
+   that floor check on every audited viewport. */
+.ghost-toggle{display:flex;align-items:center;gap:6px;margin-top:7px;font-size:14px;color:#596273;min-height:44px}
+.ghost-toggle input{width:28px;height:28px;flex:none;margin:0}
+.force-lane{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px;min-width:0}
+.force-lane .force-tile{display:flex;flex-direction:column;gap:2px;flex:1 1 130px;min-width:0;border:1px solid #e4e7ec;border-radius:6px;padding:6px 7px}
+.force-lane b{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:14px}
+.force-lane output{font:14px ui-monospace,SFMono-Regular,Menlo,monospace;white-space:nowrap}
+.action-force{background:#e9f7f0;color:#16805d}
+.disturbance-force{background:#fdf3e7;color:#b86b16}
+.state-readout{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:5px;margin-top:7px;min-width:0}
+.state-readout span{display:flex;flex-direction:column;gap:2px;min-width:0;border:1px solid #e4e7ec;background:#fafbfc;border-radius:6px;padding:6px 7px;color:#596273}
+.state-readout output{font:14px ui-monospace,SFMono-Regular,Menlo,monospace;white-space:nowrap}
+.state-readout b{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:14px;color:#8b93a1}
+.state-readout .selected-time{background:#f2f0f9;color:#6855a1}
+.vision-hidden-state{margin-top:7px;padding:7px 9px;border:1px solid #e1e5ea;border-radius:6px;background:#f7f8fa;text-align:center;font-size:14px;line-height:1.4;letter-spacing:.03em;color:#7b8492}
 .sim-controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:7px}.sim-controls button{border:1px solid #d9dde5;border-radius:7px;background:#fff;padding:10px 14px;min-height:44px;min-width:44px;cursor:pointer;font-size:14px}.sim-controls .primary{background:#243047;color:#fff;border-color:#243047}.sim-controls button:disabled{opacity:.38;cursor:not-allowed}.sim-controls .push{border-color:#e2d6c4;background:#fffaf2}.spacer{flex:1 1 0;min-width:0}
-@media(max-width:560px){.state-readout{grid-template-columns:repeat(2,1fr)}.selected-time{grid-column:1/3}}
 </style>

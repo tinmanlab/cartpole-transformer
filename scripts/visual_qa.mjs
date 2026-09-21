@@ -248,7 +248,8 @@ async function auditLayout(page, name, { minFont=9.75 } = {}) {
     // Essential readouts and control labels have a stricter, curated 14px
     // floor (design contract), separate from the blanket ~10px minFont floor
     // above that still covers every other compact/eyebrow label in the app.
-    const coreFontSelectors='.state-readout span,.action-readout span,.vision-hidden-state,.sim-controls button,'+
+    const coreFontSelectors='.state-readout span,.force-lane .force-tile,.vision-hidden-state,.sim-controls button,.ghost-toggle,.mode-switch button,'+
+      '.decision-summary-head,.decision-summary-weight,.decision-summary-remaining,.decision-summary-caveat,.decision-summary-force,'+
       '.steps b,.steps p,.claim,.qkv-key,.panel-head small,.stage-head>span,.stage-head>small,.attention-read,.attention-read strong,.force-value,'+
       '.fd-badge,.fd-stages button,.fd-content p,.fd-values span,.fd-values b,.fd-result-tick,.fd-ba-label,.fd-details summary,.follow-decision-entry,'+
       '.fd-repo-row,.fd-repo-row span,.fd-token-select button,.fd-key-select button,.fd-dim-select button,.fd-selector-label,.fd-weight-bar-label,.fd-weight-bar-value,'+
@@ -264,7 +265,7 @@ async function auditLayout(page, name, { minFont=9.75 } = {}) {
 
     // Primary controls (Pause/Run, Step, Reset, Push) get a stricter 44px
     // touch-target floor, separate from the blanket 28px smallControls floor.
-    const primaryControlSelectors='.sim-controls button';
+    const primaryControlSelectors='.sim-controls button,.decision-summary-weight,.mode-switch button';
     const undersizedPrimaryControls=[];
     for(const el of [...document.querySelectorAll(primaryControlSelectors)]){
       if(!visible(el)) continue;
@@ -551,6 +552,15 @@ async function runResponsiveLayoutAudit(browser, width, label) {
     await page.waitForTimeout(80);
   }
 
+  // Pipeline overview is a closed native <details> by default (whether or
+  // not the guide above was exercised); open it explicitly before the
+  // Pipeline-internal stage clicks below.
+  const responsivePipelineOpen=await page.locator('.pipeline-disclosure').evaluate(el=>el.open).catch(()=>false);
+  if(!responsivePipelineOpen){
+    await page.locator('.pipeline-disclosure summary').click();
+    await page.waitForTimeout(100);
+  }
+
   for(const [name,sel] of [
     ['embedding','.embedding-overview'],
     ['qkv','.qkv-overview'],
@@ -618,8 +628,158 @@ async function runDesktop(browser) {
   await waitLearned(page);
   await page.waitForTimeout(700);
 
-  const stateActionReadouts=await page.locator('.action-readout span').count();
-  if(stateActionReadouts!==2) pushError('state mode: expected exactly 2 action-readout cells (force+push), found '+stateActionReadouts);
+  const stateActionReadouts=await page.locator('.force-lane .force-tile').count();
+  if(stateActionReadouts!==2) pushError('state mode: expected exactly 2 force-lane tiles (action+disturbance), found '+stateActionReadouts);
+
+  // The Pipeline/advanced graph is a closed native <details> overview by
+  // default now that the decision-summary is the primary reading; open it
+  // explicitly before any of the existing Pipeline-internal selectors below.
+  const pipelineClosedOnEntry=await page.locator('.pipeline-disclosure').evaluate(el=>!el.open);
+  if(!pipelineClosedOnEntry) pushError('state mode: Pipeline overview is not collapsed by default on ordinary entry');
+
+  // Actual default landing screenshot: Pipeline still collapsed, nothing
+  // opened, paused so the capture is settled, viewport-only at scroll 0.
+  // desktop-overview.jpg below is taken AFTER Pipeline is opened (for the
+  // legacy stage-selector/overlap coverage further down this function), so
+  // it is NOT the default landing image -- this is.
+  const firstScreenPauseBtn=page.getByRole('button',{name:'Pause'});
+  const firstScreenWasRunning=await firstScreenPauseBtn.count()>0;
+  if(firstScreenWasRunning) await firstScreenPauseBtn.click();
+  await page.waitForTimeout(150);
+  await page.evaluate(()=>window.scrollTo(0,0));
+  await page.screenshot({path:path.join(outDir,'desktop-first-screen.jpg'),type:'jpeg',quality:82,fullPage:false});
+  if(firstScreenWasRunning) await page.getByRole('button',{name:'Run'}).click();
+  await page.waitForTimeout(100);
+
+  await page.locator('.pipeline-disclosure summary').click();
+  await page.waitForTimeout(100);
+
+  // cartpole-v1 scene contract: geometry/color checks + no decorative arrows.
+  const sceneContract=await page.evaluate(() => {
+    const root=document.querySelector('[data-scene-contract="cartpole-v1"]');
+    const svg=root?.querySelector('svg.sim');
+    return {
+      hasRoot:!!root,
+      viewBox:svg?.getAttribute('viewBox') || null,
+      cartFill:svg?.querySelector('.current-pose rect')?.getAttribute('fill') || null,
+      poleStroke:svg?.querySelector('.current-pose line')?.getAttribute('stroke') || null,
+      wheelFill:svg?.querySelector('.current-pose circle')?.getAttribute('fill') || null,
+      railStroke:[...(svg?.querySelectorAll('line') || [])].find(l=>l.getAttribute('stroke')==='#cbd5e1')?.getAttribute('stroke') || null,
+      markerCount:svg ? svg.innerHTML.match(/marker-end/g)?.length || 0 : null
+    };
+  });
+  report.interactions.sceneContract=sceneContract;
+  if(!sceneContract.hasRoot) pushError('cartpole-v1: scene root missing data-scene-contract="cartpole-v1"');
+  if(sceneContract.viewBox!=='0 0 640 320') pushError('cartpole-v1: scene viewBox is not "0 0 640 320", got '+sceneContract.viewBox);
+  if(sceneContract.cartFill!=='#334155') pushError('cartpole-v1: cart fill is not #334155, got '+sceneContract.cartFill);
+  if(sceneContract.poleStroke!=='#dc5b60') pushError('cartpole-v1: pole stroke is not #dc5b60, got '+sceneContract.poleStroke);
+  if(sceneContract.wheelFill!=='#1e293b') pushError('cartpole-v1: wheel fill is not #1e293b, got '+sceneContract.wheelFill);
+  if(!sceneContract.railStroke) pushError('cartpole-v1: rail stroke #cbd5e1 not found');
+  if(sceneContract.markerCount) pushError('cartpole-v1: decorative arrow marker(s) found in default plant scene, count '+sceneContract.markerCount);
+
+  // Scene card header/metadata bounds: the state/source label and the
+  // rendered clock must stay single-line and inside the actual sim-card
+  // bounding box (not just the page), and the unit/terminal-limit text
+  // lives in its own separate metadata line, not crammed alongside them.
+  const simCardBounds=await page.evaluate(() => {
+    const card=document.querySelector('.sim-card');
+    const head=document.querySelector('.sim-head span');
+    const time=document.querySelector('.sim-head .time');
+    const bounds=document.querySelector('.sim-bounds');
+    const r=el=>el?.getBoundingClientRect();
+    const within=(inner,outer)=>!!inner && !!outer &&
+      inner.left>=outer.left-0.5 && inner.right<=outer.right+0.5 &&
+      inner.top>=outer.top-0.5 && inner.bottom<=outer.bottom+0.5;
+    const singleLine=el=>{
+      if(!el) return false;
+      const range=document.createRange();
+      range.selectNodeContents(el);
+      return range.getClientRects().length<=1;
+    };
+    const cardRect=r(card);
+    return {
+      headText:head?.textContent.trim() || '',
+      boundsText:bounds?.textContent.trim() || '',
+      timeSingleLine:singleLine(time),
+      headWithinCard:within(r(head),cardRect),
+      timeWithinCard:within(r(time),cardRect),
+      boundsWithinCard:within(r(bounds),cardRect)
+    };
+  });
+  report.interactions.simCardBounds=simCardBounds;
+  if(!/^(LIVE|PAUSED|FROZEN) · tick \d+$/.test(simCardBounds.headText)) pushError('cartpole-v1: sim-head state label is not the compact "LIVE/PAUSED/FROZEN · tick N" form, got '+JSON.stringify(simCardBounds.headText));
+  if(!/x unit m/.test(simCardBounds.boundsText) || !/θ unit deg/.test(simCardBounds.boundsText) || !/terminal/.test(simCardBounds.boundsText)) {
+    pushError('cartpole-v1: sim-bounds metadata line is missing unit/terminal-limit text, got '+JSON.stringify(simCardBounds.boundsText));
+  }
+  if(!simCardBounds.timeSingleLine) pushError('cartpole-v1: sim-head clock wrapped across multiple lines');
+  if(!simCardBounds.headWithinCard) pushError('cartpole-v1: sim-head state label escapes the sim-card bounds');
+  if(!simCardBounds.timeWithinCard) pushError('cartpole-v1: sim-head clock escapes the sim-card bounds');
+  if(!simCardBounds.boundsWithinCard) pushError('cartpole-v1: sim-bounds metadata line escapes the sim-card bounds');
+
+  // Force/state readout tiles: every tile (including "selected t") must stay
+  // inside the sim-card, and its numeric <output> must render as one line
+  // (never breaking a signed value like "+0.00 N" across lines).
+  const readoutBounds=await page.evaluate(() => {
+    const card=document.querySelector('.sim-card');
+    const cardRect=card?.getBoundingClientRect();
+    const within=(inner,outer)=>!!inner && !!outer &&
+      inner.left>=outer.left-0.5 && inner.right<=outer.right+0.5 &&
+      inner.top>=outer.top-0.5 && inner.bottom<=outer.bottom+0.5;
+    const singleLine=el=>{
+      if(!el) return true;
+      const range=document.createRange();
+      range.selectNodeContents(el);
+      return range.getClientRects().length<=1;
+    };
+    const tiles=[...document.querySelectorAll('.force-lane .force-tile, .state-readout span')];
+    return tiles.map(t=>({
+      text:t.textContent.trim(),
+      withinCard:within(t.getBoundingClientRect(),cardRect),
+      outputSingleLine:singleLine(t.querySelector('output'))
+    }));
+  });
+  report.interactions.readoutBounds=readoutBounds;
+  for(const t of readoutBounds){
+    if(!t.withinCard) pushError('cartpole-v1: readout tile "'+t.text+'" escapes the sim-card bounds');
+    if(!t.outputSingleLine) pushError('cartpole-v1: readout tile "'+t.text+'" numeric value wrapped across multiple lines');
+  }
+
+  // Actual 8-token weighting summary is the primary state-column reading
+  // (App.svelte, ahead of the Pipeline disclosure, not inside it): top-3
+  // real final-query weights + remaining mass, disclaiming action-
+  // probability/causal claims, and a control that forwards the exact
+  // Query/Key cell into the existing shared full inspector (no new SSOT).
+  const summaryCount=await page.locator('[data-decision-summary]').count();
+  if(summaryCount!==1) pushError('decision summary: expected exactly one instance, found '+summaryCount);
+  const summaryTop=await page.locator('.decision-summary-weight').allInnerTexts();
+  const summaryCaveat=await page.locator('.decision-summary-caveat').innerText();
+  if(summaryTop.length<1 || summaryTop.length>3) pushError('decision summary: expected 1-3 top-weight cells, found '+summaryTop.length);
+  if(!/action probability/i.test(summaryCaveat) || !/causal/i.test(summaryCaveat)) pushError('decision summary: caveat does not disclaim action-probability/causal-importance, got '+JSON.stringify(summaryCaveat));
+  const firstWeightButton=page.locator('.decision-summary-weight').first();
+  const firstWeightLabel=(await firstWeightButton.locator('.dsw-label').innerText()).trim();
+  const firstWeightIndex=Number(await firstWeightButton.getAttribute('data-index'));
+  await firstWeightButton.click();
+  await page.waitForTimeout(120);
+  const detailAfterSummary=await page.locator('.transformer-detail-wide').count();
+  if(detailAfterSummary!==1) pushError('decision summary: clicking a top weight did not open the shared full Self Attention inspector');
+  // .transformer-detail-wide .eyebrow also matches the nested
+  // AttentionCellTrace eyebrow further down the same drawer (root-cause of
+  // CI run 35622817403); scope to the header eyebrow only.
+  const detailEyebrow=await page.locator('.transformer-detail-wide .detail-head .eyebrow').innerText();
+  if(!detailEyebrow.includes(firstWeightLabel)) pushError('decision summary: opened inspector shows the wrong Key token, expected '+JSON.stringify(firstWeightLabel)+' in '+JSON.stringify(detailEyebrow));
+  // Real dataset cross-check, not just header text: the opened cell must be
+  // the exact same Query (final token, N-1) / Key (clicked summary index)
+  // the summary button represented -- same event, no drift through a
+  // relabeled/stale selection.
+  const traceCell=page.locator('.attention-cell-trace');
+  const traceKeyCount=await traceCell.locator('.trace-key-button').count();
+  const traceLastIndex=traceKeyCount-1;
+  const traceRow=Number(await traceCell.getAttribute('data-row'));
+  const traceCol=Number(await traceCell.getAttribute('data-col'));
+  if(traceRow!==traceLastIndex) pushError('decision summary: opened inspector Query row is not the final token, expected '+traceLastIndex+' got '+traceRow);
+  if(traceCol!==firstWeightIndex) pushError('decision summary: opened inspector Key column does not match the clicked summary weight, expected '+firstWeightIndex+' got '+traceCol);
+  await page.getByRole('button',{name:'close Transformer detail'}).click();
+  await page.waitForTimeout(80);
 
   const t0=await page.locator('.time').innerText();
   const canvas0=await page.locator('.embedding-overview canvas').first().evaluate(el=>el.toDataURL());
@@ -798,15 +958,23 @@ async function runDesktop(browser) {
     await page.waitForTimeout(100);
   }
 
-  // linked token selection
+  // linked token selection — history poses are opt-in (cartpole-v1 contract:
+  // no permanent ghost overlay), so the explicit toggle must be enabled
+  // first; a deliberately-wrong test that skips this checkbox must find zero
+  // ghosts even after hovering a history token (negative control).
+  const ghostToggle=page.locator('.ghost-toggle input');
+  const ghostBeforeToggle=await page.locator('.selected-history-label').count();
+  if(ghostBeforeToggle!==0) pushError('history poses rendered before the explicit ghost-toggle was enabled (cartpole-v1: no permanent ghost overlay)');
+  await ghostToggle.check();
   const ghostBefore=await page.locator('.selected-history-label').count();
   await page.locator('.embedding-token').nth(2).hover();
   await page.waitForTimeout(120);
   const selectedText=await page.locator('.state-readout .selected-time').innerText();
   const ghostAfter=await page.locator('.selected-history-label').count();
-  report.interactions.tokenLink={ghostBefore,ghostAfter,selectedText};
+  report.interactions.tokenLink={ghostBeforeToggle,ghostBefore,ghostAfter,selectedText};
   if(!selectedText.includes('t−')) pushWarning('historical token selection did not surface in simulation readout');
   if(ghostAfter<1) pushWarning('selected historical ghost pose not visible');
+  await ghostToggle.uncheck();
 
   // disturbance while policy continues
   const xdot0=await page.locator('.state-readout span').nth(1).innerText();
@@ -824,7 +992,7 @@ async function runDesktop(browser) {
   // silently reappear afterward. Each case confirms nonzero force is actually
   // applied before checking the cancellation clears it.
   async function readPush(){
-    const t=await page.locator('.disturbance-readout').innerText();
+    const t=await page.locator('.disturbance-force').innerText();
     return parseFloat(t.replace(/[^-0-9.]/g,''));
   }
   async function beginLeftPush(dir){
@@ -1388,9 +1556,19 @@ async function runDesktop(browser) {
   if(tickAfterClose!==tickBeforeClose) pushError('follow-decision guide: closing the guide changed the plant tick');
   const pushReenabled=await page.getByRole('button',{name:'Push →'}).isDisabled().catch(()=>true);
   if(pushReenabled) pushError('follow-decision guide: Push stayed disabled after the guide was closed');
+  // Pipeline is a closed native <details> by default now that the decision
+  // summary is the primary reading, and (per the approved change) no longer
+  // auto-reopens when the guide closes -- so first assert it stays closed,
+  // then explicitly reopen it via the same disclosure the user would use,
+  // and verify the underlying source/force are correctly restored to live
+  // (not dropping this coverage, just reordering how it's reached).
   const pipelineRestoredOnClose=await page.locator('.pipeline-disclosure').evaluate(el=>({open:el.open,source:el.dataset.source})).catch(()=>({open:false,source:null}));
-  if(!pipelineRestoredOnClose.open) pushError('follow-decision guide: Pipeline overview did not restore to its default-visible state after the guide closed');
-  if(pipelineRestoredOnClose.source!=='live') pushError('follow-decision guide: Pipeline overview source is not "live" after the guide closed, got '+JSON.stringify(pipelineRestoredOnClose.source));
+  if(pipelineRestoredOnClose.open) pushError('follow-decision guide: Pipeline overview should stay collapsed after the guide closed (it no longer auto-reopens)');
+  await page.locator('.pipeline-disclosure summary').click();
+  await page.waitForTimeout(100);
+  const pipelineReopenedOnClose=await page.locator('.pipeline-disclosure').evaluate(el=>({open:el.open,source:el.dataset.source}));
+  if(!pipelineReopenedOnClose.open) pushError('follow-decision guide: Pipeline overview did not reopen via its own disclosure after the guide closed');
+  if(pipelineReopenedOnClose.source!=='live') pushError('follow-decision guide: Pipeline overview source is not "live" after the guide closed, got '+JSON.stringify(pipelineReopenedOnClose.source));
   const pipelineForceAfterClose=await page.locator('.pipeline-shell .panel-head>span').innerText();
   const liveCommandForceAfterClose=await page.locator('main').getAttribute('data-controller-force');
   const liveCommandForceAbs=Math.abs(Number(liveCommandForceAfterClose)).toFixed(2);
@@ -1444,12 +1622,12 @@ async function runDesktop(browser) {
     const frameCount=await page.locator('.vision-stage-frame .vision-frame').count();
     const patchGridCount=await page.locator('.vision-stage-patch .patch-grid').count();
     const patchCellCount=await page.locator('.vision-stage-patch .cell').count();
-    const visionActionReadouts=await page.locator('.action-readout span').count();
+    const visionActionReadouts=await page.locator('.force-lane .force-tile').count();
 
     if(pipelineCount!==1) pushError('vision mode: pipeline missing');
     if(hiddenStateCount!==1) pushError('vision mode: hidden-state label missing');
     if(stateReadoutCount!==0) pushError('vision mode: explicit state readout leaked into pixels-only mode');
-    if(visionActionReadouts!==2) pushError('vision mode: expected exactly 2 action-readout cells (force+push) despite hidden state, found '+visionActionReadouts);
+    if(visionActionReadouts!==2) pushError('vision mode: expected exactly 2 force-lane tiles (action+disturbance) despite hidden state, found '+visionActionReadouts);
     if(frameCount!==8) pushError('vision mode: expected 8 sampled frames, found '+frameCount);
     if(patchGridCount!==2) pushError('vision mode: expected patch and delta grids, found '+patchGridCount);
     if(patchCellCount!==512) pushError('vision mode: expected 512 visible patch+delta cells, found '+patchCellCount);
@@ -1558,10 +1736,10 @@ async function runDesktop(browser) {
     const fusionAttentionCells=await page.locator('.fusion-stage-attention .cell').count();
     const fusionScenarioButtons=await page.locator('.fusion-pipeline .scenario-bar button').count();
     const fusionStateReadout=await page.locator('.state-readout').count();
-    const fusionActionReadouts=await page.locator('.action-readout span').count();
+    const fusionActionReadouts=await page.locator('.force-lane .force-tile').count();
 
     if(fusionModeAttr!=='fusion') pushError('fusion mode: main observation mode did not switch to fusion');
-    if(fusionActionReadouts!==2) pushError('fusion mode: expected exactly 2 action-readout cells (force+push), found '+fusionActionReadouts);
+    if(fusionActionReadouts!==2) pushError('fusion mode: expected exactly 2 force-lane tiles (action+disturbance), found '+fusionActionReadouts);
     if(fusionPipelineCount!==1) pushError('fusion mode: pipeline missing');
     if(fusionPairCount!==8) pushError('fusion mode: expected 8 aligned timestamp pairs, found '+fusionPairCount);
     if(fusionTokenCount!==16) pushError('fusion mode: expected 16 typed tokens, found '+fusionTokenCount);
@@ -1721,6 +1899,23 @@ async function runMobile(browser) {
   if(mobileSankeyDisplay && mobileSankeyDisplay!=='none') pushError('mobile-overview: internal Sankey must be hidden, display='+mobileSankeyDisplay);
   await page.screenshot({path:path.join(outDir,'mobile-overview.jpg'),type:'jpeg',quality:78,fullPage:true});
 
+  // Actual default landing screenshot at the mobile width: Pipeline still
+  // collapsed, nothing opened, paused so the capture is settled, viewport-
+  // only at scroll 0 (mobile-overview.jpg above is full-page and not
+  // guaranteed paused/scroll-0, so this is the dedicated first-screen shot).
+  const mobileFirstScreenPauseBtn=page.getByRole('button',{name:'Pause'});
+  const mobileFirstScreenWasRunning=await mobileFirstScreenPauseBtn.count()>0;
+  if(mobileFirstScreenWasRunning) await mobileFirstScreenPauseBtn.click();
+  await page.waitForTimeout(150);
+  await page.evaluate(()=>window.scrollTo(0,0));
+  await page.screenshot({path:path.join(outDir,'mobile-first-screen.jpg'),type:'jpeg',quality:82,fullPage:false});
+  if(mobileFirstScreenWasRunning) await page.getByRole('button',{name:'Run'}).click();
+  await page.waitForTimeout(100);
+
+  // Pipeline overview is a closed native <details> by default; open it
+  // explicitly before the Pipeline-internal stage click below.
+  await page.locator('.pipeline-disclosure summary').click();
+  await page.waitForTimeout(100);
   await page.locator('.attention-overview').click();
   await page.waitForTimeout(180);
   const mobileDetailCount=await page.locator('.transformer-detail-wide').count();
@@ -2103,6 +2298,12 @@ async function runFollowGuideSelectionRoundtrip(browser, width, label, keyIndex,
   await page.locator('.fd-close').click();
   await page.waitForTimeout(120);
   if (await page.locator('.follow-decision-guide').count()!==0) pushError(label+': guide did not close');
+  // Pipeline no longer auto-reopens when the guide closes (it stays a
+  // closed overview by default now that the decision-summary is primary);
+  // open it explicitly before the outside-the-guide Pipeline interaction.
+  const pipelineOpenAfterGuideClose=await page.locator('.pipeline-disclosure').evaluate(el=>el.open);
+  if(!pipelineOpenAfterGuideClose) await page.locator('.pipeline-disclosure summary').click();
+  await page.waitForTimeout(100);
   await page.locator('.attention-overview').click();
   await page.waitForTimeout(150);
   const outsideQueryButtonsDisabled=await page.locator('.attention-cell-trace .trace-query-button').evaluateAll(els=>els.some(el=>el.disabled));
@@ -2168,6 +2369,10 @@ async function runModelLoadFailureFixture(browser) {
   // the real toy token is 4D (STATE_FIELDS). Both are label-only fixes;
   // the token-dimension label now reads the actual token length instead of
   // a hardcoded constant.
+  // Pipeline overview is a closed native <details> by default; open it
+  // explicitly before reading its internal panel/stage content below.
+  await page.locator('.pipeline-disclosure summary').click();
+  await page.waitForTimeout(100);
   const panelTitle=await page.locator('.pipeline-shell .panel-head strong').innerText().catch(()=>'');
   if(/1 block/.test(panelTitle)) pushError('model-load-failure fixture: Pipeline panel title still claims "1 block" in toy fallback, got '+JSON.stringify(panelTitle));
   if(!/fixed attention/i.test(panelTitle)) pushError('model-load-failure fixture: Pipeline panel title does not name the actual fixed-attention toy model, got '+JSON.stringify(panelTitle));

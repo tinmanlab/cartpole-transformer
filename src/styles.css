@@ -1,6 +1,6 @@
 :root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#172033;background:#f6f7f9;font-synthesis:none}
 *{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#fafbfc,#f4f5f7);color:#172033}button{font:inherit}main{max-width:1500px;margin:0 auto;padding:12px 16px 44px}
-.topbar{min-height:38px;height:auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;padding:2px}.mode-switch{display:flex;gap:2px;padding:2px;border:1px solid #e0e4e9;border-radius:7px;background:#f7f8fa}.mode-switch button{border:0;background:transparent;border-radius:5px;padding:5px 9px;min-height:28px;font-size:10px;color:#77808d;cursor:pointer}.mode-switch button.active{background:#fff;color:#293548;box-shadow:0 1px 3px rgba(0,0,0,.08)}.mode-switch button:disabled{opacity:.35;cursor:not-allowed}.topbar strong{font-size:14px;letter-spacing:-.01em}.topbar span{font-size:10px;color:#8a93a2;letter-spacing:.04em}
+.topbar{min-height:38px;height:auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;padding:2px}.mode-switch{display:flex;flex-wrap:wrap;gap:2px;padding:2px;border:1px solid #e0e4e9;border-radius:7px;background:#f7f8fa}.mode-switch button{border:0;background:transparent;border-radius:5px;padding:5px 9px;min-height:44px;min-width:44px;font-size:14px;color:#77808d;cursor:pointer}.mode-switch button.active{background:#fff;color:#293548;box-shadow:0 1px 3px rgba(0,0,0,.08)}.mode-switch button:disabled{opacity:.35;cursor:not-allowed}.topbar strong{font-size:14px;letter-spacing:-.01em}.topbar span{font-size:10px;color:#8a93a2;letter-spacing:.04em}
 .lab-grid{position:relative;display:grid;grid-template-columns:minmax(380px,.72fr) minmax(760px,1.28fr);gap:10px;align-items:start;min-height:500px}
 /* Grid items default to min-width:auto (their min-content size); once the
    single-column mobile layout kicks in below, that floor can force the whole grid
@@ -22,3 +22,14 @@
 @media(max-width:560px){.steps{grid-template-columns:1fr}.topbar span{display:none}}
 
 .lab-grid>.upstream-sankey{z-index:4;overflow:visible}
+
+.decision-summary{margin-top:10px;padding:10px 12px;border:1px solid #e2e5ea;background:#fff;border-radius:12px}
+.decision-summary-head{font-size:14px;color:#596273;margin-bottom:7px}
+.decision-summary-weights{display:flex;flex-wrap:wrap;align-items:center;gap:7px}
+.decision-summary-weight{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;border:1px solid #ded7f2;background:#f4f0fb;color:#5d4b92;border-radius:9px;padding:6px 12px;min-height:44px;min-width:44px;font:14px ui-monospace,SFMono-Regular,Menlo,monospace;cursor:pointer}
+.dsw-label{font-size:14px;color:#8b93a1;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.decision-summary-remaining{font-size:14px;color:#8b93a1}
+.decision-summary-caveat{font-size:14px;color:#7b8492;font-style:italic;margin:7px 0 0}
+.decision-summary-open{border:0;background:transparent;color:#7359b7;cursor:pointer;font:inherit;font-style:normal;text-decoration:underline;padding:0;min-height:44px}
+.decision-summary-force{margin-top:7px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;font:14px ui-monospace,SFMono-Regular,Menlo,monospace;color:#596273}
+.decision-summary-force b{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:14px;color:#8b93a1;font-weight:600}

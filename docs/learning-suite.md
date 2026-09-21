@@ -90,6 +90,33 @@ Alongside the label, show the concrete identifier for the shown event (a
 tick number, episode/step index, or similar) — not just the word "frozen"
 with no way to tell which instant it refers to.
 
+## Scene geometry (cartpole-v1 contract)
+
+Each repo's plant scene is a single unperspectived side view, drawn with its
+own existing Canvas/SVG renderer (no shared package). The scene root carries
+`data-scene-contract="cartpole-v1"`. Shared constants, checked visually and
+numerically in each repo's own QA:
+
+- Aspect 640×320 (responsive vector/canvas scaling on top).
+- White (#ffffff) background, navy cart (#334155), warm red pole (#dc5b60),
+  slate wheels (#1e293b), neutral rail (#cbd5e1). No decorative
+  grid/gradient/glow.
+- Track ends at x56/x584 ↔ physical x −2.4/+2.4, center x320, worldScale110.
+- Cart body 78×28 at y202 (pivot also at y202); two wheels radius9 at
+  centers x±24 from cart center, y242; rail at y251.
+- Pole length132 at nominal 1m, thickness7, drawn from the view's own native
+  angle state (a repo may scale pole length by its actual l/.5 when its
+  physical pole length differs from the nominal).
+- No velocity/angle arrows, no angle arc, no information-flow markers on the
+  main plant scene by default; no permanent multi-ghost overlay — history
+  pose inspection stays an explicit, labelled, opt-in control.
+- A clean external signed physical-force readout/lane sits directly below
+  the scene, using: action/delivered force green (#16805d), external
+  disturbance amber (#b86b16), observation blue (#2563eb), internal
+  calculation purple (#7552bd), failed state red (#b42318). Zero force stays
+  a plain signed number, never an arrow; no arbitrary arrow minimum length
+  or oversized marker heads if a repo does draw an arrow.
+
 ## Visual fundamentals (shared, on each repo's existing light theme)
 
 No new design system or shared CSS package — each repo keeps its existing
