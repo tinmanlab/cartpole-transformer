@@ -248,7 +248,7 @@ async function auditLayout(page, name, { minFont=9.75 } = {}) {
     // Essential readouts and control labels have a stricter, curated 14px
     // floor (design contract), separate from the blanket ~10px minFont floor
     // above that still covers every other compact/eyebrow label in the app.
-    const coreFontSelectors='.state-readout span,.force-lane .force-tile,.vision-hidden-state,.sim-controls button,.ghost-toggle,'+
+    const coreFontSelectors='.state-readout span,.force-lane .force-tile,.vision-hidden-state,.sim-controls button,.ghost-toggle,.mode-switch button,'+
       '.decision-summary-head,.decision-summary-weight,.decision-summary-remaining,.decision-summary-caveat,.decision-summary-force,'+
       '.steps b,.steps p,.claim,.qkv-key,.panel-head small,.stage-head>span,.stage-head>small,.attention-read,.attention-read strong,.force-value,'+
       '.fd-badge,.fd-stages button,.fd-content p,.fd-values span,.fd-values b,.fd-result-tick,.fd-ba-label,.fd-details summary,.follow-decision-entry,'+
@@ -265,7 +265,7 @@ async function auditLayout(page, name, { minFont=9.75 } = {}) {
 
     // Primary controls (Pause/Run, Step, Reset, Push) get a stricter 44px
     // touch-target floor, separate from the blanket 28px smallControls floor.
-    const primaryControlSelectors='.sim-controls button,.decision-summary-weight';
+    const primaryControlSelectors='.sim-controls button,.decision-summary-weight,.mode-switch button';
     const undersizedPrimaryControls=[];
     for(const el of [...document.querySelectorAll(primaryControlSelectors)]){
       if(!visible(el)) continue;
@@ -636,6 +636,21 @@ async function runDesktop(browser) {
   // explicitly before any of the existing Pipeline-internal selectors below.
   const pipelineClosedOnEntry=await page.locator('.pipeline-disclosure').evaluate(el=>!el.open);
   if(!pipelineClosedOnEntry) pushError('state mode: Pipeline overview is not collapsed by default on ordinary entry');
+
+  // Actual default landing screenshot: Pipeline still collapsed, nothing
+  // opened, paused so the capture is settled, viewport-only at scroll 0.
+  // desktop-overview.jpg below is taken AFTER Pipeline is opened (for the
+  // legacy stage-selector/overlap coverage further down this function), so
+  // it is NOT the default landing image -- this is.
+  const firstScreenPauseBtn=page.getByRole('button',{name:'Pause'});
+  const firstScreenWasRunning=await firstScreenPauseBtn.count()>0;
+  if(firstScreenWasRunning) await firstScreenPauseBtn.click();
+  await page.waitForTimeout(150);
+  await page.evaluate(()=>window.scrollTo(0,0));
+  await page.screenshot({path:path.join(outDir,'desktop-first-screen.jpg'),type:'jpeg',quality:82,fullPage:false});
+  if(firstScreenWasRunning) await page.getByRole('button',{name:'Run'}).click();
+  await page.waitForTimeout(100);
+
   await page.locator('.pipeline-disclosure summary').click();
   await page.waitForTimeout(100);
 
@@ -661,6 +676,73 @@ async function runDesktop(browser) {
   if(sceneContract.wheelFill!=='#1e293b') pushError('cartpole-v1: wheel fill is not #1e293b, got '+sceneContract.wheelFill);
   if(!sceneContract.railStroke) pushError('cartpole-v1: rail stroke #cbd5e1 not found');
   if(sceneContract.markerCount) pushError('cartpole-v1: decorative arrow marker(s) found in default plant scene, count '+sceneContract.markerCount);
+
+  // Scene card header/metadata bounds: the state/source label and the
+  // rendered clock must stay single-line and inside the actual sim-card
+  // bounding box (not just the page), and the unit/terminal-limit text
+  // lives in its own separate metadata line, not crammed alongside them.
+  const simCardBounds=await page.evaluate(() => {
+    const card=document.querySelector('.sim-card');
+    const head=document.querySelector('.sim-head span');
+    const time=document.querySelector('.sim-head .time');
+    const bounds=document.querySelector('.sim-bounds');
+    const r=el=>el?.getBoundingClientRect();
+    const within=(inner,outer)=>!!inner && !!outer &&
+      inner.left>=outer.left-0.5 && inner.right<=outer.right+0.5 &&
+      inner.top>=outer.top-0.5 && inner.bottom<=outer.bottom+0.5;
+    const singleLine=el=>{
+      if(!el) return false;
+      const range=document.createRange();
+      range.selectNodeContents(el);
+      return range.getClientRects().length<=1;
+    };
+    const cardRect=r(card);
+    return {
+      headText:head?.textContent.trim() || '',
+      boundsText:bounds?.textContent.trim() || '',
+      timeSingleLine:singleLine(time),
+      headWithinCard:within(r(head),cardRect),
+      timeWithinCard:within(r(time),cardRect),
+      boundsWithinCard:within(r(bounds),cardRect)
+    };
+  });
+  report.interactions.simCardBounds=simCardBounds;
+  if(!/^(LIVE|PAUSED|FROZEN) · tick \d+$/.test(simCardBounds.headText)) pushError('cartpole-v1: sim-head state label is not the compact "LIVE/PAUSED/FROZEN · tick N" form, got '+JSON.stringify(simCardBounds.headText));
+  if(!/x unit m/.test(simCardBounds.boundsText) || !/θ unit deg/.test(simCardBounds.boundsText) || !/terminal/.test(simCardBounds.boundsText)) {
+    pushError('cartpole-v1: sim-bounds metadata line is missing unit/terminal-limit text, got '+JSON.stringify(simCardBounds.boundsText));
+  }
+  if(!simCardBounds.timeSingleLine) pushError('cartpole-v1: sim-head clock wrapped across multiple lines');
+  if(!simCardBounds.headWithinCard) pushError('cartpole-v1: sim-head state label escapes the sim-card bounds');
+  if(!simCardBounds.timeWithinCard) pushError('cartpole-v1: sim-head clock escapes the sim-card bounds');
+  if(!simCardBounds.boundsWithinCard) pushError('cartpole-v1: sim-bounds metadata line escapes the sim-card bounds');
+
+  // Force/state readout tiles: every tile (including "selected t") must stay
+  // inside the sim-card, and its numeric <output> must render as one line
+  // (never breaking a signed value like "+0.00 N" across lines).
+  const readoutBounds=await page.evaluate(() => {
+    const card=document.querySelector('.sim-card');
+    const cardRect=card?.getBoundingClientRect();
+    const within=(inner,outer)=>!!inner && !!outer &&
+      inner.left>=outer.left-0.5 && inner.right<=outer.right+0.5 &&
+      inner.top>=outer.top-0.5 && inner.bottom<=outer.bottom+0.5;
+    const singleLine=el=>{
+      if(!el) return true;
+      const range=document.createRange();
+      range.selectNodeContents(el);
+      return range.getClientRects().length<=1;
+    };
+    const tiles=[...document.querySelectorAll('.force-lane .force-tile, .state-readout span')];
+    return tiles.map(t=>({
+      text:t.textContent.trim(),
+      withinCard:within(t.getBoundingClientRect(),cardRect),
+      outputSingleLine:singleLine(t.querySelector('output'))
+    }));
+  });
+  report.interactions.readoutBounds=readoutBounds;
+  for(const t of readoutBounds){
+    if(!t.withinCard) pushError('cartpole-v1: readout tile "'+t.text+'" escapes the sim-card bounds');
+    if(!t.outputSingleLine) pushError('cartpole-v1: readout tile "'+t.text+'" numeric value wrapped across multiple lines');
+  }
 
   // Actual 8-token weighting summary is the primary state-column reading
   // (App.svelte, ahead of the Pipeline disclosure, not inside it): top-3
@@ -1474,9 +1556,19 @@ async function runDesktop(browser) {
   if(tickAfterClose!==tickBeforeClose) pushError('follow-decision guide: closing the guide changed the plant tick');
   const pushReenabled=await page.getByRole('button',{name:'Push →'}).isDisabled().catch(()=>true);
   if(pushReenabled) pushError('follow-decision guide: Push stayed disabled after the guide was closed');
+  // Pipeline is a closed native <details> by default now that the decision
+  // summary is the primary reading, and (per the approved change) no longer
+  // auto-reopens when the guide closes -- so first assert it stays closed,
+  // then explicitly reopen it via the same disclosure the user would use,
+  // and verify the underlying source/force are correctly restored to live
+  // (not dropping this coverage, just reordering how it's reached).
   const pipelineRestoredOnClose=await page.locator('.pipeline-disclosure').evaluate(el=>({open:el.open,source:el.dataset.source})).catch(()=>({open:false,source:null}));
-  if(!pipelineRestoredOnClose.open) pushError('follow-decision guide: Pipeline overview did not restore to its default-visible state after the guide closed');
-  if(pipelineRestoredOnClose.source!=='live') pushError('follow-decision guide: Pipeline overview source is not "live" after the guide closed, got '+JSON.stringify(pipelineRestoredOnClose.source));
+  if(pipelineRestoredOnClose.open) pushError('follow-decision guide: Pipeline overview should stay collapsed after the guide closed (it no longer auto-reopens)');
+  await page.locator('.pipeline-disclosure summary').click();
+  await page.waitForTimeout(100);
+  const pipelineReopenedOnClose=await page.locator('.pipeline-disclosure').evaluate(el=>({open:el.open,source:el.dataset.source}));
+  if(!pipelineReopenedOnClose.open) pushError('follow-decision guide: Pipeline overview did not reopen via its own disclosure after the guide closed');
+  if(pipelineReopenedOnClose.source!=='live') pushError('follow-decision guide: Pipeline overview source is not "live" after the guide closed, got '+JSON.stringify(pipelineReopenedOnClose.source));
   const pipelineForceAfterClose=await page.locator('.pipeline-shell .panel-head>span').innerText();
   const liveCommandForceAfterClose=await page.locator('main').getAttribute('data-controller-force');
   const liveCommandForceAbs=Math.abs(Number(liveCommandForceAfterClose)).toFixed(2);
@@ -1806,6 +1898,19 @@ async function runMobile(browser) {
   report.interactions.mobileSankeyDisplay=mobileSankeyDisplay;
   if(mobileSankeyDisplay && mobileSankeyDisplay!=='none') pushError('mobile-overview: internal Sankey must be hidden, display='+mobileSankeyDisplay);
   await page.screenshot({path:path.join(outDir,'mobile-overview.jpg'),type:'jpeg',quality:78,fullPage:true});
+
+  // Actual default landing screenshot at the mobile width: Pipeline still
+  // collapsed, nothing opened, paused so the capture is settled, viewport-
+  // only at scroll 0 (mobile-overview.jpg above is full-page and not
+  // guaranteed paused/scroll-0, so this is the dedicated first-screen shot).
+  const mobileFirstScreenPauseBtn=page.getByRole('button',{name:'Pause'});
+  const mobileFirstScreenWasRunning=await mobileFirstScreenPauseBtn.count()>0;
+  if(mobileFirstScreenWasRunning) await mobileFirstScreenPauseBtn.click();
+  await page.waitForTimeout(150);
+  await page.evaluate(()=>window.scrollTo(0,0));
+  await page.screenshot({path:path.join(outDir,'mobile-first-screen.jpg'),type:'jpeg',quality:82,fullPage:false});
+  if(mobileFirstScreenWasRunning) await page.getByRole('button',{name:'Run'}).click();
+  await page.waitForTimeout(100);
 
   // Pipeline overview is a closed native <details> by default; open it
   // explicitly before the Pipeline-internal stage click below.

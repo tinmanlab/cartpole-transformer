@@ -106,11 +106,12 @@
 <div class="sim-card resize-watch" data-scene-contract="cartpole-v1">
   <div class="sim-head">
     <div>
-      <span>{status === 'fell' ? 'FROZEN · fell' : running ? 'LIVE' : 'PAUSED'} · plant tick {tick} · x unit m · θ unit deg · terminal |x|&gt;2.4m or |θ|&gt;21.8°</span>
+      <span>{status === 'fell' ? 'FROZEN' : running ? 'LIVE' : 'PAUSED'} · tick {tick}</span>
       <strong>{status === 'fell' ? 'Pole fell' : 'Cart-Pole'}</strong>
     </div>
     <div class="time">{elapsed.toFixed(1)} s</div>
   </div>
+  <div class="sim-bounds">x unit m · θ unit deg · terminal |x|&gt;2.4m or |θ|&gt;21.8°</div>
 
   <svg bind:this={svgEl} viewBox="0 0 {viewBoxWidth} {viewBoxHeight}" class="sim" role="img" aria-label="live Cart-Pole simulation" style="--label-scale: {labelScale}">
     <rect x="0" y="0" width={viewBoxWidth} height={viewBoxHeight} fill="#ffffff"/>
@@ -159,19 +160,21 @@
        the next Step/tick, not yet measured or delivered -- there is no
        separate actuator model in this repo, so command == delivered once
        applied), external disturbance is amber. Zero stays a plain signed
-       number, never an arrow, so the lane never shifts layout. -->
+       number, never an arrow, so the lane never shifts layout. Label sits
+       above the value (own nowrap <output>) so a narrow tile never breaks
+       "+0.00 N" across lines. -->
   <div class="force-lane">
-    <span class="force-tile action-force"><b>next command</b>{controllerForce >= 0 ? '+' : ''}{controllerForce.toFixed(2)} N</span>
-    <span class="force-tile disturbance-force"><b>external disturbance</b>{disturbance >= 0 ? '+' : ''}{disturbance.toFixed(2)} N</span>
+    <span class="force-tile action-force"><b>next command</b><output>{controllerForce >= 0 ? '+' : ''}{controllerForce.toFixed(2)} N</output></span>
+    <span class="force-tile disturbance-force"><b>external disturbance</b><output>{disturbance >= 0 ? '+' : ''}{disturbance.toFixed(2)} N</output></span>
   </div>
 
   {#if showStateOverlay}
     <div class="state-readout">
-      <span><b>x [m]</b>{state.x.toFixed(2)}</span>
-      <span><b>ẋ [m/s]</b>{state.xDot.toFixed(2)}</span>
-      <span><b>θ [deg]</b>{deg.toFixed(1)}</span>
-      <span><b>θ̇ [deg/s]</b>{(state.thetaDot*180/Math.PI).toFixed(1)}</span>
-      <span class="selected-time"><b>selected</b>{selectedToken===last?'t':'t−'+(last-selectedToken)}</span>
+      <span><b>x [m]</b><output>{state.x.toFixed(2)}</output></span>
+      <span><b>ẋ [m/s]</b><output>{state.xDot.toFixed(2)}</output></span>
+      <span><b>θ [deg]</b><output>{deg.toFixed(1)}</output></span>
+      <span><b>θ̇ [deg/s]</b><output>{(state.thetaDot*180/Math.PI).toFixed(1)}</output></span>
+      <span class="selected-time"><b>selected</b><output>{selectedToken===last?'t':'t−'+(last-selectedToken)}</output></span>
     </div>
   {:else}
     <div class="vision-hidden-state">VISION-ONLY · state numbers hidden · controller sees rendered frames only</div>
@@ -189,19 +192,33 @@
 
 <style>
 .sim-card{height:auto;min-height:500px;background:#fff;border:1px solid #e2e5ea;border-radius:16px;padding:11px;display:flex;flex-direction:column;min-width:0}
-.sim-head{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:0 2px 8px;border-bottom:1px solid #eef0f3}
-.sim-head span{display:block;font-size:14px;letter-spacing:.02em;color:#596273}
+.sim-head{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:0 2px 4px;border-bottom:1px solid #eef0f3;min-width:0}
+.sim-head>div{min-width:0}
+.sim-head span{display:block;font-size:14px;letter-spacing:.02em;color:#596273;white-space:nowrap}
 .sim-head strong{display:block;font-size:16px;margin-top:1px}
-.time{font:14px ui-monospace,SFMono-Regular,Menlo,monospace;color:#667085}
+.sim-bounds{font-size:14px;color:#596273;padding:4px 2px 8px;border-bottom:1px solid #eef0f3;line-height:1.4}
+.time{font:14px ui-monospace,SFMono-Regular,Menlo,monospace;color:#667085;white-space:nowrap;flex:none}
 .sim{width:100%;height:auto;display:block;margin-top:8px;background:#ffffff;border-radius:11px;border:1px solid #edf0f4;flex:1;min-height:0}
 /* In-diagram SVG labels stay compact (scale-corrected to ~10px, never smaller); every value they annotate is duplicated in the >=14px HTML readout below, so this is a documented, always-readable exception rather than hidden content */
 .sim text{font:calc(10px * var(--label-scale, 1)) ui-monospace,SFMono-Regular,Menlo,monospace;fill:#697386}
 .selected-history-label text{fill:#5968b7;font-weight:700}
+/* min-height:44px keeps the whole label a real touch target; the native
+   checkbox itself gets an explicit 28x28 visual size (the shared small-
+   control floor) instead of its ~13px browser default, which was tripping
+   that floor check on every audited viewport. */
 .ghost-toggle{display:flex;align-items:center;gap:6px;margin-top:7px;font-size:14px;color:#596273;min-height:44px}
-.force-lane{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}.force-lane .force-tile{display:flex;justify-content:space-between;gap:5px;flex:1;min-width:150px;border:1px solid #e4e7ec;border-radius:6px;padding:6px 7px;font:14px ui-monospace,SFMono-Regular,Menlo,monospace}.force-lane b{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:14px}
+.ghost-toggle input{width:28px;height:28px;flex:none;margin:0}
+.force-lane{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px;min-width:0}
+.force-lane .force-tile{display:flex;flex-direction:column;gap:2px;flex:1 1 130px;min-width:0;border:1px solid #e4e7ec;border-radius:6px;padding:6px 7px}
+.force-lane b{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:14px}
+.force-lane output{font:14px ui-monospace,SFMono-Regular,Menlo,monospace;white-space:nowrap}
 .action-force{background:#e9f7f0;color:#16805d}
 .disturbance-force{background:#fdf3e7;color:#b86b16}
-.state-readout{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-top:7px}.state-readout span{display:flex;justify-content:space-between;gap:5px;border:1px solid #e4e7ec;background:#fafbfc;border-radius:6px;padding:6px 7px;font:14px ui-monospace,SFMono-Regular,Menlo,monospace;color:#596273}.state-readout b{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:14px;color:#8b93a1}.state-readout .selected-time{background:#f2f0f9;color:#6855a1}.vision-hidden-state{margin-top:7px;padding:7px 9px;border:1px solid #e1e5ea;border-radius:6px;background:#f7f8fa;text-align:center;font-size:14px;line-height:1.4;letter-spacing:.03em;color:#7b8492}
+.state-readout{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:5px;margin-top:7px;min-width:0}
+.state-readout span{display:flex;flex-direction:column;gap:2px;min-width:0;border:1px solid #e4e7ec;background:#fafbfc;border-radius:6px;padding:6px 7px;color:#596273}
+.state-readout output{font:14px ui-monospace,SFMono-Regular,Menlo,monospace;white-space:nowrap}
+.state-readout b{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:14px;color:#8b93a1}
+.state-readout .selected-time{background:#f2f0f9;color:#6855a1}
+.vision-hidden-state{margin-top:7px;padding:7px 9px;border:1px solid #e1e5ea;border-radius:6px;background:#f7f8fa;text-align:center;font-size:14px;line-height:1.4;letter-spacing:.03em;color:#7b8492}
 .sim-controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:7px}.sim-controls button{border:1px solid #d9dde5;border-radius:7px;background:#fff;padding:10px 14px;min-height:44px;min-width:44px;cursor:pointer;font-size:14px}.sim-controls .primary{background:#243047;color:#fff;border-color:#243047}.sim-controls button:disabled{opacity:.38;cursor:not-allowed}.sim-controls .push{border-color:#e2d6c4;background:#fffaf2}.spacer{flex:1 1 0;min-width:0}
-@media(max-width:560px){.state-readout{grid-template-columns:repeat(2,1fr)}.selected-time{grid-column:1/3}}
 </style>
