@@ -64,55 +64,39 @@
 
 <svelte:head>
   <title>Cart-Pole Transformer Explainer</title>
-  <meta name="description" content="Live Cart-Pole simulation connected to an upstream-inspired Transformer attention visualization."/>
+  <meta name="description" content="Live Cart-Pole simulation beside its Transformer attention computation."/>
 </svelte:head>
 
 <main>
   <header class="hero">
-    <div>
-      <div class="kicker">CART-POLE TRANSFORMER · INTERACTIVE LAB</div>
-      <h1>Attention이 실제로 cart를 움직이는 순간을 본다</h1>
-      <p>왼쪽의 물리 시뮬레이션과 오른쪽의 Transformer 내부 계산은 같은 시간축입니다. 막대가 움직일 때마다 8개의 상태 token, Q/K/V, attention matrix, context와 force가 실시간으로 함께 바뀝니다.</p>
-    </div>
-    <div class="legend">
-      <div><i class="q"></i><b>Q</b><span>무엇을 찾나?</span></div>
-      <div><i class="k"></i><b>K</b><span>어떤 정보인가?</span></div>
-      <div><i class="v"></i><b>V</b><span>무엇을 가져오나?</span></div>
-    </div>
+    <div class="kicker">CART-POLE TRANSFORMER · LIVE EXPLAINER</div>
+    <h1>시뮬레이션과 Attention을 한 화면에서</h1>
+    <p>왼쪽에서 움직이는 Cart-Pole의 같은 상태가 오른쪽에서 바로 token → Q/K/V → attention → force로 계산됩니다.</p>
   </header>
 
-  <section class="top-grid">
+  <section class="lab-grid" aria-label="live Cart-Pole and Transformer visualization">
     <CartPoleView {state} force={appliedForce} {running} {elapsed} {status} onToggle={toggle} onReset={reset} onPush={push} onPushEnd={pushEnd}/>
-    <aside class="now">
-      <div class="eyebrow">RIGHT NOW</div>
-      <h2>현재 Query는 어디를 보고 있나?</h2>
-      <div class="attn-bars">
-        {#each result.weights[result.weights.length-1] as weight, i}
-          <div class="bar-row">
-            <span>{i===N-1?'t':'t−'+(N-1-i)}</span>
-            <div class="bar"><i style={"width:"+(weight*100)+"%"}></i></div>
-            <b>{(weight*100).toFixed(0)}%</b>
-          </div>
-        {/each}
-      </div>
-      <div class="force-readout">
-        <span>attention → context → controller</span>
-        <strong>{controllerForce >= 0 ? 'RIGHT' : 'LEFT'} {Math.abs(controllerForce).toFixed(1)} N</strong>
-      </div>
-      <p class="small">← / → push 버튼을 누르고 있으면 외란이 추가됩니다. controller는 중단되지 않고 같은 50 Hz로 계속 계산합니다.</p>
-    </aside>
+    <Pipeline {history} {result} {controllerForce}/>
   </section>
 
-  <Pipeline {history} {result} {controllerForce}/>
-
-  <section class="concepts">
-    <article><span>1</span><h3>Token</h3><p>텍스트의 단어 대신 <code>[x, ẋ, θ, θ̇]</code>라는 한 시점의 상태가 token입니다. 8개 token은 약 0.16초의 짧은 기억입니다.</p></article>
-    <article><span>2</span><h3>Q / K / V</h3><p>같은 상태를 세 방식으로 투영합니다. Q/K는 “누구를 볼지”, V는 “무슨 정보를 가져올지”를 분리합니다.</p></article>
-    <article><span>3</span><h3>Attention</h3><p>Q·K 점수를 softmax로 바꿔 가중치를 만들고, 그만큼 V를 섞습니다. matrix에서 현재 row가 실제 이번 제어 결정입니다.</p></article>
-    <article><span>4</span><h3>Action</h3><p>섞인 context가 force를 만들고 그 force가 실제 물리식으로 다음 Cart-Pole 상태를 만듭니다. 그래서 계산과 움직임이 끊어지지 않습니다.</p></article>
+  <section class="explain">
+    <div class="explain-head">
+      <div>
+        <div class="kicker">READ AFTER WATCHING THE LIVE VIEW</div>
+        <h2>오른쪽 그림은 무엇을 하는가?</h2>
+      </div>
+      <div class="qkv-key"><span class="q">Q</span> 찾을 기준 <span class="k">K</span> 비교용 꼬리표 <span class="v">V</span> 실제 가져올 정보</div>
+    </div>
+    <div class="steps">
+      <article><b>1 · State token</b><p>각 시점의 <code>[x, ẋ, θ, θ̇]</code>가 token 하나입니다. 8개 token은 짧은 시간 기억입니다.</p></article>
+      <article><b>2 · Q / K / V</b><p>같은 token을 세 방식으로 바꿉니다. Q와 K는 “어디를 볼지”, V는 “무엇을 가져올지” 담당합니다.</p></article>
+      <article><b>3 · Attention</b><p><code>QKᵀ / √d → softmax</code>로 과거 token의 중요도를 만듭니다. 현재 결정은 matrix의 마지막 row입니다.</p></article>
+      <article><b>4 · Action</b><p>attention 비율만큼 V를 합친 context가 force를 만들고, 그 force가 다시 왼쪽 물리 시뮬레이션에 들어갑니다.</p></article>
+    </div>
+    <div class="formula-line"><code>state history → Q, K, V → QKᵀ/√d → causal mask → softmax → Σ(attention·V) → force</code></div>
   </section>
 
-  <div class="claim">현재 모델은 <b>학습된 Transformer가 아니라</b> attention 계산을 숨김없이 보여주기 위한 1-head transparent controller입니다. 다음 단계에서 동일한 시각화 인터페이스에 실제 학습된 tiny causal Transformer의 intermediate tensor를 연결합니다.</div>
+  <div class="claim">현재는 계산을 완전히 보이게 만든 <b>1-head transparent attention controller</b>입니다. 아직 학습된 Transformer policy는 아니며, 다음 단계에서 이 동일한 시각화 인터페이스에 실제 learned Q/K/V tensor를 연결합니다.</div>
 
-  <footer>Visualization methods adapted from the interaction patterns of Polo Club Transformer Explainer (MIT): canvas vector strips, D3 matrix encoding, DOM-to-DOM flow paths, and expandable attention animation.</footer>
+  <footer>Polo Club Transformer Explainer의 MIT-licensed 시각화 방법을 참고해 vector strips, D3 matrix, DOM flow path, GSAP path animation을 Cart-Pole용으로 재구성했습니다.</footer>
 </main>
